@@ -16,8 +16,9 @@ html {
 
 html,
 body {
+  height: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {
@@ -47,3 +48,29 @@ a {
     color-scheme: dark;
   }
 }
+
+.app {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar-container {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+.content {
+  flex-grow: 1;
+  min-width: 0;
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+

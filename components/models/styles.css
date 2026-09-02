@@ -1,0 +1,39 @@
+.student-image {
+    height: 140px;
+    width: 120px !important;
+    margin: 10px auto;
+    border: 3px solid #ffffff;
+    box-shadow: 1px 1px 10px #04392785;
+}
+
+.primary-text {
+    letter-spacing: 0.8px;
+    margin-bottom: 0 !important;
+    text-transform: capitalize;
+    text-align: center;
+}
+
+.heading-text {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.8px;
+    text-align: end;
+}
+
+.normal-text {
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    margin: 2px;
+}
+.heading-text1 {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.8px;
+}
+
+.normal-text1 {
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.8px;
+}

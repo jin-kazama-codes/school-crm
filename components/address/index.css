@@ -1,0 +1,11 @@
+#box-shadower::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    transform: translate3d(0, 0, -1px);
+    background: conic-gradient(from 90deg at 40% -25%, white, white, white);
+    border: 2px solid black;
+    z-index: 1;
+    filter: blur(2px);
+    clip-path: polygon(-100vmax -100vmax, 100vmax -100vmax, 100vmax 100vmax, -100vmax 100vmax, -100vmax -100vmax, 0 0, 0 100%, 100% 100%, 100% 0, 0 0);
+}

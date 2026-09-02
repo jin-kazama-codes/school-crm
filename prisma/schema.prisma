@@ -1,0 +1,676 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================== ENUMS ========================
+
+enum Status {
+  active
+  inactive
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum SchoolType {
+  co_ed  @map("co-ed")
+  boys
+  girls
+}
+
+enum SchoolSubType {
+  junior
+  senior
+  senior_sec @map("senior-sec")
+  playgroup
+}
+
+enum AddressParent {
+  school
+  student
+  admin
+  sub_admin  @map("sub-admin")
+  member
+  teacher
+  guardian
+  user
+  bus
+  employee
+}
+
+enum ImageParent {
+  parent
+  student
+  teacher
+  school
+  homework
+}
+
+enum ImageType {
+  display
+  banner
+  normal
+}
+
+enum AttendanceParent {
+  student
+  teacher
+  employee
+}
+
+enum AttendanceStatus {
+  present
+  absent
+}
+
+enum BloodGroup {
+  A_POS  @map("A+")
+  A_NEG  @map("A-")
+  B_POS  @map("B+")
+  B_NEG  @map("B-")
+  AB_POS @map("AB+")
+  AB_NEG @map("AB-")
+  O_POS  @map("O+")
+  O_NEG  @map("O-")
+}
+
+enum Nationality {
+  indian
+  nri
+}
+
+enum AdmissionType {
+  regular
+  midsession
+}
+
+enum CasteGroup {
+  general
+  obc
+  sc
+  st
+}
+
+enum FeeWaiverType {
+  partial
+  full
+}
+
+enum TeacherGrade {
+  primary_teacher
+  trained_graduate_teacher
+  post_graduate_teacher
+}
+
+enum PaymentFee {
+  school
+  bus
+}
+
+enum PaymentType {
+  monthly
+  quarterly
+  half_yearly @map("half-yearly")
+  annually
+}
+
+enum MarksheetTerm {
+  I
+  II
+  III
+}
+
+enum MarksheetResult {
+  pass
+  fail
+}
+
+enum TimetableDay {
+  monday
+  tuesday
+  wednesday
+  thursday
+  friday
+  saturday
+}
+
+enum HolidayType {
+  school_closure
+  partial_closure
+  staff_only
+}
+
+enum SchoolDurationBatch {
+  junior
+  senior
+  both
+}
+
+enum SchoolDurationShift {
+  morning
+  evening
+  both
+}
+
+// ======================== MODELS ========================
+
+model user_role {
+  id         Int      @id @default(autoincrement())
+  name       String?
+  priority   Int?
+  status     Status?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("user_role")
+}
+
+model school {
+  id                Int          @id @default(autoincrement())
+  name              String?
+  email             String?
+  contact_no_1      String?
+  contact_no_2      String?
+  director          String?
+  principal         String?
+  board             String?
+  area              String?
+  school_code       String?
+  session_start     String?
+  payment_date      Int?
+  amenities         String?
+  payment_methods   String?
+  registered_by     String?
+  registration_year Int?
+  is_boarding       Boolean?
+  boarding_capacity Int?
+  capacity          Int?
+  founding_year     Int?
+  affiliation_no    Int?
+  type              SchoolType?
+  sub_type          SchoolSubType?
+  status            Status?
+  created_at        DateTime?    @db.Timestamp(6)
+  updated_at        DateTime?    @db.Timestamp(6)
+  created_by        Int?
+  updated_by        Int?
+
+  @@map("school")
+}
+
+model user {
+  id          Int      @id @default(autoincrement())
+  school_id   Int?
+  username    String?
+  password    String?
+  email       String?
+  contact_no  String?
+  role        Int?
+  designation String?
+  gender      Gender?
+  status      Status?
+  created_at  DateTime? @db.Timestamp(6)
+  updated_at  DateTime? @db.Timestamp(6)
+  created_by  Int?
+  updated_by  Int?
+
+  @@map("user")
+}
+
+model student {
+  id                   Int             @id @default(autoincrement())
+  school_id            Int?
+  parent_id            Int?
+  roll_no              Int?
+  enrollment_no        Int?
+  session              String?
+  firstname            String?
+  lastname             String?
+  mother_name          String?
+  mother_contact_no    Decimal?
+  mother_aadhar        Decimal?
+  father_name          String?
+  father_contact_no    Decimal?
+  father_aadhar        Decimal?
+  guardian_name        String?
+  guardian_contact_no  Decimal?
+  guardian_aadhar      Decimal?
+  contact_no           String?
+  email                String?
+  class                Int?
+  section              Int?
+  subjects             String?
+  admission_date       DateTime?
+  dob                  DateTime?
+  is_specially_abled   Boolean?
+  is_taking_bus        Boolean?
+  is_fee_waiver        Boolean?
+  fee_waiver_type      FeeWaiverType?
+  waived_fees          Int?
+  blood_group          BloodGroup?
+  birth_mark           String?
+  religion             String?
+  nationality          Nationality?
+  id_card              String?
+  aadhaar_no           String?
+  admission_type       AdmissionType?
+  caste_group          CasteGroup?
+  gender               Gender?
+  head                 Int?
+  house                String?
+  status               Status?
+  created_at           DateTime?      @db.Timestamp(6)
+  updated_at           DateTime?      @db.Timestamp(6)
+  created_by           Int?
+  updated_by           Int?
+
+  @@map("student")
+}
+
+model teacher {
+  id                Int          @id @default(autoincrement())
+  school_id         Int?
+  parent_id         Int?
+  firstname         String
+  lastname          String?
+  email             String?
+  contact_no        String?
+  dob               DateTime?
+  religion          String?
+  nationality       Nationality?
+  blood_group       BloodGroup?
+  qualification     String?
+  achievements      String?
+  experience        String?
+  grade             TeacherGrade?
+  is_specially_abled Boolean?
+  is_class_teacher  Boolean?
+  class             Int?
+  section           Int?
+  caste_group       CasteGroup?
+  gender            Gender?
+  status            Status?
+  created_at        DateTime?    @db.Timestamp(6)
+  updated_at        DateTime?    @db.Timestamp(6)
+  created_by        Int?
+  updated_by        Int?
+
+  @@map("teacher")
+}
+
+model employee {
+  id         Int      @id @default(autoincrement())
+  school_id  Int?
+  firstname  String?
+  lastname   String?
+  email      String?
+  contact_no String?
+  role       String?
+  dob        String?
+  gender     Gender?
+  status     Status?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("employee")
+}
+
+model address {
+  id         Int           @id @default(autoincrement())
+  school_id  Int?
+  parent     AddressParent?
+  parent_id  Int?
+  street     String?
+  landmark   String?
+  zipcode    String?
+  city       Int?
+  state      Int?
+  country    Int?
+  created_at DateTime?     @db.Timestamp(6)
+  updated_at DateTime?     @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("address")
+}
+
+model image {
+  id         Int         @id @default(autoincrement())
+  school_id  Int?
+  parent     ImageParent?
+  parent_id  Int?
+  priority   Int?
+  type       ImageType?
+  image_src  String?
+  created_at DateTime?   @db.Timestamp(6)
+  updated_at DateTime?   @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("image")
+}
+
+model attendance {
+  id         Int              @id @default(autoincrement())
+  school_id  Int?
+  parent     AttendanceParent?
+  parent_id  Int?
+  class_id   Int?
+  section_id Int?
+  date       DateTime?        @db.Timestamp(6)
+  status     AttendanceStatus?
+  created_at DateTime?        @db.Timestamp(6)
+
+  @@map("attendance")
+}
+
+model timetable {
+  id         Int          @id @default(autoincrement())
+  school_id  Int?
+  class_id   Int?
+  period     Int?
+  section_id Int?
+  subject_id Int?
+  duration   String?
+  day        TimetableDay?
+  batch      String?
+
+  @@map("timetable")
+}
+
+model marksheet {
+  id         Int             @id @default(autoincrement())
+  school_id  Int?
+  student_id Int?
+  class_id   Int?
+  section_id Int?
+  session    String?
+  term       MarksheetTerm?
+  result     MarksheetResult?
+  created_at DateTime?       @db.Timestamp(6)
+  updated_at DateTime?       @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("marksheet")
+}
+
+model payment {
+  id               Int         @id @default(autoincrement())
+  school_id        Int?
+  student_id       Int?
+  method           Int?
+  fee              PaymentFee?
+  type             PaymentType?
+  type_duration    String?
+  academic_year    String?
+  amount           Float?
+  final_amount     Float?
+  late_fee         Float?
+  discount_percent Int?
+  due_date         DateTime?
+  created_at       DateTime?   @db.Timestamp(6)
+  updated_at       DateTime?   @db.Timestamp(6)
+  created_by       Int?
+  updated_by       Int?
+
+  @@map("payment")
+}
+
+model payment_method {
+  id         Int      @id @default(autoincrement())
+  name       String?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("payment_method")
+}
+
+model amenity {
+  id          Int      @id @default(autoincrement())
+  name        String?
+  description String?
+  status      Status?
+  created_at  DateTime? @db.Timestamp(6)
+  updated_at  DateTime? @db.Timestamp(6)
+  created_by  Int?
+  updated_by  Int?
+
+  @@map("amenity")
+}
+
+model bus {
+  id                Int      @id @default(autoincrement())
+  school_id         Int?
+  registration_no   String?
+  driver            String?
+  driver_contact    String?
+  driver_license    String?
+  conductor         String?
+  conductor_contact String?
+  conductor_aadhaar String?
+  route             String?
+  status            Status?
+  created_at        DateTime? @db.Timestamp(6)
+  updated_at        DateTime? @db.Timestamp(6)
+  created_by        Int?
+  updated_by        Int?
+
+  @@map("bus")
+}
+
+model city {
+  id       Int     @id @default(autoincrement())
+  name     String?
+  state_id String?
+
+  @@map("city")
+}
+
+model state {
+  id         Int     @id @default(autoincrement())
+  name       String?
+  country_id String?
+
+  @@map("state")
+}
+
+model country {
+  id           Int     @id @default(autoincrement())
+  name         String?
+  country_code String?
+  phone_code   String?
+
+  @@map("country")
+}
+
+model school_class {
+  id         Int      @id @default(autoincrement())
+  name       String?
+  status     Status?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("class")
+}
+
+model section {
+  id         Int      @id @default(autoincrement())
+  name       String?
+  status     Status?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("section")
+}
+
+model subject {
+  id         Int      @id @default(autoincrement())
+  name       String?
+  status     Status?
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("subject")
+}
+
+model holiday {
+  id         Int         @id @default(autoincrement())
+  school_id  Int?
+  title      String?
+  startDate  DateTime?
+  endDate    DateTime?
+  type       HolidayType?
+  notes      String?
+  created_at DateTime?   @db.Timestamp(6)
+  updated_at DateTime?   @db.Timestamp(6)
+  created_by Int?
+  updated_by Int?
+
+  @@map("holiday")
+}
+
+model homework {
+  id          Int      @id @default(autoincrement())
+  school_id   Int?
+  teacher_id  Int?
+  class_id    Int?
+  section_id  Int?
+  subject_id  Int?
+  title       String?
+  description String?
+  status      Status?
+  created_at  DateTime? @db.Timestamp(6)
+  updated_at  DateTime? @db.Timestamp(6)
+  created_by  Int?
+  updated_by  Int?
+
+  @@map("homework")
+}
+
+model noticeboard {
+  id           Int      @id @default(autoincrement())
+  school_id    Int?
+  title        String?
+  description  String?
+  publish_date DateTime? @db.Timestamp(6)
+  expiry_date  DateTime? @db.Timestamp(6)
+  status       Status?
+  created_at   DateTime? @db.Timestamp(6)
+  updated_at   DateTime? @db.Timestamp(6)
+  created_by   Int?
+  updated_by   Int?
+
+  @@map("noticeboard")
+}
+
+model school_duration {
+  id                          Int                 @id @default(autoincrement())
+  school_id                   Int?
+  batch                       SchoolDurationBatch?
+  period                      Int?
+  halves                      Int?
+  recess_time                 Int?
+  first_half_period_duration  Int?
+  second_half_period_duration Int?
+  cutoff_time                 Int?
+  opening_time                DateTime?           @db.Timestamp(6)
+  closing_time                DateTime?           @db.Timestamp(6)
+  shifts                      SchoolDurationShift?
+  eve_opening_time            DateTime?           @db.Timestamp(6)
+  eve_closing_time            DateTime?           @db.Timestamp(6)
+  employee_entry_time         DateTime?           @db.Timestamp(6)
+  employee_exit_time          DateTime?           @db.Timestamp(6)
+
+  @@map("school_duration")
+}
+
+model school_house {
+  id              Int      @id @default(autoincrement())
+  school_id       Int?
+  name            String?
+  color_code      String?
+  captain         Int?
+  vice_captain    Int?
+  teacher_incharge Int?
+  strength        Int?
+  status          Status?
+  created_at      DateTime? @db.Timestamp(6)
+  created_by      Int?
+
+  @@map("school_house")
+}
+
+// Junction table: school_class_data (managed via raw SQL in original code)
+model school_class_data {
+  id                Int     @id @default(autoincrement())
+  school_id         Int?
+  class_id          Int?
+  section_id        Int?
+  subject_ids       String?
+  class_fee         Float?
+  class_capacity    Int?
+  late_fee          Float?
+  late_fee_duration String?
+
+  @@map("school_class_data")
+}
+
+// Junction table: teacher_class_section_subject (managed via raw SQL in original code)
+model teacher_class_section_subject {
+  id         Int     @id @default(autoincrement())
+  school_id  Int?
+  teacher_id Int?
+  class_id   Int?
+  section_id Int?
+  subject_ids String?
+
+  @@map("teacher_class_section_subject")
+}
+
+// Marksheet mapping data (subjects+scores)
+model marksheet_data {
+  id           Int     @id @default(autoincrement())
+  marksheet_id Int?
+  subject_id   Int?
+  marks        Float?
+  max_marks    Float?
+  grade        String?
+
+  @@map("marksheet_data")
+}
+
+// Email log table (raw SQL inserts in original)
+model email {
+  id             Int      @id @default(autoincrement())
+  school_id      Int?
+  email_type     String?
+  receiver_email String?
+  role           Int?
+  status         Int?
+  message        String?
+
+  @@map("email")
+}
