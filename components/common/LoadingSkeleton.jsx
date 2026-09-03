@@ -6,32 +6,41 @@
  * restrictions set forth in your license agreement with School CRM.
  */
 
-import { Box, Skeleton } from '@mui/material';
 import PropTypes from 'prop-types';
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const multipleSkeletons = () => {
   return (
-    <Box
-      sx={{ height: "max-content" }}
-    >
+    <div className="h-max flex flex-col gap-6 p-4">
       {[...Array(6)].map((_, index) => {
         if (index % 2) {
-          return <LoadingSkeleton key={index} variant="rounded" animation="wave" width={600} height={20} />
+          return <LoadingSkeleton key={index} width="max-w-[600px]" height="h-5" />;
         } else {
-          return <LoadingSkeleton key={index} variant="rounded" animation="wave" width={500} height={20} />
+          return <LoadingSkeleton key={index} width="max-w-[500px]" height="h-5" />;
         }
-      })
-      }
-    </Box>
+      })}
+    </div>
   );
 };
 
 export const LoadingSkeleton = ({ variant, animation, height, width }) => {
+  // Translate possible MUI string widths/heights to style or classes
+  const style = {};
+  const className = [
+    "bg-slate-200 dark:bg-slate-700/50 rounded",
+    animation !== 'false' ? "animate-pulse" : "",
+    variant === "circular" ? "rounded-full" : "rounded-md",
+    typeof width === 'string' && width.includes('-') ? width : '',
+    typeof height === 'string' && height.includes('h-') ? height : ''
+  ].filter(Boolean).join(" ");
+
+  if (typeof width === 'number') style.width = `${width}px`;
+  if (typeof height === 'number') style.height = `${height}px`;
+
   return (
-    <Skeleton variant={variant} animation={animation} width={width} height={height} sx={{ my: 3, mx: 1 }} />
+    <div className={`my-3 mx-2 ${className}`} style={style} />
   );
 };
+
 LoadingSkeleton.propTypes = {
   variant: PropTypes.string, 
   animation: PropTypes.string,

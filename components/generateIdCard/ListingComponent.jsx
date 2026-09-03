@@ -9,12 +9,10 @@
 
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
 import PropTypes from "prop-types";
-import { Box, FormControl, MenuItem, InputLabel, Select, Typography, useMediaQuery, useTheme, Button } from "@mui/material";
+import { Download } from "lucide-react";
 
 import API from "../../apis";
-// import PaymentModal from "./FormInModalComponent";
 import Search from "../common/Search";
 import ServerPaginationGrid from '../common/Datagrid';
 
@@ -25,9 +23,7 @@ import { datagridColumns } from "./GenIdCardConfig";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
-// import { setStudents } from "../../redux/actions/StudentAction";
 import { setGenerateIdCard } from "../../redux/actions/GenerateIdCardAction";
-import { tokens } from "../../theme";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
@@ -46,18 +42,13 @@ const ListingComponent = ({ rolePriority = null }) => {
   const selected = useSelector(state => state.menuItems.selected);
   const { listData, loading } = useSelector(state => state.allGenerateIdCards);
 
-  const theme = useTheme();
   const dispatch = useDispatch();
-  const isMobile = useMediaQuery("(max-width:480px)");
-  const isTab = useMediaQuery("(max-width:920px)");
 
-  //revisit for pagination
   const [searchFlag, setSearchFlag] = useState({ search: false, searching: false });
   const [oldPagination, setOldPagination] = useState();
 
   const { getPaginatedData } = useCommon();
   const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage } = Utility();
-  const colors = tokens(theme.palette.mode);
   const reloadBtn = document.getElementById("reload-btn");
 
   const ENV = process.env;
@@ -155,159 +146,124 @@ const ListingComponent = ({ rolePriority = null }) => {
     });
   };
 
-
-
-  console.log("listdadt", listData.rows);
+  const selectClassNames = "w-full min-w-[120px] px-4 py-2.5 bg-white/90 dark:bg-[#1a1a1a]/90 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-100 transition-all";
 
   return (
-    <Box m="10px" position="relative"
-      sx={{
-        borderRadius: "20px",
-        border: "0.5px solid black",
-        overflow: "hidden",
-        boxShadow: "1px 1px 10px black",
-        backgroundImage: theme.palette.mode === "light"
-          ? `linear-gradient(rgb(151 203 255 / 80%), rgb(151 203 255 / 80%)), url(${listBg})`
-          : `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url(${listBg})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center",
-        backgroundSize: "cover"
-      }}>
-      <Box
-        height={isMobile ? "19vh" : isTab ? "8vh" : "11vh"}
-        borderRadius="4px"
-        padding={isMobile ? "1vh" : "2vh"}
-        backgroundColor={colors.blueAccent[700]}
-      >
-        <Box
-          display="flex"
-          height={isMobile ? "16vh" : "7vh"}
-          flexDirection={isMobile ? "column" : "row"}
-          justifyContent={"space-between"}
-          alignItems={isMobile ? "center" : "normal"}
-        >
-          <Typography
-            component="h2"
-            variant="h2"
-            color={colors.grey[100]}
-            fontWeight="bold"
-          >
-            {selected}
-          </Typography>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120, marginRight: "10px" }}
-          >
-            <InputLabel>Class</InputLabel>
-            <Select
-              variant="filled"
-              value={classSectionObj?.class || ""}
-              onChange={event =>
-                setClassSectionObj({
-                  ...classSectionObj,
-                  class: event.target.value
-                })
-              }
-              sx={{
-                height: "100%",
-                marginLeft: "1vh",
-                backgroundColor: colors.blueAccent[800],
-                "&:hover": {
-                  backgroundColor: colors.blueAccent[800]
-                }
-              }}
-            >
-              {allClasses?.listData?.length
-                ? allClasses.listData.map(cls => (
-                  <MenuItem value={cls.class_id} key={cls.class_id}>
-                    {cls.class_name}
-                  </MenuItem>
-                ))
-                : schoolClasses?.listData?.length
-                  ? schoolClasses.listData.map(cls => (
-                    <MenuItem value={cls.class_id} key={cls.class_id}>
-                      {cls.class_name}
-                    </MenuItem>
-                  ))
-                  : null}
-            </Select>
-          </FormControl>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120, height: isTab ? "4vh" : "auto" }}
-          >
-            <InputLabel>Section</InputLabel>
-            <Select
-              variant="filled"
-              value={classSectionObj?.section || ""}
-              onChange={event =>
-                setClassSectionObj({
-                  ...classSectionObj,
-                  section: event.target.value
-                })
-              }
-              sx={{
-                height: "100%",
-                marginRight: "1vh",
-                backgroundColor: colors.blueAccent[800],
-                "&:hover": {
-                  backgroundColor: colors.blueAccent[800]
-                }
-              }}
-            >
-              {allSections?.listData?.length
-                ? allSections.listData.map(section => (
-                  <MenuItem value={section.section_id} key={section.section_id}>
-                    {section.section_name}
-                  </MenuItem>
-                ))
-                : schoolSections?.listData?.length
-                  ? schoolSections.listData.map(section => (
-                    <MenuItem value={section.section_id} key={section.section_id}>
-                      {section.section_name}
-                    </MenuItem>
-                  ))
-                  : null}
-            </Select>
-          </FormControl>
-          <Search
-            action={setGenerateIdCard}
-            api={API.GenerateIdCardAPI}
-            getSearchData={getPaginatedData}
-            oldPagination={oldPagination}
-            reloadBtn={reloadBtn}
-            setSearchFlag={setSearchFlag}
-          />
-          <Button
-            variant="contained"
-            color="success"
-            onClick={downloadImages}
-            style={{ margin: '0px 5px 0px 5px' }}
-          >
-            Download All Images
-          </Button>
-        </Box>
-      </Box>
+    <div 
+        className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300"
+        style={{
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url(${listBg?.src || listBg})`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: "cover"
+        }}
+    >
+        <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md p-4 md:p-6 border-b border-white/20 dark:border-white/5">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize whitespace-nowrap">
+                    {selected}
+                </h2>
+                
+                <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="flex flex-col">
+                            <select
+                                value={classSectionObj?.class || ""}
+                                onChange={event =>
+                                    setClassSectionObj({
+                                        ...classSectionObj,
+                                        class: event.target.value
+                                    })
+                                }
+                                className={selectClassNames}
+                            >
+                                <option value="" disabled>Class</option>
+                                {allClasses?.listData?.length
+                                    ? allClasses.listData.map(cls => (
+                                    <option value={cls.class_id} key={cls.class_id}>
+                                        {cls.class_name}
+                                    </option>
+                                    ))
+                                    : schoolClasses?.listData?.length
+                                    ? schoolClasses.listData.map(cls => (
+                                        <option value={cls.class_id} key={cls.class_id}>
+                                        {cls.class_name}
+                                        </option>
+                                    ))
+                                    : null}
+                            </select>
+                        </div>
+                        <div className="flex flex-col">
+                            <select
+                                value={classSectionObj?.section || ""}
+                                onChange={event =>
+                                    setClassSectionObj({
+                                        ...classSectionObj,
+                                        section: event.target.value
+                                    })
+                                }
+                                className={selectClassNames}
+                            >
+                                <option value="" disabled>Section</option>
+                                {allSections?.listData?.length
+                                    ? allSections.listData.map(section => (
+                                    <option value={section.section_id} key={section.section_id}>
+                                        {section.section_name}
+                                    </option>
+                                    ))
+                                    : schoolSections?.listData?.length
+                                    ? schoolSections.listData.map(section => (
+                                        <option value={section.section_id} key={section.section_id}>
+                                        {section.section_name}
+                                        </option>
+                                    ))
+                                    : null}
+                            </select>
+                        </div>
+                    </div>
 
-      <ServerPaginationGrid
-        action={setGenerateIdCard}
-        api={API.GenerateIdCardAPI}
-        getQuery={getPaginatedData}
-        columns={datagridColumns(rolePriority, setOpenDialog)}
-        condition={classConditionObj}
-        rows={listData.rows}
-        count={listData.count}
-        loading={loading}
-        selected={selected}
-        pageSizeOptions={pageSizeOptions}
-        setOldPagination={setOldPagination}
-        searchFlag={searchFlag}
-        setSearchFlag={setSearchFlag}
-        checkboxSelection={true}
-        hidePagination={true}
-      />
-      {/* <PaymentModal openDialog={openDialog} setOpenDialog={setOpenDialog} /> */}
-    </Box>
+                    <div className="w-full md:w-auto">
+                        <Search
+                            action={setGenerateIdCard}
+                            api={API.GenerateIdCardAPI}
+                            getSearchData={getPaginatedData}
+                            oldPagination={oldPagination}
+                            reloadBtn={reloadBtn}
+                            setSearchFlag={setSearchFlag}
+                        />
+                    </div>
+
+                    <button
+                        onClick={downloadImages}
+                        className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/30 transition-all duration-200 whitespace-nowrap"
+                    >
+                        <Download className="w-5 h-5" />
+                        Download All Images
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div className="p-4 md:p-6">
+            <ServerPaginationGrid
+                action={setGenerateIdCard}
+                api={API.GenerateIdCardAPI}
+                getQuery={getPaginatedData}
+                columns={datagridColumns(rolePriority, setOpenDialog)}
+                condition={classConditionObj}
+                rows={listData.rows}
+                count={listData.count}
+                loading={loading}
+                selected={selected}
+                pageSizeOptions={pageSizeOptions}
+                setOldPagination={setOldPagination}
+                searchFlag={searchFlag}
+                setSearchFlag={setSearchFlag}
+                checkboxSelection={true}
+                hidePagination={true}
+            />
+        </div>
+    </div>
   );
 };
 

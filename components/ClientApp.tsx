@@ -14,7 +14,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 
-import { CssBaseline, ThemeProvider } from "@mui/material";
+
 
 import Login from "./login/Login";
 import Topbar from "@/components/common/Topbar";
@@ -210,10 +210,7 @@ export default function ClientApp() {
   if (pathname === "/login") {
     return (
       <ColorModeContext.Provider value={colorMode}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <Login />
-        </ThemeProvider>
+        <Login />
       </ColorModeContext.Provider>
     );
   }
@@ -221,18 +218,13 @@ export default function ClientApp() {
   if (isResetPw) {
     return (
       <ColorModeContext.Provider value={colorMode}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <ResetPasswordComponent />
-        </ThemeProvider>
+        <ResetPasswordComponent />
       </ColorModeContext.Provider>
     );
   }
 
   return (
     <ColorModeContext.Provider value={colorMode}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
         <IdleTimerWrapper
           onIdle={onIdle}
           timeout={parseInt(process.env.NEXT_PUBLIC_LOGOUT_TIMER || "1800000")}
@@ -269,7 +261,6 @@ export default function ClientApp() {
             </Suspense>
           )}
         </div>
-      </ThemeProvider>
     </ColorModeContext.Provider>
   );
 }

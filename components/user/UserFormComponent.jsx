@@ -12,18 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 
 import { useFormik } from "formik";
-import {
-  Box,
-  InputLabel,
-  MenuItem,
-  InputAdornment,
-  IconButton,
-  FormControl,
-  FormHelperText,
-} from "@mui/material";
-import { Button, Select, TextField, useMediaQuery } from "@mui/material";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import { Eye, EyeOff, User, Mail, Phone, Briefcase, Building, Shield, UserCircle, Activity } from "lucide-react";
 
 import API from "../../apis";
 import userValidation from "./Validation";
@@ -68,9 +57,6 @@ const UserFormComponent = ({
   const allUserRoles = useSelector((state) => state.allUserRoles);
 
   const dispatch = useDispatch();
-  const isNonMobile = useMediaQuery("(min-width:600px)");
-  const isMobile = useMediaQuery("(max-width:480px)");
-  const pwField = document.getElementById("pwField");
   const { fetchAndSetAll } = Utility();
 
   const formik = useFormik({
@@ -88,11 +74,12 @@ const UserFormComponent = ({
 
   const watchForm = () => {
     if (onChange) {
-      if (pwField.disabled) {
-        delete formik.values.password;
+      const values = { ...formik.values };
+      if (!updatePassword.clicked && userId) {
+        delete values.password;
       }
       onChange({
-        values: formik.values,
+        values: values,
         validated: formik.isSubmitting
           ? Object.keys(formik.errors).length === 0
           : false,
@@ -116,16 +103,10 @@ const UserFormComponent = ({
   useEffect(() => {
     if (updatedValues) {
       setInitialState(updatedValues);
-      pwField.setAttribute("disabled", true);
-      pwField.style.backgroundColor = "#777";
-      setUpdatePassword({
-        clicked: true,
-      });
     }
   }, [updatedValues]);
 
   useEffect(() => {
-    // this will only fetch schools for admin
     if (!allSchools?.listData?.length && rolePriority === 1) {
       fetchAndSetAll(dispatch, setAllSchools, API.SchoolAPI);
     }
@@ -137,40 +118,18 @@ const UserFormComponent = ({
     }
   }, [allUserRoles?.listData?.length]);
 
-  // useEffect(() => {
-  //     const getRoles = () => {
-  //         API.UserRoleAPI.getAll()
-  //             .then(roles => {
-  //                 if (roles.status === 'Success') {
-  //                     setAllRoles(roles.data.rows);
-  //                 } else {
-  //                     console.log("An Error Occurred, Please Try Again");
-  //                 }
-  //             })
-  //             .catch(err => {
-  //                 throw err;
-  //             });
-  //     };
-  //     getRoles();
-  // }, []);
-
   const handleUpdatePassword = () => {
     if (updatePassword.clicked) {
-      pwField.removeAttribute("disabled");
-      pwField.style.backgroundColor = "rgba(255, 255, 255, 0.09)";
-      pwField.focus();
       setUpdatePassword({
         clicked: false,
         password: formik.values.password,
       });
-      formik.values.password = "";
+      formik.setFieldValue('password', '');
     } else {
-      pwField.setAttribute("disabled", true);
-      pwField.style.backgroundColor = "#777";
       setUpdatePassword({
         clicked: true,
       });
-      formik.values.password = updatePassword.password;
+      formik.setFieldValue('password', updatePassword.password || '');
     }
   };
 
@@ -180,223 +139,277 @@ const UserFormComponent = ({
     }
   }, [schoolId]);
 
+  const inputClass = (touched, error, disabled) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all pl-11 ${
+    disabled ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''
+  } ${
+      touched && error 
+      ? 'border-red-500 focus:ring-red-500/50' 
+      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+  } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+
+  const selectClass = (touched, error, disabled) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all pl-11 ${
+    disabled ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''
+  } ${
+      touched && error 
+      ? 'border-red-500 focus:ring-red-500/50' 
+      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+  } text-slate-800 dark:text-slate-100`;
+
+  const labelClass = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5";
+  const errorClass = "mt-1.5 text-sm text-red-500 font-medium";
+  const fieldsetLegendClass = "flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100 mb-6";
+  const fieldsetClass = "p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 mt-8 relative";
+
   return (
-    <Box m="20px">
-      {userId ? (
-        <Button
-          type="button"
-          color="primary"
-          variant="contained"
-          sx={{
-            position: isMobile ? "relative" : "absolute",
-            right: isMobile ? "0" : 30,
-            top: isMobile ? 98 : 110,
-            zIndex: isMobile ? 1 : 0,
-          }}
-          onClick={handleUpdatePassword}
-        >
-          {updatePassword.clicked === true ? "Update" : "Cancel Update"}{" "}
-          Password{" "}
-        </Button>
-      ) : null}
-      <form ref={refId}>
-        <Box
-          display="grid"
-          gap="30px"
-          gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-          sx={{
-            "& > div": { gridColumn: isNonMobile ? undefined : "span 4" },
-          }}
-        >
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            name="username"
-            label="Username*"
-            autoComplete={false}
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.username}
-            error={!!formik.touched.username && !!formik.errors.username}
-            helperText={formik.touched.username && formik.errors.username}
-            sx={{ gridColumn: "span 2" }}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            id="pwField"
-            label="Password*"
-            name="password"
-            type={showPassword ? "text" : "password"} // <-- This is where the pw toggle happens
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.password}
-            error={!!formik.touched.password && !!formik.errors.password}
-            helperText={formik.touched.password && formik.errors.password}
-            sx={{ gridColumn: "span 2" }}
-            InputProps={{
-              // <-- This is where the toggle button is added
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={() => setShowPassword(!showPassword)}
-                    onMouseDown={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <VisibilityOutlinedIcon />
-                    ) : (
-                      <VisibilityOffOutlinedIcon />
+    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full animate-in slide-in-from-bottom-4 duration-500 relative">
+      
+      {userId && (
+          <button
+            type="button"
+            onClick={handleUpdatePassword}
+            className="absolute top-6 right-6 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-xl font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 z-10"
+          >
+            {updatePassword.clicked ? "Cancel Password Update" : "Update Password"}
+          </button>
+      )}
+
+      <form ref={refId} className="space-y-6">
+        
+        <div className={fieldsetClass}>
+            <h3 className={fieldsetLegendClass}>
+                <UserCircle className="w-6 h-6 text-blue-500" />
+                Account Details
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                    <label className={labelClass}>Username*</label>
+                    <div className="relative">
+                        <User className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            name="username"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.username}
+                            className={inputClass(formik.touched.username, formik.errors.username)}
+                            placeholder="e.g., johndoe"
+                        />
+                    </div>
+                    {formik.touched.username && formik.errors.username && (
+                        <p className={errorClass}>{formik.errors.username}</p>
                     )}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            label="Email"
-            name="email"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.email}
-            error={!!formik.touched.email && !!formik.errors.email}
-            helperText={formik.touched.email && formik.errors.email}
-            sx={{ gridColumn: "span 2" }}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            label="Contact Number*"
-            name="contact_no"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.contact_no}
-            error={!!formik.touched.contact_no && !!formik.errors.contact_no}
-            helperText={formik.touched.contact_no && formik.errors.contact_no}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            label="Designation"
-            name="designation"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.designation}
-            error={!!formik.touched.designation && !!formik.errors.designation}
-            helperText={formik.touched.designation && formik.errors.designation}
-          />
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.gender && !!formik.errors.gender}
-          >
-            <InputLabel>Gender</InputLabel>
-            <Select
-              variant="filled"
-              name="gender"
-              value={formik.values.gender}
-              onChange={formik.handleChange}
-            >
-              {Object.keys(config.gender).map((item) => (
-                <MenuItem key={item} value={item}>
-                  {config.gender[item]}
-                </MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.gender && formik.errors.gender}
-            </FormHelperText>
-          </FormControl>
+                </div>
 
-          {allSchools?.listData?.length ? (
-            <FormControl
-              variant="filled"
-              sx={{ minWidth: 120 }}
-              error={!!formik.touched.school_id && !!formik.errors.school_id}
-            >
-              <InputLabel id="schoolField">School</InputLabel>
-              <Select
-                variant="filled"
-                labelId="schoolField"
-                label="School"
-                name="school_id"
-                disabled ={schoolId && userId ? true : false}
-                value={formik.values.school_id}
-                onChange={(event) => {
-                  const selectedSchoolId = event.target.value;
-                  setSchoolId(selectedSchoolId);
-                  formik.setFieldValue("school_id", selectedSchoolId);
-                }}
-              >
-                {allSchools.listData.map((item) => (
-                  <MenuItem value={item.id} name={item.name} key={item.id}>
-                    {item.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          ) : null}
+                <div className="flex flex-col">
+                    <label className={labelClass}>Password*</label>
+                    <div className="relative">
+                        <Shield className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            disabled={userId && !updatePassword.clicked}
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.password}
+                            className={inputClass(formik.touched.password, formik.errors.password, userId && !updatePassword.clicked)}
+                            placeholder={userId && !updatePassword.clicked ? "********" : "Enter password"}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                            disabled={userId && !updatePassword.clicked}
+                        >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                    </div>
+                    {formik.touched.password && formik.errors.password && (!userId || updatePassword.clicked) && (
+                        <p className={errorClass}>{formik.errors.password}</p>
+                    )}
+                </div>
+            </div>
+        </div>
 
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.role && !!formik.errors.role}
-          >
-            <InputLabel id="roleField">Role</InputLabel>
-            <Select
-              variant="filled"
-              labelId="roleField"
-              label="role"
-              name="role"
-              value={formik.values.role}
-              onChange={formik.handleChange}
-            >
-              {rolePriority === 2 && !allUserRoles?.listData?.length
-                ? null
-                : allUserRoles.listData
-                  .filter((role) => role.id > rolePriority && role.id < 4)
-                  .map((role) => (
-                    <MenuItem
-                      value={role.id}
-                      name={role.name}
-                      key={role.name}
-                    >
-                      {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                    </MenuItem>
-                  ))}
-            </Select>
-          </FormControl>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.status && !!formik.errors.status}
-          >
-            <InputLabel>Status</InputLabel>
-            <Select
-              variant="filled"
-              name="status"
-              value={formik.values.status}
-              onChange={formik.handleChange}
-            >
-              {Object.keys(config.status).map((item) => (
-                <MenuItem key={item} value={item}>
-                  {config.status[item]}
-                </MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.status && formik.errors.status}
-            </FormHelperText>
-          </FormControl>
-        </Box>
+        <div className={fieldsetClass}>
+            <h3 className={fieldsetLegendClass}>
+                <User className="w-6 h-6 text-indigo-500" />
+                Personal Information
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="flex flex-col">
+                    <label className={labelClass}>Email Address</label>
+                    <div className="relative">
+                        <Mail className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="email"
+                            name="email"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.email}
+                            className={inputClass(formik.touched.email, formik.errors.email)}
+                            placeholder="e.g., john@example.com"
+                        />
+                    </div>
+                    {formik.touched.email && formik.errors.email && (
+                        <p className={errorClass}>{formik.errors.email}</p>
+                    )}
+                </div>
+
+                <div className="flex flex-col">
+                    <label className={labelClass}>Contact Number*</label>
+                    <div className="relative">
+                        <Phone className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="tel"
+                            name="contact_no"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.contact_no}
+                            className={inputClass(formik.touched.contact_no, formik.errors.contact_no)}
+                            placeholder="e.g., +1 234 567 8900"
+                        />
+                    </div>
+                    {formik.touched.contact_no && formik.errors.contact_no && (
+                        <p className={errorClass}>{formik.errors.contact_no}</p>
+                    )}
+                </div>
+
+                <div className="flex flex-col">
+                    <label className={labelClass}>Gender*</label>
+                    <div className="relative">
+                        <User className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <select
+                            name="gender"
+                            value={formik.values.gender}
+                            onChange={formik.handleChange}
+                            className={selectClass(formik.touched.gender, formik.errors.gender)}
+                        >
+                            <option value="" disabled>Select Gender</option>
+                            {Object.keys(config.gender).map((item) => (
+                                <option key={item} value={item}>
+                                    {config.gender[item]}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {formik.touched.gender && formik.errors.gender && (
+                        <p className={errorClass}>{formik.errors.gender}</p>
+                    )}
+                </div>
+            </div>
+        </div>
+
+        <div className={fieldsetClass}>
+            <h3 className={fieldsetLegendClass}>
+                <Briefcase className="w-6 h-6 text-emerald-500" />
+                Professional Details
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="flex flex-col">
+                    <label className={labelClass}>Designation</label>
+                    <div className="relative">
+                        <Briefcase className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            name="designation"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.designation}
+                            className={inputClass(formik.touched.designation, formik.errors.designation)}
+                            placeholder="e.g., Teacher"
+                        />
+                    </div>
+                    {formik.touched.designation && formik.errors.designation && (
+                        <p className={errorClass}>{formik.errors.designation}</p>
+                    )}
+                </div>
+
+                {allSchools?.listData?.length ? (
+                    <div className="flex flex-col">
+                        <label className={labelClass}>School*</label>
+                        <div className="relative">
+                            <Building className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <select
+                                name="school_id"
+                                disabled={schoolId && userId ? true : false}
+                                value={formik.values.school_id}
+                                onChange={(event) => {
+                                    const selectedSchoolId = event.target.value;
+                                    setSchoolId(selectedSchoolId);
+                                    formik.setFieldValue("school_id", selectedSchoolId);
+                                }}
+                                className={selectClass(formik.touched.school_id, formik.errors.school_id, schoolId && userId)}
+                            >
+                                <option value="" disabled>Select School</option>
+                                {allSchools.listData.map((item) => (
+                                    <option value={item.id} key={item.id}>
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {formik.touched.school_id && formik.errors.school_id && (
+                            <p className={errorClass}>{formik.errors.school_id}</p>
+                        )}
+                    </div>
+                ) : null}
+
+                <div className="flex flex-col">
+                    <label className={labelClass}>Role*</label>
+                    <div className="relative">
+                        <Shield className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <select
+                            name="role"
+                            value={formik.values.role}
+                            onChange={formik.handleChange}
+                            className={selectClass(formik.touched.role, formik.errors.role)}
+                        >
+                            <option value="" disabled>Select Role</option>
+                            {rolePriority === 2 && !allUserRoles?.listData?.length
+                                ? null
+                                : allUserRoles.listData
+                                    ?.filter((role) => role.id > rolePriority && role.id < 4)
+                                    .map((role) => (
+                                    <option value={role.id} key={role.name}>
+                                        {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                                    </option>
+                                ))}
+                        </select>
+                    </div>
+                    {formik.touched.role && formik.errors.role && (
+                        <p className={errorClass}>{formik.errors.role}</p>
+                    )}
+                </div>
+
+                <div className="flex flex-col">
+                    <label className={labelClass}>Status*</label>
+                    <div className="relative">
+                        <Activity className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <select
+                            name="status"
+                            value={formik.values.status}
+                            onChange={formik.handleChange}
+                            className={selectClass(formik.touched.status, formik.errors.status)}
+                        >
+                            {Object.keys(config.status).map((item) => (
+                                <option key={item} value={item}>
+                                    {config.status[item]}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {formik.touched.status && formik.errors.status && (
+                        <p className={errorClass}>{formik.errors.status}</p>
+                    )}
+                </div>
+            </div>
+        </div>
+
       </form>
-    </Box>
+    </div>
   );
 };
 
@@ -408,7 +421,8 @@ UserFormComponent.propTypes = {
   setDirty: PropTypes.func,
   reset: PropTypes.bool,
   setReset: PropTypes.func,
-  userId: PropTypes.number,
+  schoolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  userId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   rolePriority: PropTypes.number,
   updatedValues: PropTypes.object,
 };

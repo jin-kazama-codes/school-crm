@@ -8,12 +8,7 @@
 
 import { useState } from "react";
 import PropTypes from 'prop-types';
-
-import { Box, IconButton, InputBase, useMediaQuery, useTheme, Button } from "@mui/material";
-import ReplayIcon from "@mui/icons-material/Replay";
-import SearchIcon from "@mui/icons-material/Search";
-
-import { tokens } from "../../theme";
+import { Search as SearchIcon, RotateCcw } from "lucide-react";
 
 const Search = ({
     getSearchData,
@@ -24,10 +19,7 @@ const Search = ({
     api
 }) => {
     const [inputValue, setInputValue] = useState("");
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const isMobile = useMediaQuery("(max-width:480px)");
-    const isTab = useMediaQuery("(max-width:920px)");
+    const isTab = typeof window !== "undefined" && window.innerWidth <= 920;
 
     const handleChange = (event) => {
         setInputValue(event.target.value);
@@ -39,18 +31,21 @@ const Search = ({
             search: true,
             searching: true,
         });
-        reloadBtn.style.display = "inline-flex";
+        if (reloadBtn) {
+            reloadBtn.style.display = "inline-flex";
+        }
     };
 
-    //Search data by pressing down the enter key
     const handleKeyDown = (event) => {
-        if (event.keyCode == 13) {
+        if (event.keyCode === 13) {
             handleSearch();
         }
     };
 
     const handleReload = () => {
-        reloadBtn.style.display = "none";
+        if (reloadBtn) {
+            reloadBtn.style.display = "none";
+        }
         setInputValue('');
         setSearchFlag({
             search: false,
@@ -59,49 +54,35 @@ const Search = ({
     };
 
     return (
-        <Box
-            backgroundColor={colors.primary[400]}
-            borderRadius="10px"
-            width="40vw"
-            height={isTab ? "4vh" : "auto"}
-            display="flex"
-        >
-            <InputBase
-                sx={{
-                    ml: 2,
-                    flex: 1,
-                    width: "88%",
-                }}
-                placeholder="Search"
+        <div className={`flex items-center bg-slate-100 dark:bg-[#1a1a1a] rounded-xl border border-slate-200 dark:border-[#2a2a2a] overflow-hidden w-full max-w-xl transition-all focus-within:ring-2 focus-within:ring-emerald-500/50 ${isTab ? 'h-10' : 'h-12'}`}>
+            <input
+                className="flex-1 bg-transparent px-4 py-2 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+                placeholder="Search..."
                 id="input"
                 value={inputValue}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                autoComplete="off" // Add this attribute to disable suggestions
+                autoComplete="off"
             />
-            <Button sx={{
-                display: "none",
-                zIndex: 1,
-                borderRadius: "50%",
-                color: colors.grey[100],
-                float: "right",
-            }}
+            
+            <button
                 id="reload-btn"
                 type="button"
                 onClick={handleReload}
+                className="hidden items-center justify-center p-2 mx-1 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-slate-200 dark:hover:bg-white/10"
             >
-                <ReplayIcon />
-            </Button>
-            <IconButton sx={{
-                p: 2
-            }}
+                <RotateCcw className="w-5 h-5" />
+            </button>
+            
+            <button
                 onClick={handleSearch}
+                className="flex items-center justify-center p-3 text-slate-400 hover:text-emerald-500 transition-colors bg-slate-200/50 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
             >
-                <SearchIcon />
-            </IconButton>
-        </Box>
+                <SearchIcon className="w-5 h-5" />
+            </button>
+        </div>
     );
-}
+};
 
 Search.propTypes = {
     getSearchData: PropTypes.func,

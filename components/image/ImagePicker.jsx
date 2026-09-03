@@ -10,9 +10,8 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
-import { ErrorMessage, useFormik } from "formik";
-import { Box, IconButton, TextField, Typography } from "@mui/material";
-import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import { useFormik } from "formik";
+import { UploadCloud } from "lucide-react";
 
 import imageValidation from "./Validation";
 import PreviewImage from "./PreviewImage";
@@ -84,54 +83,48 @@ const ImagePicker = ({
     const showPicker = !formik.values[`${image}`]?.length || multiple;
 
     return (
-        <Box m="10px">
-            {/* {!multiple || formik.values[`${image}`] ? ( */}
-            <form ref={refId} encType="multipart/form-data" style={{ display: multiple || (showPicker && !updatedImage?.length) ? "block" : "none" }}>
-                <TextField
-                    accept=".jpg, .gif, .png, .jpeg, .svg, .webp, application/pdf"
-                    name={image}
-                    label={`Upload ${imageType} Image`}
-                    value={formik.values[`${image}`] || ''}
-                    size="small"
-                    onBlur={formik.handleBlur}
-                    InputProps={{
-                        multiple: multiple,
-                        startAdornment: (
-                            <IconButton component="label" sx={{ width: "88%" }}>
-                                <AddPhotoAlternateIcon />
-                                <input
-                                    hidden
-                                    multiple={multiple}
-                                    type="file"
-                                    name="file"
-                                    onChange={(event) => {
-                                        const newFiles = Array.from(event.target.files); // Convert FileList to array
-                                        // Check if formik.values[`${imageType}`] exists and is an array
-                                        if (Array.isArray(formik.values[`${image}`])) {
-                                            // Merge new files with existing files
-                                            formik.setFieldValue(`${image}`, [
-                                                ...formik.values[`${image}`],
-                                                ...newFiles
-                                            ]);
-                                        } else {
-                                            // Assign new files directly
-                                            formik.setFieldValue(`${image}`, newFiles);
-                                        }
-                                        setDirty(true);
-                                    }}
-                                />
-                            </IconButton>
-                        )
-                    }}
-                    sx={{ m: 1, outline: "none", width: "13%" }}
-                />
+        <div className="w-full">
+            <form 
+                ref={refId} 
+                encType="multipart/form-data" 
+                className={`mb-6 ${multiple || (showPicker && !updatedImage?.length) ? "block" : "hidden"}`}
+            >
+                <div className="relative group">
+                    <label 
+                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-[#1a1a1a] dark:hover:bg-[#222] transition-colors"
+                    >
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <UploadCloud className="w-8 h-8 mb-3 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                            <p className="mb-2 text-sm text-slate-500 dark:text-slate-400">
+                                <span className="font-semibold">Click to upload</span> or drag and drop
+                            </p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">
+                                SVG, PNG, JPG, WEBP or PDF
+                            </p>
+                        </div>
+                        <input
+                            hidden
+                            multiple={multiple}
+                            type="file"
+                            name="file"
+                            accept=".jpg, .gif, .png, .jpeg, .svg, .webp, application/pdf"
+                            onChange={(event) => {
+                                const newFiles = Array.from(event.target.files);
+                                if (Array.isArray(formik.values[`${image}`])) {
+                                    formik.setFieldValue(`${image}`, [
+                                        ...formik.values[`${image}`],
+                                        ...newFiles
+                                    ]);
+                                } else {
+                                    formik.setFieldValue(`${image}`, newFiles);
+                                }
+                                setDirty(true);
+                            }}
+                        />
+                    </label>
+                </div>
             </form>
-            {/* ) : null} */}
-            {/* {Object.keys(formik.errors) ? (
-                <p>
-                    {formik.touched[`${imageType}`] && formik.errors[`${imageType}`]}
-                </p>
-            ) : null} */}
+
             <PreviewImage
                 formik={formik}
                 deletedImage={deletedImage}
@@ -147,14 +140,13 @@ const ImagePicker = ({
                 iCardDetails={iCardDetails}
                 setICardDetails={setICardDetails}
             />
+
             {formik.touched[`${image}`] && formik.errors[`${image}`] && (
-                <Typography variant="body2" color="error" mb="10%">
+                <p className="mt-2 text-sm text-red-500 font-medium">
                     {formik.errors[`${image}`]}
-                </Typography>
+                </p>
             )}
-
-
-        </Box>
+        </div>
     );
 }
 

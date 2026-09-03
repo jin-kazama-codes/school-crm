@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
@@ -12,32 +11,16 @@ import { useNavigate } from "@/lib/routerAdapter";
 import { useSelector, useDispatch } from "react-redux";
 import { saveAs } from 'file-saver';
 import { read, utils, write } from 'xlsx';
-
 import PropTypes from "prop-types";
+import { UploadCloud, DownloadCloud, X } from 'lucide-react';
 
-import { Box, Divider, IconButton, Typography, List, ListItem } from "@mui/material";
-import { Button, Dialog, TextField, useMediaQuery } from "@mui/material";
-import { useTheme } from '@mui/material/styles';
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-
-import API from "../../apis"
+import API from "../../apis";
 import Toast from "../common/Toast";
 import Loader from "../common/Loader";
-import { tokens, themeSettings } from "../../theme";
 import { Utility } from "../utility";
-
 import formBg from "../assets/formBg.png";
 
-const ENV = process.env;
-
-const ImportComponent = ({ openDialog, setOpenDialog }) => {
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const isMobile = useMediaQuery("(max-width:480px)");
-    const isTab = useMediaQuery("(max-width:920px)");
-
+const ImportTeacher = ({ openDialog, setOpenDialog }) => {
     //form component starts
     const [importedFile, setImportedFile] = useState(undefined);
     const [teachers, setTeacher] = useState([]);
@@ -46,10 +29,10 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
     const [loading, setLoading] = useState(false);
     const [skipped, setSkipped] = useState(true);
     const [skippedTeachers, setSkippedTeachers] = useState([]);
+    
     const selected = useSelector(state => state.menuItems.selected);
     const toastInfo = useSelector(state => state.toastInfo);
 
-    const { typography } = themeSettings(theme.palette.mode);
     const { getStateCityFromZipCode, toastAndNavigate, generateNormalPassword, getLocalStorage, formateName } = Utility();
     const dispatch = useDispatch();
     const navigateTo = useNavigate();
@@ -102,12 +85,12 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
         }
 
         if (!serial.toString().includes("/") && !serial.toString().includes("-")) {
-            const excelEpoch = new Date(1900, 0, 1); // January 1, 1900
-            const daysOffset = serial - 2; // Excel mistakenly considers 1900 a leap year, so subtract 2 days
+            const excelEpoch = new Date(1900, 0, 1);
+            const daysOffset = serial - 2;
             const date = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
 
             const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based in JS
+            const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = date.getFullYear();
 
             return `${year}-${month}-${day}`;
@@ -117,7 +100,6 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
 
     useEffect(() => {
         if (teachers?.length) {
-
             const promises = teachers.map(async (teacher) => {
                 try {
                     setLoading(true);
@@ -126,7 +108,6 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
                     const cityName = await apiResponse.city;
                     const stateName = await apiResponse.state;
                     const teacherDobSerial = teacher.dob;
-                    // const teacherAddmissionSerial = teacher.admission_date;
 
                     const state_id = await getIdByName(stateName, API.StateAPI);
                     const city_id = await getIdByName(cityName, API.CityAPI);
@@ -200,12 +181,12 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
                                 parent: 'teacher',
                                 parent_id: tea.id
                             });
-                            setUploadingRecord({
-                                ...uploadingRecord,
-                                count: uploadingRecord.count--,
+                            setUploadingRecord(prev => ({
+                                ...prev,
+                                count: (prev.count || 1) - 1,
                                 name: teacher.firstname,
                                 skip: false
-                            });
+                            }));
                             setSkipped(false);
                         }
                     } else {
@@ -220,12 +201,12 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
                                 emptyField = field;
                             }
                         });
-                        setUploadingRecord({
-                            ...uploadingRecord,
-                            count: uploadingRecord.count--,
+                        setUploadingRecord(prev => ({
+                            ...prev,
+                            count: (prev.count || 1) - 1,
                             name: teacher.firstname,
                             skip: true
-                        });
+                        }));
                         setSkippedTeachers(prevSkipped => [...prevSkipped, {
                             firstname: teacher?.firstname,
                             contact_no: teacher?.contact_no,
@@ -255,25 +236,21 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
                     console.log("At least one operation failed:", error);
                 })
         }
-
     }, [teachers?.length]);
 
     useEffect(() => {
         if (!skippedTeachers.length && !loading && !skipped) {
             location.reload();
         }
-    }, [skippedTeachers.length, loading, skipped]); // 0
+    }, [skippedTeachers.length, loading, skipped]);
 
     const downloadSkippedTeachers = () => {
-        const skipped = [];
-        skippedTeachers.map(skp => {
-            if (skp.error) {
-                delete skp.error;
-            }
-            skipped.push(skp);
-        })
+        const skippedData = skippedTeachers.map(skp => {
+            const { error, ...rest } = skp;
+            return rest;
+        });
 
-        const worksheet = utils.json_to_sheet(skippedTeachers);
+        const worksheet = utils.json_to_sheet(skippedData);
         const workbook = utils.book_new();
         utils.book_append_sheet(workbook, worksheet, 'Skipped Teachers');
         const excelBuffer = write(workbook, { bookType: 'xlsx', type: 'array' });
@@ -281,165 +258,140 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
         saveAs(data, 'skipped_Teachers.xlsx');
     };
 
+    if (!openDialog) return null;
+
     return (
-        <div >
-            <Dialog
-                fullScreen={fullScreen}
-                open={openDialog}
-                // onClose={setOpenDialog(false)}
-                aria-labelledby="responsive-dialog-title"
-                sx={{
-                    top: isMobile ? "33%" : isTab ? "25%" : "20%", height: isMobile ? "49%" : isTab ? "39%" : "60%",
-                    "& .MuiPaper-root": {
-                        width: "100%",
-                        backgroundImage: theme.palette.mode == "light" ? `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${formBg})`
-                            : `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url(${formBg})`,
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "center",
-                        backgroundSize: "cover"
-                    },
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+                className="w-full max-w-3xl bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${formBg?.src || formBg})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover"
                 }}
             >
-                <Typography
-                    fontFamily={typography.fontFamily}
-                    fontSize={typography.h2.fontSize}
-                    color={colors.grey[100]}
-                    fontWeight="600"
-                    display="inline-block"
-                    textAlign="center"
-                    marginTop="10px"
-                >
-                    {`Import ${selected}s`}
-                </Typography>
+                <div className="p-6 md:p-8 flex flex-col h-full max-h-[85vh]">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 text-center w-full">
+                            Import {selected}s
+                        </h2>
+                        <button onClick={() => setOpenDialog(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
 
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        padding: 2,
-                        fontFamily: 'Arial, sans-serif',
-                    }}
-                >
-                    {loading && (
-                        <Typography sx={{ fontSize: '1.5em', color: '#555' }}>Loading...</Typography>
-                    )}
-                    {!loading && skippedTeachers.length > 0 && (
-                        <Box
-                            sx={{
-                                textAlign: 'center',
-                                border: '1px solid #ddd',
-                                padding: 2,
-                                borderRadius: 1,
-                                backgroundColor: "transparent",
-                                width: '100%',
-                                maxWidth: 600,
-                            }}
-                        >
-                            <Typography variant="h2" sx={{ marginBottom: 2, color: '#333' }}>
-                                Skipped Teachers
-                            </Typography>
-                            <List sx={{ padding: 0 }}>
-                                {skippedTeachers.map((teacher, index) => (
-                                    <ListItem
-                                        key={index}
-                                        sx={{ marginBottom: 1, fontSize: '1.2em', color: '#666' }}
-                                    >
-                                        {teacher.firstname} - Missing {teacher.error}
-                                    </ListItem>
-                                ))}
-                            </List>
-                            <Button onClick={downloadSkippedTeachers} variant="contained" color="error" sx={{ marginTop: 2, boxShadow: "3px 3px 1px black, -3px -3px 1px black,3px -3px 1px black, -3px 3px 1px black" }}>
-                                Download Skipped Teachers Excel
-                            </Button>
-                        </Box>
-                    )}
-                </Box>
-
-                <Box>
-                    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" }}>
-                        <TextField
-                            name="importedFile"
-                            label="Upload Your File"
-                            value={importedFile}
-                            size="medium"
-                            InputProps={{
-                                startAdornment: (
-                                    <IconButton component="label" sx={{ width: "99%" }}>
-                                        <UploadFileIcon />
-                                        <input
-                                            hidden
-                                            type="file"
-                                            name="importedFile"
-                                            onChange={event => {
-                                                const file = event.target.files[0];
-                                                setImportedFile(file);
-                                                setFileName(file.name);
-                                            }}
-                                        />
-                                    </IconButton>
-                                )
-                            }}
-                            sx={{ m: "8px auto", outline: "none", width: "40%" }}
-                        />
-                        <div style={{ lineHeight: "30px", gridColumn: "span 2", display: "flex", fontWeight: "600", marginLeft: "30%" }}>Your Selected File: <div style={{ fontWeight: "900", marginLeft: "20px", color: "blue" }}>{fileName}</div> </div>
-
-                        <Divider />
-                        <Box display="flex" justifyContent="space-between" p="20px">
-
-                            <a href="https://ufile.io/dkv9szf1" target="_blank">
-                                <Button
-                                    component="label"
-                                    role={undefined}
-                                    variant="contained"
-                                    tabIndex={-1}
-                                    color="info"
-                                    startIcon={<CloudDownloadIcon />}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-6">
+                        {loading && (
+                            <div className="text-center text-xl font-medium text-slate-600 py-8">Loading...</div>
+                        )}
+                        
+                        {!loading && skippedTeachers.length > 0 && (
+                            <div className="border border-red-200 bg-red-50/50 p-6 rounded-xl mx-auto max-w-xl text-center">
+                                <h3 className="text-xl font-bold text-red-700 mb-4">Skipped Teachers</h3>
+                                <ul className="space-y-2 mb-6">
+                                    {skippedTeachers.map((teacher, index) => (
+                                        <li key={index} className="text-red-600 font-medium bg-white px-4 py-2 rounded-lg shadow-sm">
+                                            {teacher.firstname} - Missing {teacher.error}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button 
+                                    onClick={downloadSkippedTeachers}
+                                    className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center mx-auto gap-2"
                                 >
-                                    Sample File Download
-                                </Button>
-                            </a>
+                                    <DownloadCloud className="w-5 h-5" />
+                                    Download Skipped List
+                                </button>
+                            </div>
+                        )}
 
-                            <Box>
-                                {!loading &&
-                                    <Box>
-                                        <Button color="error" variant="contained" sx={{ mr: 3 }}
-                                            onClick={() => setOpenDialog(false)}>
-                                            Cancel
-                                        </Button>
-                                        <Button type="submit"
-                                            color="success" variant="contained"
-                                        >
-                                            Submit
-                                        </Button>
-                                    </Box>
-                                }
-                                <Typography id="uploading">
-                                    {`Importing: ${uploadingRecord.name}`}
-                                    {`Remaining: ${uploadingRecord.count}`}
-                                </Typography>
-                                {uploadingRecord.skip &&
-                                    <Typography id="uploading">
-                                        {`Skipping: ${uploadingRecord.name}`}
-                                    </Typography>
-                                }
-                                <Toast alerting={toastInfo.toastAlert}
-                                    severity={toastInfo.toastSeverity}
-                                    message={toastInfo.toastMessage}
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-xl mx-auto w-full">
+                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors group">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <UploadCloud className="w-10 h-10 mb-3 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                    <p className="mb-2 text-sm text-slate-500 font-semibold">
+                                        <span className="font-bold">Click to upload</span> or drag and drop
+                                    </p>
+                                </div>
+                                <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    onChange={event => {
+                                        const file = event.target.files[0];
+                                        if (file) {
+                                            setImportedFile(file);
+                                            setFileName(file.name);
+                                        }
+                                    }} 
                                 />
-                            </Box>
-                        </Box>
-                    </form>
-                </Box>
-                {loading === true ? <Loader /> : null}
-            </Dialog>
-        </div >
+                            </label>
+
+                            {fileName && (
+                                <div className="text-center text-sm font-semibold text-slate-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                    Selected File: <span className="text-blue-600 ml-2">{fileName}</span>
+                                </div>
+                            )}
+
+                            <hr className="border-slate-200" />
+
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <a href="https://ufile.io/dkv9szf1" target="_blank" rel="noreferrer" className="w-full sm:w-auto">
+                                    <button
+                                        type="button"
+                                        className="w-full px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-semibold shadow-md transition-all flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <DownloadCloud className="w-4 h-4" />
+                                        Sample File
+                                    </button>
+                                </a>
+
+                                {!loading && (
+                                    <div className="flex gap-3 w-full sm:w-auto">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setOpenDialog(false)}
+                                            className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-xl transition-all text-sm"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            type="submit"
+                                            disabled={!importedFile}
+                                            className="flex-1 sm:flex-none px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold shadow-md shadow-green-600/30 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Import
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {(uploadingRecord.name || uploadingRecord.count !== undefined) && (
+                                <div className="text-center text-sm font-medium text-slate-600">
+                                    {uploadingRecord.name && <p>Importing: {uploadingRecord.name}</p>}
+                                    {uploadingRecord.count !== undefined && <p>Remaining: {uploadingRecord.count}</p>}
+                                    {uploadingRecord.skip && <p className="text-amber-600">Skipping: {uploadingRecord.name}</p>}
+                                </div>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            {loading && <Loader />}
+            
+            <Toast 
+                alerting={toastInfo.toastAlert}
+                severity={toastInfo.toastSeverity}
+                message={toastInfo.toastMessage}
+            />
+        </div>
     );
 }
 
-ImportComponent.propTypes = {
+ImportTeacher.propTypes = {
     setOpenDialog: PropTypes.func,
     openDialog: PropTypes.bool
 };
 
-export default ImportComponent;
+export default ImportTeacher;

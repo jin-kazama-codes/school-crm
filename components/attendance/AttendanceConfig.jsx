@@ -8,50 +8,15 @@
  * restrictions set forth in your license agreement with School CRM.
  */
 
-import { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
-import Checkbox from '@mui/material/Checkbox';
-
-import API from "../../apis";
-
-import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
-import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
-import { tokens } from "../../theme";
-import { Utility } from "../utility";
+import { FileEdit } from 'lucide-react';
 
 export const datagridColumns = (rolePriority = null) => {
-    const schoolClasses = useSelector(state => state.schoolClasses);
-    const allClasses = useSelector(state => state.allClasses);
-    const schoolSections = useSelector(state => state.schoolSections);
-    const allSections = useSelector(state => state.allSections);
-
-    const dispatch = useDispatch();
     const navigateTo = useNavigate();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord } = Utility();
 
     const handleActionEdit = (id) => {
         navigateTo(`/attendance/update/${id}`, { state: { id: id } });
     };
-
-    // useEffect(() => {
-    //     if (!getLocalStorage("schoolInfo")) {
-    //         if (!allClasses?.listData?.length) {
-    //             fetchAndSetAll(dispatch, setAllClasses, API.ClassAPI);
-    //         }
-    //         if (!allSections?.listData?.length) {
-    //             fetchAndSetAll(dispatch, setAllSections, API.SectionAPI);
-    //         }
-    //     }
-    //     if (getLocalStorage("schoolInfo") && (!schoolClasses?.listData?.length || !schoolSections?.listData?.length)) {
-    //         fetchAndSetSchoolData(dispatch, setSchoolClasses, setSchoolSections);
-    //     }
-    // }, [schoolClasses?.listData?.length, schoolSections?.listData?.length, allClasses?.listData?.length, allSections?.listData?.length]);
 
     const columns = [
         {
@@ -61,8 +26,6 @@ export const datagridColumns = (rolePriority = null) => {
             align: "center",
             flex: 1,
             minWidth: 120,
-            // this function combines the values of firstname and lastname into one string
-            // valueGetter: (params) => `${capitalizeEveryWord(params.row.firstname) || ''}`
         },
         {
             field: "subjects",
@@ -72,7 +35,7 @@ export const datagridColumns = (rolePriority = null) => {
             flex: 1,
             minWidth: 100
         },
-        rolePriority !== 1 && {
+        ...(rolePriority !== 1 ? [{
             field: "action",
             headerName: "Action",
             headerAlign: "center",
@@ -80,21 +43,17 @@ export const datagridColumns = (rolePriority = null) => {
             flex: 1,
             minWidth: 75,
             renderCell: ({ row: { id } }) => (
-                <Box width="30%"
-                    m="0 auto"
-                    p="5px"
-                    display="flex"
-                    justifyContent="center"
-                >
-                    <Button color="info" variant="contained"
+                <div className="flex justify-center items-center w-full h-full">
+                    <button
                         onClick={() => handleActionEdit(id)}
-                        sx={{ minWidth: "50px" }}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        title="Edit Attendance"
                     >
-                        <DriveFileRenameOutlineOutlinedIcon />
-                    </Button>
-                </Box>
+                        <FileEdit className="w-5 h-5" />
+                    </button>
+                </div>
             )
-        }
+        }] : [])
     ];
     return columns;
 };

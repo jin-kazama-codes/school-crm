@@ -10,8 +10,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Box, Button, Typography, useTheme } from "@mui/material";
+import { Save, X as XIcon, RotateCcw } from "lucide-react";
 
 import API from "../../apis";
 import AddressFormComponent from "../address/AddressFormComponent";
@@ -26,7 +25,6 @@ import { setAllSubjects } from "../../redux/actions/SubjectAction";
 import { setAllPaymentMethods } from "../../redux/actions/PaymentMethodAction";
 import { setFormAmenities } from "../../redux/actions/AmenityAction";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
-import { tokens, themeSettings } from "../../theme";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
@@ -71,10 +69,7 @@ const FormComponent = () => {
     const navigateTo = useNavigate();
     const dispatch = useDispatch();
     const userParams = useParams();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
 
-    const { typography } = themeSettings(theme.palette.mode);
     const { state } = useLocation();
     const { getPaginatedData } = useCommon();
     const { createSchoolCode, formatImageName, getLocalStorage, getIdsFromObject, findMultipleById,
@@ -463,118 +458,145 @@ const FormComponent = () => {
     };
 
     return (
-        <Box m="10px"
-            sx={{
-                backgroundImage: theme.palette.mode == "light" ? `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${formBg})`
-                    : `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url(${formBg})`,
+        <div 
+            className="min-h-screen p-4 md:p-8 animate-in fade-in duration-500"
+            style={{
+                backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${formBg?.src || formBg})`,
                 backgroundRepeat: "no-repeat",
-                backgroundPosition: "start",
+                backgroundPosition: "center",
                 backgroundSize: "cover",
                 backgroundAttachment: "fixed"
             }}
         >
-            <Typography
-                fontFamily={typography.fontFamily}
-                fontSize={typography.h2.fontSize}
-                color={colors.grey[100]}
-                fontWeight="bold"
-                display="inline-block"
-                marginLeft="20px"
-            >
-                {`${title} ${selected}`}
-            </Typography>
-            <SchoolFormComponent
-                onChange={(data) => {
-                    handleFormChange(data, 'school');
-                }}
-                refId={schoolFormRef}
-                setDirty={setDirty}
-                reset={reset}
-                setReset={setReset}
-                schoolId={id}
-                allClasses={allClasses?.listData}
-                allSections={allSections?.listData}
-                subjectsInRedux={allSubjects?.listData}
-                amenities={formAmenitiesInRedux?.listData?.rows}
-                paymentMethods={allPaymentMethods?.listData}
-                updatedValues={updatedValues?.schoolData}
-            />
-            <AddressFormComponent
-                onChange={(data) => {
-                    handleFormChange(data, 'address');
-                }}
-                refId={addressFormRef}
-                update={id ? true : false}
-                setDirty={setDirty}
-                reset={reset}
-                setReset={setReset}
-                updatedValues={updatedValues?.addressData}
-            />
-            <ImagePicker
-                key="image"
-                onChange={data => handleFormChange(data, 'display')}
-                refId={imageFormRef}
-                reset={reset}
-                setReset={setReset}
-                setDirty={setDirty}
-                preview={previewDisplay}
-                setPreview={setPreviewDisplay}
-                updatedImage={updatedDisplayImage}            //these are updated Values
-                setUpdatedImage={setUpdatedDisplayImage}
-                deletedImage={deletedImage}
-                setDeletedImage={setDeletedImage}
-                imageType="Display"
-                ENV={ENV}
-            />
-            <ImagePicker
-                key="banner"
-                onChange={data => handleFormChange(data, 'banner')}
-                refId={bannerImageFormRef}
-                reset={reset}
-                setReset={setReset}
-                setDirty={setDirty}
-                preview={previewBanner}
-                setPreview={setPreviewBanner}
-                updatedImage={updatedBannerImage}             //these are updated Values
-                setUpdatedImage={setUpdatedBannerImage}
-                deletedImage={deletedBannerImage}
-                setDeletedImage={setDeletedBannerImage}
-                imageType="Banner"
-                multiple={true}
-                ENV={ENV}
-                validation={false}
-            />
+            <div className="max-w-7xl mx-auto space-y-8">
+                <div className="flex items-center gap-3">
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                        {`${title} ${selected}`}
+                    </h1>
+                </div>
 
-            <Box display="flex" justifyContent="end" m="20px">
-                {   //hide reset button on school update
-                    title === "Update" ? null :
-                        <Button type="reset" color="warning" variant="contained" sx={{ mr: 3 }}
+                <div className="space-y-6">
+                    <SchoolFormComponent
+                        onChange={(data) => {
+                            handleFormChange(data, 'school');
+                        }}
+                        refId={schoolFormRef}
+                        setDirty={setDirty}
+                        reset={reset}
+                        setReset={setReset}
+                        schoolId={id}
+                        allClasses={allClasses?.listData}
+                        allSections={allSections?.listData}
+                        subjectsInRedux={allSubjects?.listData}
+                        amenities={formAmenitiesInRedux?.listData?.rows}
+                        paymentMethods={allPaymentMethods?.listData}
+                        updatedValues={updatedValues?.schoolData}
+                    />
+
+                    <AddressFormComponent
+                        onChange={(data) => {
+                            handleFormChange(data, 'address');
+                        }}
+                        refId={addressFormRef}
+                        update={id ? true : false}
+                        setDirty={setDirty}
+                        reset={reset}
+                        setReset={setReset}
+                        updatedValues={updatedValues?.addressData}
+                    />
+
+                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Display Image</h3>
+                        <ImagePicker
+                            key="image"
+                            onChange={data => handleFormChange(data, 'display')}
+                            refId={imageFormRef}
+                            reset={reset}
+                            setReset={setReset}
+                            setDirty={setDirty}
+                            preview={previewDisplay}
+                            setPreview={setPreviewDisplay}
+                            updatedImage={updatedDisplayImage}
+                            setUpdatedImage={setUpdatedDisplayImage}
+                            deletedImage={deletedImage}
+                            setDeletedImage={setDeletedImage}
+                            imageType="Display"
+                            ENV={ENV}
+                        />
+                    </div>
+
+                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Banner Images</h3>
+                        <ImagePicker
+                            key="banner"
+                            onChange={data => handleFormChange(data, 'banner')}
+                            refId={bannerImageFormRef}
+                            reset={reset}
+                            setReset={setReset}
+                            setDirty={setDirty}
+                            preview={previewBanner}
+                            setPreview={setPreviewBanner}
+                            updatedImage={updatedBannerImage}
+                            setUpdatedImage={setUpdatedBannerImage}
+                            deletedImage={deletedBannerImage}
+                            setDeletedImage={setDeletedBannerImage}
+                            imageType="Banner"
+                            multiple={true}
+                            ENV={ENV}
+                            validation={false}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-4 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl p-4 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm sticky bottom-4 z-50">
+                    {title !== "Update" && (
+                        <button 
+                            type="button" 
                             disabled={!dirty || submitted}
                             onClick={() => {
                                 if (window.confirm("Do You Really Want To Reset?")) {
                                     setReset(true);
                                 }
                             }}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:hover:bg-orange-500/30 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
+                            <RotateCcw className="w-5 h-5" />
                             Reset
-                        </Button>
-                }
-                <Button color="error" variant="contained" sx={{ mr: 3 }}
-                    onClick={() => navigateTo(`/${selected.toLowerCase()}/listing`)}>
-                    Cancel
-                </Button>
-                <Button type="submit" onClick={() => handleSubmit()} disabled={!dirty}
-                    color={title === "Update" ? "info" : "success"} variant="contained"
-                >
-                    Submit
-                </Button>
-                <Toast alerting={toastInfo.toastAlert}
-                    severity={toastInfo.toastSeverity}
-                    message={toastInfo.toastMessage}
-                />
-            </Box>
-            {loading === true ? <Loader /> : null}
-        </Box>
+                        </button>
+                    )}
+                    
+                    <button 
+                        type="button"
+                        onClick={() => navigateTo(`/${selected.toLowerCase()}/listing`)}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-xl font-semibold transition-all"
+                    >
+                        <XIcon className="w-5 h-5" />
+                        Cancel
+                    </button>
+                    
+                    <button 
+                        type="button" 
+                        onClick={handleSubmit} 
+                        disabled={!dirty || submitted}
+                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                            title === "Update" 
+                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30" 
+                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30"
+                        }`}
+                    >
+                        <Save className="w-5 h-5" />
+                        {title === "Update" ? "Update School" : "Save School"}
+                    </button>
+                </div>
+            </div>
+
+            <Toast 
+                alerting={toastInfo.toastAlert}
+                severity={toastInfo.toastSeverity}
+                message={toastInfo.toastMessage}
+            />
+            {loading && <Loader />}
+        </div>
     );
 };
 

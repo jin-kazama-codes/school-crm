@@ -10,20 +10,13 @@ import { useRef, useState } from "react";
 import { useNavigate } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
-
 import { Formik } from "formik";
 import * as Yup from 'yup';
-import { Box, Divider, Typography } from "@mui/material";
-import { Button, Dialog, TextField, useMediaQuery } from "@mui/material";
-import { useTheme } from '@mui/material/styles';
 
 import API from "../../apis";
 import Loader from "../common/Loader";
 import Toast from "../common/Toast";
-
-import { tokens, themeSettings } from "../../theme";
 import { Utility } from "../utility";
-
 import formBg from "../assets/formBg.png";
 
 const initialValues = {
@@ -31,11 +24,11 @@ const initialValues = {
     newPassword: "",
     confirmNewPassword: ""
 };
+
 const sequentialChars = ['123', '234', '345', '456', '567', '678', '789', '890', 'abc', 'bcd', 'cde', 'def', 'efg', 'fgh', 'ghi', 'hij', 'ijk', 'jkl', 'klm', 'lmn', 'mno', 'nop', 'opq', 'pqr', 'qrs', 'rst', 'stu', 'tuv', 'uvw', 'vwx', 'wxy', 'xyz'];
 
 const validationSchema = Yup.object({
-    oldPassword: Yup.string()
-        .required('Old Password is required'),
+    oldPassword: Yup.string().required('Old Password is required'),
     newPassword: Yup.string()
         .min(8, 'Password Must Be 8 Characters Long')
         .matches(/[A-Z]/, 'Password Must Contain At Least 1 Uppercase Letter')
@@ -43,7 +36,6 @@ const validationSchema = Yup.object({
         .matches(/[0-9]/, 'Password Must Contain At Least 1 Number')
         .matches(/[^\w]/, 'Password Must Contain At Least 1 Special Character')
         .test('no-sequential-chars', 'Avoid Sequential Characters In The Password', (value) => {
-            // Check for sequential characters
             for (const seq of sequentialChars) {
                 if (value.includes(seq) || value.includes(seq.toUpperCase())) {
                     return false;
@@ -58,23 +50,15 @@ const validationSchema = Yup.object({
 });
 
 const ChangePwModal = ({ openDialog, setOpenDialog }) => {
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const isMobile = useMediaQuery("(max-width:480px)");
-    const isTab = useMediaQuery("(max-width:920px)");
-
     const handleDialogClose = () => {
         setOpenDialog(false);
     };
 
-    //form component starts
     const [loading, setLoading] = useState(false);
     const oldPasswordRef = useRef(null);
     const navigateTo = useNavigate();
     const dispatch = useDispatch();
     const toastInfo = useSelector(state => state.toastInfo);
-    const { typography } = themeSettings(theme.palette.mode);
     const { toastAndNavigate } = Utility();
 
     const handleFormSubmit = (values, { setFieldError, setSubmitting }) => {
@@ -86,11 +70,10 @@ const ChangePwModal = ({ openDialog, setOpenDialog }) => {
                     setLoading(false);
                     if (response.status === 'Success') {
                         if (response.data === 'Old Password do not match') {
-                            // Set the Formik error for oldPassword
                             setFieldError('oldPassword', response.data);
                             setSubmitting(false);
                             toastAndNavigate(dispatch, true, "info", response.data);
-                            oldPasswordRef.current.focus();     //to focus old password field
+                            if (oldPasswordRef.current) oldPasswordRef.current.focus();
                         } else if (response.data === 'User does not exist') {
                             toastAndNavigate(dispatch, true, "info", response.data);
                         } else if (response.data.includes('Updated Successfully')) {
@@ -111,105 +94,121 @@ const ChangePwModal = ({ openDialog, setOpenDialog }) => {
         }
     };
 
+    if (!openDialog) return null;
+
+    const inputClasses = "w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500";
+    const labelClasses = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2";
+    const errorClasses = "text-red-500 text-xs mt-1 ml-1 font-medium";
+
     return (
-        <div>
-            <Dialog
-                fullScreen={fullScreen}
-                open={openDialog}
-                onClose={handleDialogClose}
-                aria-labelledby="responsive-dialog-title"
-                sx={{
-                    top: isMobile ? "33%" : isTab ? "25%" : "20%", height: isMobile ? "49%" : isTab ? "39%" : "60%",
-                    "& .MuiPaper-root": {
-                        width: "100%",
-                        backgroundImage: theme.palette.mode == "light" ? `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${formBg})`
-                            : `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url(${formBg})`,
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "center",
-                        backgroundSize: "cover"
-                    }
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+                className="w-full max-w-2xl bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${formBg?.src || formBg})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover"
                 }}
             >
-                <Typography
-                    fontFamily={typography.fontFamily}
-                    fontSize={typography.h2.fontSize}
-                    color={colors.grey[100]}
-                    fontWeight="600"
-                    display="inline-block"
-                    textAlign="center"
-                    marginTop="10px"
-                >
-                    Change Password
-                </Typography>
-                <Formik
-                    initialValues={initialValues}
-                    validationSchema={validationSchema}
-                    onSubmit={handleFormSubmit}
-                >
-                    {({
-                        values,
-                        errors,
-                        touched,
-                        dirty,
-                        isSubmitting,
-                        handleBlur,
-                        handleChange,
-                        handleSubmit
-                    }) => (
-                        <form onSubmit={handleSubmit}>
-                            <Box display="grid" gap="30px" gridTemplateColumns="repeat(2, minmax(0, 1fr))" padding="20px">
-                                <TextField
-                                    variant="filled"
-                                    type="text"
-                                    name="oldPassword"
-                                    label="Old Password*"
-                                    inputRef={oldPasswordRef}
-                                    onBlur={handleBlur}
-                                    onChange={handleChange}
-                                    value={values.oldPassword}
-                                    error={!!touched.oldPassword && !!errors.oldPassword}
-                                    helperText={touched.oldPassword && errors.oldPassword}
-                                />
-                                <TextField
-                                    variant="filled"
-                                    type="text"
-                                    name="newPassword"
-                                    label="New Password*"
-                                    onBlur={handleBlur}
-                                    onChange={handleChange}
-                                    value={values.newPassword}
-                                    error={!!touched.newPassword && !!errors.newPassword}
-                                    helperText={touched.newPassword && errors.newPassword}
-                                />
-                                <TextField
-                                    variant="filled"
-                                    type="text"
-                                    name="confirmNewPassword"
-                                    label="Confirm New Password*"
-                                    onBlur={handleBlur}
-                                    onChange={handleChange}
-                                    value={values.confirmNewPassword}
-                                    error={!!touched.confirmNewPassword && !!errors.confirmNewPassword}
-                                    helperText={touched.confirmNewPassword && errors.confirmNewPassword}
-                                />
-                            </Box>
-                            <Divider />
-                            <Box display="flex" justifyContent="end" p="20px">
-                                <Button color="error" variant="contained" sx={{ mr: 3 }}
-                                    onClick={() => handleDialogClose()}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={!dirty || isSubmitting}
-                                    color="success" variant="contained"
-                                >
-                                    Submit
-                                </Button>
-                            </Box>
-                        </form>
-                    )}
-                </Formik>
-                {loading === true ? <Loader /> : null}
-            </Dialog>
+                <div className="p-6 md:p-8">
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 text-center mb-8">
+                        Change Password
+                    </h2>
+
+                    <Formik
+                        initialValues={initialValues}
+                        validationSchema={validationSchema}
+                        onSubmit={handleFormSubmit}
+                    >
+                        {({
+                            values,
+                            errors,
+                            touched,
+                            dirty,
+                            isSubmitting,
+                            handleBlur,
+                            handleChange,
+                            handleSubmit
+                        }) => (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="md:col-span-2">
+                                        <label className={labelClasses}>Old Password*</label>
+                                        <input
+                                            type="password"
+                                            name="oldPassword"
+                                            ref={oldPasswordRef}
+                                            value={values.oldPassword}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            className={`${inputClasses} ${touched.oldPassword && errors.oldPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            placeholder="Enter old password"
+                                        />
+                                        {touched.oldPassword && errors.oldPassword && (
+                                            <p className={errorClasses}>{errors.oldPassword}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClasses}>New Password*</label>
+                                        <input
+                                            type="password"
+                                            name="newPassword"
+                                            value={values.newPassword}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            className={`${inputClasses} ${touched.newPassword && errors.newPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            placeholder="Enter new password"
+                                        />
+                                        {touched.newPassword && errors.newPassword && (
+                                            <p className={errorClasses}>{errors.newPassword}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClasses}>Confirm New Password*</label>
+                                        <input
+                                            type="password"
+                                            name="confirmNewPassword"
+                                            value={values.confirmNewPassword}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            className={`${inputClasses} ${touched.confirmNewPassword && errors.confirmNewPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            placeholder="Confirm new password"
+                                        />
+                                        {touched.confirmNewPassword && errors.confirmNewPassword && (
+                                            <p className={errorClasses}>{errors.confirmNewPassword}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <hr className="border-slate-200 dark:border-slate-700/50 my-6" />
+
+                                <div className="flex justify-end gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleDialogClose}
+                                        className="px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-xl font-semibold transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!dirty || isSubmitting}
+                                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Submit
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </Formik>
+                </div>
+            </div>
+            
+            {loading && <Loader />}
+            
             <Toast
                 alerting={toastInfo.toastAlert}
                 severity={toastInfo.toastSeverity}

@@ -9,32 +9,17 @@
 import { useState, useEffect, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Link, useNavigate } from "@/lib/routerAdapter"
-
-import { Formik, Form, Field } from "formik"
-import { Box, Grid, Button, TextField, Typography, Avatar } from "@mui/material"
-import {
-  InputAdornment,
-  IconButton,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material"
+import { Formik } from "formik"
 import ReactCardFlip from "react-card-flip"
-
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined"
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined"
-import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined"
+import { Lock, Eye, EyeOff } from "lucide-react"
 
 import API from "../../apis"
 import Toast from "../common/Toast"
 import SignInLoader from "../common/SignInLoader"
-
-import { themeSettings } from "../../theme"
 import { Utility } from "../utility"
-
-import bgImg from "../assets/newbg12.jpeg";
-import bg from "../assets/school_stuff.png"
 import ForgetPassword from "./ForgetPw"
 
+import bgImg from "../assets/newbg12.jpeg";
 
 const initialValues = {
   school_code: "",
@@ -52,13 +37,11 @@ const Login = () => {
   const toastInfo = useSelector(state => state.toastInfo)
 
   const dispatch = useDispatch()
-  const inputRef = useRef(null)
-  const formikRef = useRef(null); // Ref to hold Formik instance
-  const navigateTo = useNavigate()
-  const theme = useTheme()
-  const isMobile = useMediaQuery("(max-width:480px)")
-  const isTab = useMediaQuery("(max-width:920px)")
-  const { typography } = themeSettings(theme.palette.mode)
+  const formikRef = useRef(null)
+  
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 480;
+  const isTab = typeof window !== "undefined" && window.innerWidth <= 920;
+
   const {
     getLocalStorage,
     remLocalStorage,
@@ -72,21 +55,7 @@ const Login = () => {
     }
   }, []);
 
-  const boxstyle = {
-    position: "absolute",
-    top: isMobile ? "49%" : "48%",
-    right: isMobile ? "-25%" : "-8%",
-    boxShadow: 24,
-    borderRadius: 6,
-    bgcolor: "background.paper",
-    width: isMobile ? "78%" : isTab ? "48%" : "30%",
-    height: isMobile ? "40vh" : isTab ? "58vh" : "96vh",
-    transform: "translate(-50%, -50%)",
-    padding: "10px",
-  }
-
   const flipCard = () => {
-    // Flip the state to activate password reset mode
     setIsFliped(!isFliped);
     if (formikRef.current) {
       formikRef.current.resetForm();
@@ -94,13 +63,11 @@ const Login = () => {
     }
   }
 
-  //make the POST API call when submit button is clicked
   useEffect(() => {
     if (formData.school_code || (formData.email && formData.password)) {
       setLoading(true)
       API.UserAPI.login(formData)
         .then(({ data: response }) => {
-          console.log("response>>>",response);
           setLoading(false)
           if (
             response.status === "Success" &&
@@ -114,7 +81,6 @@ const Login = () => {
               response.data === "School code is incorrect")
           ) {
             toastAndNavigate(dispatch, true, "info", response?.data)
-            inputRef.current.focus()
           } else {
             const authInfo = {
               id: response.data.id,
@@ -145,203 +111,162 @@ const Login = () => {
   }, [formData])
 
   return (
-    <Box
-      style={{
-        backgroundImage: `url(${bgImg?.src || bgImg})`,
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        height: "99.9vh",
-        width: "100vw",
-        color: "#f5f5f5",
-      }}
-    >
+    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center">
+      {/* Background with overlay */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
+        style={{ backgroundImage: `url(${bgImg?.src || bgImg})` }}
+      />
+      <div className="absolute inset-0 z-0 bg-slate-900/60 backdrop-blur-[2px]" />
+
       <Toast
         alerting={toastInfo.toastAlert}
         severity={toastInfo.toastSeverity}
         message={toastInfo.toastMessage}
       />
-      <Box sx={boxstyle}>
-        <Grid container sx={{ flexDirection: "column" }}>
-          {!isMobile && (
-            <Grid xs={10} sm={10} lg={10}>
-              <Box
-                style={{
-                  backgroundImage: `url(${bg?.src || bg})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center center",
-                  backgroundRepeat: "no-repeat",
-                  height: isMobile ? "39vh" : isTab ? "21vh" : "44vh",
-                  color: "#f5f5f5",
-                }}
-              ></Box>
-            </Grid>
-          )}
-          <Grid xs={12} sm={12} lg={12} md={12}>
-            <Box
-              style={{
-                width: isMobile ? "73vw" : "100%",
-                height: isMobile ? "38vh" : isTab ? "27vh" : "49vh",
-                backgroundColor: "#3b33d5",
-                borderRadius: 26,
-                backgroundAttachment: "fixed",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                position: "relative",
-              }}
-            >
-              <Avatar
-                sx={{
-                  bgcolor: theme.palette.mode === "dark" ? "#1F2A40" : "#ffffff",
-                  color: "#3b33d5",
-                }}
-              >
-                <LockOutlinedIcon />
-              </Avatar>
-              <Typography
-                component="h2"
-                sx={{
-                  marginTop: "20px",
-                  fontFamily: typography.fontFamily,
-                  fontSize: typography.h2.fontSize,
-                }}
-              >
+
+      {/* Main Login Card Wrapper */}
+      <div className="relative z-10 w-full max-w-[420px] p-6 mx-4">
+        <ReactCardFlip flipDirection="horizontal" isFlipped={isFliped}>
+          {/* Front: Login Form */}
+          <div className="w-full bg-white dark:bg-[#1a1a1a] rounded-[26px] shadow-2xl overflow-hidden p-8 flex flex-col border border-white/20 dark:border-white/5">
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">
                 {ENV.NEXT_PUBLIC_COMPANY_NAME || "School CRM"}
-              </Typography>
-              <ReactCardFlip flipDirection="horizontal" isFlipped={isFliped}>
-                <Formik
-                  innerRef={formikRef}
-                  onSubmit={(values) => setFormData(values)}
-                  initialValues={initialValues}
-                >
-                  {({
-                    values,
-                    errors,
-                    touched,
-                    dirty,
-                    handleBlur,
-                    handleChange,
-                    handleSubmit
-                  }) => (
-                    <form
-                      onSubmit={handleSubmit}
-                      style={{
-                        width: isMobile ? "60vw" : isTab ? "28vw" : "21vw",
-                        display: "flex",
-                        flexDirection: "column"
-                      }}
-                    >
-                      <TextField
-                        fullWidth
-                        name="school_code"
-                        label="School Code"
-                        variant="filled"
-                        type="text"
-                        inputRef={inputRef}
-                        onBlur={handleBlur}
-                        onChange={handleChange}
-                        value={values.school_code}
-                        error={!!touched.school_code && !!errors.school_code}
-                        helperText={touched.school_code && errors.school_code}
-                        sx={{ margin: "5px", backgroundColor: "#E9F1FA", borderRadius: isMobile ? "15px" : "20px", overflow: "hidden" }}
-                      />
-                      <TextField
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                Sign in to your account
+              </p>
+            </div>
+
+            <Formik
+              innerRef={formikRef}
+              onSubmit={(values) => setFormData(values)}
+              initialValues={initialValues}
+            >
+              {({
+                values,
+                errors,
+                touched,
+                dirty,
+                handleBlur,
+                handleChange,
+                handleSubmit
+              }) => (
+                <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
+                  {/* School Code */}
+                  <div className="space-y-1">
+                    <input
+                      name="school_code"
+                      type="text"
+                      placeholder="School Code"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      value={values.school_code}
+                      className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${
+                        touched.school_code && errors.school_code 
+                          ? "border-red-500 focus:ring-red-500/20" 
+                          : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
+                      }`}
+                    />
+                    {touched.school_code && errors.school_code && (
+                      <p className="text-xs text-red-500 ml-1">{errors.school_code}</p>
+                    )}
+                  </div>
+
+                  {/* Username */}
+                  <div className="space-y-1">
+                    <input
+                      required
+                      name="email"
+                      type="text"
+                      placeholder="Username / Email"
+                      autoComplete="username"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      value={values.email}
+                      className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${
+                        touched.email && errors.email 
+                          ? "border-red-500 focus:ring-red-500/20" 
+                          : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
+                      }`}
+                    />
+                    {touched.email && errors.email && (
+                      <p className="text-xs text-red-500 ml-1">{errors.email}</p>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <input
                         required
-                        fullWidth
-                        name="email"
-                        label="Username"
-                        variant="filled"
-                        type="text"
-                        autoComplete="new-email"
-                        onBlur={handleBlur}
-                        onChange={handleChange}
-                        value={values.email}
-                        error={!!touched.email && !!errors.email}
-                        helperText={touched.email && errors.email}
-                        sx={{ margin: "5px", backgroundColor: "#E9F1FA", borderRadius: isMobile ? "15px" : "20px", overflow: "hidden" }}
-                      />
-                      <TextField
-                        required
-                        fullWidth
                         name="password"
-                        label="Password"
-                        variant="filled"
-                        type={showPassword ? "text" : "password"} // <-- This is where the pw toggle happens
-                        autoComplete="off"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        autoComplete="current-password"
                         onBlur={handleBlur}
                         onChange={handleChange}
                         value={values.password}
-                        error={!!touched.contact_no && !!errors.contact_no}
-                        helperText={touched.contact_no && errors.contact_no}
-                        sx={{ margin: "5px", backgroundColor: "white", borderRadius: isMobile ? "15px" : "20px", overflow: "hidden" }}
-                        InputProps={{
-                          // <-- This is where the toggle button is added
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <IconButton
-                                aria-label="toggle password visibility"
-                                onClick={() => setShowPassword(!showPassword)}
-                                onMouseDown={() =>
-                                  setShowPassword(!showPassword)
-                                }
-                              >
-                                {showPassword ? (
-                                  <VisibilityOutlinedIcon />
-                                ) : (
-                                  <VisibilityOffOutlinedIcon />
-                                )}
-                              </IconButton>
-                            </InputAdornment>
-                          ),
-                        }}
+                        className={`w-full px-4 py-3 pr-12 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${
+                          touched.password && errors.password 
+                            ? "border-red-500 focus:ring-red-500/20" 
+                            : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
+                        }`}
                       />
-
-                      <Button onClick={flipCard} sx={{ color: "white" }}>Forgot Password?</Button>
-
-                      <Button
-                        disabled={!dirty || loading}
-                        type="submit"
-                        variant="contained"
-                        size="large"
-                        sx={{
-                          color: "#F6F6F2",
-                          display: "block",
-                          margin: "0",
-                          mt: "2px",
-                          minWidth: isMobile
-                            ? "170px"
-                            : isTab
-                              ? "200px"
-                              : "200px",
-                          backgroundColor: loading ? "#FF9A01" : "#FF9A01",
-                          borderRadius: 28,
-                          opacity: loading ? 1 : 1,
-                          '&:hover': {
-                            backgroundColor: "#FF9A01",
-                            opacity: 1,
-                          },
-                          '&:active': {
-                            backgroundColor: "#FF9A01",
-                            opacity: 1,
-                          },
-                        }}
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       >
-                        {loading === true ? <SignInLoader /> : "Sign In"}
-                      </Button>
-                    </form>
-                  )}
-                </Formik>
-                <ForgetPassword Api={API.UserAPI} isFliped={isFliped} setIsFliped={setIsFliped} dispatch={dispatch} toastAndNavigate={toastAndNavigate}
-                  isMobile={isMobile} isTab={isTab}
-                />
-              </ReactCardFlip>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
-    </Box>
+                        {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    {touched.password && errors.password && (
+                      <p className="text-xs text-red-500 ml-1">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button 
+                      type="button"
+                      onClick={flipCard} 
+                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 transition-colors"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+
+                  <button
+                    disabled={!dirty || loading}
+                    type="submit"
+                    className="w-full py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md shadow-emerald-600/20"
+                  >
+                    {loading ? <SignInLoader /> : "Sign In"}
+                  </button>
+                </form>
+              )}
+            </Formik>
+          </div>
+
+          {/* Back: Forgot Password */}
+          <div className="w-full h-full">
+            <ForgetPassword 
+              Api={API.UserAPI} 
+              isFliped={isFliped} 
+              setIsFliped={setIsFliped} 
+              dispatch={dispatch} 
+              toastAndNavigate={toastAndNavigate}
+              isMobile={isMobile} 
+              isTab={isTab}
+            />
+          </div>
+        </ReactCardFlip>
+      </div>
+    </div>
   )
 }
 

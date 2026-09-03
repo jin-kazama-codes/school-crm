@@ -9,16 +9,10 @@
  */
 
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from "@mui/material";
-import DriveFileRenameOutlineOutlinedIcon from "@mui/icons-material/DriveFileRenameOutlineOutlined";
-
-import { tokens } from "../../theme";
+import { Pencil } from 'lucide-react';
 import { Utility } from "../utility";
 
 export const datagridColumns = (rolePriority = null) => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const { capitalizeEveryWord, formatDate } = Utility();
   const navigateTo = useNavigate();
 
@@ -46,7 +40,7 @@ export const datagridColumns = (rolePriority = null) => {
       align: "center",
       flex: 1,
       minWidth: 100,
-      valueFormatter: (params) => `${ formatDate(params.value)}`
+      valueFormatter: (value) => `${formatDate(value)}`
     },
     {
       field: "endDate",
@@ -55,7 +49,7 @@ export const datagridColumns = (rolePriority = null) => {
       align: "center",
       flex: 1,
       minWidth: 100,
-      valueFormatter: (params) => `${formatDate(params.value)}`
+      valueFormatter: (value) => `${formatDate(value)}`
     },
     {
       field: "notes",
@@ -79,28 +73,20 @@ export const datagridColumns = (rolePriority = null) => {
           (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
         );
         const typeAll = capitalizedParts.join(" ");
+        
+        let bgColors = "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30"; // default (staff_only)
+        if (type === "school_closure") {
+            bgColors = "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
+        } else if (type === "partial_closure") {
+            bgColors = "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30";
+        }
+
         return (
-          <Box
-            width="70%"
-            m="0 auto"
-            p="5px"
-            display="flex"
-            justifyContent="center"
-            backgroundColor={
-              type === "school_closure"
-                ? colors.greenAccent[600]
-                : type === "partial_closure"
-                ? colors.redAccent[700]
-                : type === "staff_only"
-                ? colors.blueAccent[800]
-                : colors.blueAccent[800]
-            }
-            borderRadius="4px"
-          >
-            <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
+          <div className="flex justify-center items-center w-full h-full">
+            <div className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase shadow-sm border ${bgColors}`}>
               {typeAll}
-            </Typography>
-          </Box>
+            </div>
+          </div>
         );
       },
     },
@@ -113,25 +99,18 @@ export const datagridColumns = (rolePriority = null) => {
       minWidth: 75,
       renderCell: ({ row: { id } }) => {
         return (
-          <Box
-            width="30%"
-            m="0 auto"
-            p="5px"
-            display="flex"
-            justifyContent="center"
-          >
-            <Button
-              color="info"
-              variant="contained"
-              onClick={() => handleActionEdit(id)}
-              sx={{ minWidth: "50px" }}
+          <div className="flex justify-center items-center w-full h-full">
+            <button
+                onClick={() => handleActionEdit(id)}
+                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
-              <DriveFileRenameOutlineOutlinedIcon />
-            </Button>
-          </Box>
+                <Pencil className="w-4 h-4" />
+            </button>
+          </div>
         );
       },
     },
-  ];
+  ].filter(Boolean);
+  
   return columns;
 };

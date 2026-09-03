@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { ReduxProvider } from "./providers";
 import "./globals.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "School CRM - The Skolar",
@@ -14,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={cn("font-sans h-full overflow-hidden", geist.variable)}>
+      <body className="h-full overflow-hidden flex flex-col m-0 p-0">
         <ReduxProvider>
           {children}
         </ReduxProvider>

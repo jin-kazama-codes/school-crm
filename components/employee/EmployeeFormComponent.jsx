@@ -9,15 +9,10 @@
 
 import React, { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
-
-import { Box, InputLabel, MenuItem, FormHelperText, FormControl } from "@mui/material";
-import { Select, TextField, useMediaQuery } from "@mui/material";
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { useFormik } from "formik";
+import dayjs from "dayjs";
 
 import employeeValidation from "./Validation";
-
 import config from '../config';
 
 const initialValues = {
@@ -41,8 +36,6 @@ const EmployeeFormComponent = ({
 }) => {
 
     const [initialState, setInitialState] = useState(initialValues);
-
-    const isNonMobile = useMediaQuery("(min-width:600px)");
 
     const formik = useFormik({
         initialValues: initialState,
@@ -88,136 +81,150 @@ const EmployeeFormComponent = ({
         }
     }, [updatedValues]);
 
+    const formatDateForInput = (dateValue) => {
+        if (!dateValue) return "";
+        return dayjs(dateValue).format('YYYY-MM-DD');
+    };
+
+    const handleDateChange = (field, e) => {
+        const val = e.target.value;
+        formik.setFieldValue(field, val ? dayjs(val) : null);
+    };
+
+    const inputClass = (fieldName) => `w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+        formik.touched[fieldName] && formik.errors[fieldName] 
+        ? 'border-red-500 focus:ring-red-500/50' 
+        : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
+    } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+    
+    const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
+    const errorClass = "mt-1 text-sm text-red-500";
+
     return (
-        <Box m="20px">
-            <form ref={refId}>
-                <Box
-                    display="grid"
-                    gap="30px"
-                    gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-                    sx={{
-                        "& > div": { gridColumn: isNonMobile ? undefined : "span 4" },
-                    }}
-                >
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        name="firstname"
-                        label="Firstname*"
-                        autoComplete="new-firstname"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.firstname}
-                        error={!!formik.touched.firstname && !!formik.errors.firstname}
-                        helperText={formik.touched.firstname && formik.errors.firstname}
-                    />
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        name="lastname"
-                        label="Lastname*"
-                        autoComplete="new-lastname"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.lastname}
-                        error={!!formik.touched.lastname && !!formik.errors.lastname}
-                        helperText={formik.touched.lastname && formik.errors.lastname}
-                    />
-
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        label="Email"
-                        name="email"
-                        autoComplete="new-email"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.email}
-                        error={!!formik.touched.email && !!formik.errors.email}
-                        helperText={formik.touched.email && formik.errors.email}
-                    />
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        label="Contact Number*"
-                        name="contact_no"
-                        autoComplete="new-contact"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.contact_no}
-                        error={!!formik.touched.contact_no && !!formik.errors.contact_no}
-                        helperText={formik.touched.contact_no && formik.errors.contact_no}
-                    />
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        label="Role"
-                        name="role"
-                        autoComplete="new-role"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.role}
-                        error={!!formik.touched.role && !!formik.errors.role}
-                        helperText={formik.touched.role && formik.errors.role}
-                    />
-
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            format="DD MMMM YYYY"            //ex - 25 July 2023
-                            views={['day', "month", "year"]}
-                            label="Select Date Of Birth"
-                            name="dob"
-                            required
-                            value={formik.values.dob}
-                            onChange={newDob => {
-                                formik.setFieldValue("dob", newDob);
-                            }}
+        <div className="p-6">
+            <form ref={refId} onSubmit={formik.handleSubmit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <div className="col-span-1 md:col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Firstname*</label>
+                        <input
+                            type="text"
+                            name="firstname"
+                            autoComplete="new-firstname"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.firstname}
+                            className={inputClass("firstname")}
                         />
-                    </LocalizationProvider>
-                    <FormControl variant="filled" sx={{ minWidth: 120 }}
-                        error={!!formik.touched.gender && !!formik.errors.gender}
-                    >
-                        <InputLabel>Gender</InputLabel>
-                        <Select
-                            variant="filled"
+                        {formik.touched.firstname && formik.errors.firstname && <p className={errorClass}>{formik.errors.firstname}</p>}
+                    </div>
+
+                    <div className="col-span-1 md:col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Lastname*</label>
+                        <input
+                            type="text"
+                            name="lastname"
+                            autoComplete="new-lastname"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.lastname}
+                            className={inputClass("lastname")}
+                        />
+                        {formik.touched.lastname && formik.errors.lastname && <p className={errorClass}>{formik.errors.lastname}</p>}
+                    </div>
+
+                    <div className="col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            autoComplete="new-email"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.email}
+                            className={inputClass("email")}
+                        />
+                        {formik.touched.email && formik.errors.email && <p className={errorClass}>{formik.errors.email}</p>}
+                    </div>
+
+                    <div className="col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Contact Number*</label>
+                        <input
+                            type="text"
+                            name="contact_no"
+                            autoComplete="new-contact"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.contact_no}
+                            className={inputClass("contact_no")}
+                        />
+                        {formik.touched.contact_no && formik.errors.contact_no && <p className={errorClass}>{formik.errors.contact_no}</p>}
+                    </div>
+
+                    <div className="col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Role</label>
+                        <input
+                            type="text"
+                            name="role"
+                            autoComplete="new-role"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.role}
+                            className={inputClass("role")}
+                        />
+                        {formik.touched.role && formik.errors.role && <p className={errorClass}>{formik.errors.role}</p>}
+                    </div>
+
+                    <div className="col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Date Of Birth*</label>
+                        <input
+                            type="date"
+                            name="dob"
+                            onBlur={formik.handleBlur}
+                            onChange={(e) => handleDateChange("dob", e)}
+                            value={formatDateForInput(formik.values.dob)}
+                            className={inputClass("dob")}
+                            required
+                        />
+                        {formik.touched.dob && formik.errors.dob && <p className={errorClass}>{formik.errors.dob}</p>}
+                    </div>
+
+                    <div className="col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Gender</label>
+                        <select
                             name="gender"
                             value={formik.values.gender}
                             onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            className={inputClass("gender")}
                         >
+                            <option value="" disabled>Select Gender</option>
                             {Object.keys(config.gender).map(item => (
-                                <MenuItem key={item} value={item}>
-                                    {config.gender[item]}
-                                </MenuItem>
+                                <option key={item} value={item}>{config.gender[item]}</option>
                             ))}
-                        </Select>
-                        <FormHelperText>{formik.touched.gender && formik.errors.gender}</FormHelperText>
-                    </FormControl>
-                    <FormControl variant="filled" sx={{ minWidth: 120 }}
-                        error={!!formik.touched.status && !!formik.errors.status}
-                    >
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                            variant="filled"
+                        </select>
+                        {formik.touched.gender && formik.errors.gender && <p className={errorClass}>{formik.errors.gender}</p>}
+                    </div>
+
+                    <div className="col-span-1 lg:col-span-2">
+                        <label className={labelClass}>Status</label>
+                        <select
                             name="status"
                             value={formik.values.status}
                             onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            className={inputClass("status")}
                         >
                             {Object.keys(config.status).map(item => (
-                                <MenuItem key={item} value={item}>
-                                    {config.status[item]}
-                                </MenuItem>
+                                <option key={item} value={item}>{config.status[item]}</option>
                             ))}
-                        </Select>
-                        <FormHelperText>{formik.touched.status && formik.errors.status}</FormHelperText>
-                    </FormControl>
-                </Box>
+                        </select>
+                        {formik.touched.status && formik.errors.status && <p className={errorClass}>{formik.errors.status}</p>}
+                    </div>
+
+                </div>
             </form >
-        </Box >
+        </div>
     );
 }
 
@@ -225,7 +232,7 @@ EmployeeFormComponent.propTypes = {
     onChange: PropTypes.func.isRequired,
     refId: PropTypes.any.isRequired, 
     setDirty: PropTypes.func.isRequired,
-    reset: PropTypes.func.isRequired,
+    reset: PropTypes.bool.isRequired,
     setReset: PropTypes.func.isRequired,
     updatedValues: PropTypes.object  
 };

@@ -10,11 +10,7 @@
 
 import { useSelector } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
-
-import { tokens } from "../../theme";
+import { Pencil } from 'lucide-react';
 import { Utility } from "../utility";
 
 export const datagridColumns = (rolePriority = null) => {
@@ -24,8 +20,6 @@ export const datagridColumns = (rolePriority = null) => {
     const allSections = useSelector(state => state.allSections);
 
     const navigateTo = useNavigate();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const { appendSuffix, findById, capitalizeEveryWord} = Utility();
 
     const handleActionEdit = (id, student_id, term) => {
@@ -60,7 +54,7 @@ export const datagridColumns = (rolePriority = null) => {
                     sectionName = findById(params?.row?.section_id, schoolSections?.listData)?.section_name;
                 }
                 return (
-                    <div>
+                    <div className="flex items-center justify-center w-full h-full font-medium">
                         {className ? appendSuffix(className) : '/'} {sectionName}
                     </div>
                 );
@@ -75,66 +69,49 @@ export const datagridColumns = (rolePriority = null) => {
             minWidth: 80
         },
         {
-
             field: "result",
             headerName: "Result",
             headerAlign: "center",
             align: "center",
             flex: 1,
             minWidth: 120,
-            valueFormatter: (params) => `${capitalizeEveryWord(params.value) || ""}`,
+            valueFormatter: (value) => `${capitalizeEveryWord(value) || ""}`,
             renderCell: ({ row: { result } }) => {
+                const getResultStyle = () => {
+                    if (result === "pass") return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
+                    if (result === "fail") return "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30";
+                    if (result === "Not Declared Yet") return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30";
+                    return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/20 dark:text-slate-400 dark:border-slate-500/30";
+                };
+
                 return (
-                    <Box
-                        width="60%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center"
-                        backgroundColor={
-                            result === "pass"
-                                ? colors.greenAccent[600]
-                                : result === "fail"
-                                    ? colors.redAccent[700]
-                                    : result === "Not Declared Yet"
-                                        ? colors.greenAccent[400]
-                                        : colors.redAccent[700]
-                        }
-                        borderRadius="4px"
-                    >
-                        <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
+                    <div className="flex justify-center items-center w-full h-full">
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border shadow-sm ${getResultStyle()}`}>
                             {capitalizeEveryWord(result) || ''}
-                        </Typography>
-                    </Box>
+                        </div>
+                    </div>
                 );
-
             }
-
         },
-        rolePriority !== 1 && {
+        ...(rolePriority !== 1 ? [{
             field: "action",
             headerName: "Action",
             headerAlign: "center",
             align: "center",
             flex: 1,
             minWidth: 75,
-            renderCell: ({ row: { id, student_id, term } }) => {
-                return (
-                    <Box width="30%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center">
-                        <Button color="info" variant="contained"
-                            onClick={() => handleActionEdit(id, student_id, term)}
-                            sx={{ minWidth: "50px" }}
-                        >
-                            <DriveFileRenameOutlineOutlinedIcon />
-                        </Button>
-                    </Box>
-                );
-            }
-        }
+            renderCell: ({ row: { id, student_id, term } }) => (
+                <div className="flex justify-center items-center w-full h-full">
+                    <button
+                        onClick={() => handleActionEdit(id, student_id, term)}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        title="Edit"
+                    >
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                </div>
+            )
+        }] : [])
     ];
     return columns;
 };

@@ -11,16 +11,12 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import PreviewIcon from '@mui/icons-material/Preview';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import { Eye, FileEdit } from 'lucide-react';
 
 import API from "../../apis";
 
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
-import { tokens } from "../../theme";
 import { Utility } from "../utility";
 
 export const datagridColumns = (rolePriority = null, setOpen = null) => {
@@ -31,8 +27,6 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
 
     const dispatch = useDispatch();
     const navigateTo = useNavigate();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate } = Utility();
 
     function formatAddress(params) {
@@ -46,7 +40,6 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
         const specials = {
             "Nursery": "Nursery",
             "Pre-K": "Pre-K"
-            // Add more special cases as needed
         };
     
         const parts = value.split(' ');
@@ -109,13 +102,15 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             align: 'center',
             flex: 1,
             minWidth: 150,
-            valueGetter: (params) => params.value?.split("/").pop(), // for export
+            valueGetter: (value) => value?.split("/").pop(), // for export
             renderCell: (params) => (
-                <img
-                    src={params.row.student_image} // use params.row.student_image for the image URL
-                    alt="No Image Found"
-                    style={{ width: '100px', height: '100px' }}
-                />
+                <div className="flex justify-center items-center w-full h-full p-2">
+                    <img
+                        src={params.row.student_image} // use params.row.student_image for the image URL
+                        alt="No Image Found"
+                        className="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
+                    />
+                </div>
             ),
         },
         {
@@ -126,7 +121,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             flex: 1,
             minWidth: 150,
             // this function combines the values of firstname and lastname into one string
-            valueGetter: (params) => `${capitalizeEveryWord(params.row.firstname) || ''} ${capitalizeEveryWord(params.row.lastname)|| ''}`
+            valueGetter: (value, row) => `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname)|| ''}`
         },
         {
             field: "father_name",
@@ -151,7 +146,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             align: "center",
             flex: 1,
             minWidth: 200,
-            valueFormatter: (params) => transformClassSection(params.value),
+            valueFormatter: (value) => transformClassSection(value),
         },
         {
             field: "contact_no",
@@ -168,7 +163,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             align: "center",
             flex: 1,
             minWidth: 150,
-            valueFormatter: (params) => `${formatDate(params.value)}`
+            valueFormatter: (value) => `${formatDate(value)}`
         },
         {
             field: 'address',
@@ -178,41 +173,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             flex: 1,
             minWidth: 150,
             valueGetter: formatAddress,
-        },
-       
-        // {
-        //     field: "action",
-        //     headerName: "Action",
-        //     headerAlign: "center",
-        //     align: "center",
-        //     flex: 1,
-        //     minWidth: 100,
-        //     renderCell: ({ row: { id } }) => {
-        //         return (
-        //             <Box width="85%"
-        //                 m="0 auto"
-        //                 p="5px"
-        //                 display="flex"
-        //                 justifyContent="space-around">
-
-        //                 {/* {rolePriority !== 1 &&
-        //                     <Button color="info" variant="contained"
-        //                         onClick={() => handleActionEdit(id)}
-        //                         sx={{ minWidth: "50px" }}
-        //                     >
-        //                         <DriveFileRenameOutlineOutlinedIcon />
-        //                     </Button>} */}
-
-        //                 <Button color="info" variant="contained"
-        //                     onClick={() => handleActionShow(id)}
-        //                     sx={{ minWidth: "50px" }}
-        //                 >
-        //                     <PreviewIcon />
-        //                 </Button>
-        //             </Box>
-        //         );
-        //     }
-        // }
+        }
     ];
     return columns;
 };

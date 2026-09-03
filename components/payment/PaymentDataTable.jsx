@@ -11,36 +11,13 @@ import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation } from "@/lib/routerAdapter";
 
-import { styled } from '@mui/material/styles';
-import { Table, useTheme } from '@mui/material';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-
 import API from "../../apis";
-
 import { setPayments } from "../../redux/actions/PaymentAction";
-import { tokens } from "../../theme";
 import { Utility } from "../utility";
 import { useCommon } from "../hooks/common";
 
-const StyledTableRow = styled(TableRow)(({ theme }) => ({
-    '&:nth-of-type(odd)': {
-        backgroundColor: theme.palette.action.hover,
-    },
-    // hide last border
-    '&:last-child td, &:last-child th': {
-        border: 0,
-    },
-}));
-
 const PaymentDataTable = () => {
     const allPayments = useSelector(state => state.allPayments);
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
 
     const { state } = useLocation();
     const { capitalizeEveryWord, formatDate } = Utility();
@@ -52,61 +29,80 @@ const PaymentDataTable = () => {
         }
         : null;
 
-    const tableHeaderCell = {
-        border: `2px solid ${colors.whiteAccent[500]}`,
-        color: colors.whiteAccent[800],
-        fontSize: '16px',
-        textAlign: 'center'
-    };
-    const tableBodyCell = {
-        border: `2px solid ${colors.whiteAccent[500]}`,
-        fontSize: '14px',
-        textAlign: 'center'
-    };
 
     useEffect(() => {
         getPaginatedData(0, 50, setPayments, API.PaymentAPI, studentConditionObj);
     }, []);
 
     return (
-        <TableContainer component={Paper}
-            sx={{ width: "98%", margin: '10px auto' }}>
-            <Table sx={{ minWidth: 700, letterSpacing: "1px" }}
-                aria-label="customized table">
-                <TableHead>
-                    <TableRow sx={{ backgroundColor: colors.redAccent[300] }}>
-                        <TableCell sx={tableHeaderCell}>Session</TableCell>
-                        <TableCell sx={[tableHeaderCell, { backgroundColor: colors.redAccent[200] }]}>Fee</TableCell>
-                        <TableCell sx={tableHeaderCell}>Method</TableCell>
-                        <TableCell sx={[tableHeaderCell, { backgroundColor: colors.redAccent[200] }]}>Type</TableCell>
-                        <TableCell sx={tableHeaderCell}>Period</TableCell>
-                        <TableCell sx={[tableHeaderCell, { backgroundColor: colors.redAccent[200] }]}>Discount</TableCell>
-                        <TableCell sx={tableHeaderCell}>Amount</TableCell>
-                        <TableCell sx={[tableHeaderCell, { backgroundColor: colors.redAccent[200] }]}>Date</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {!allPayments?.listData?.length ?
-                        <StyledTableRow>
-                            <TableCell component="th" scope="row" colSpan={8} sx={tableBodyCell}> No Record Found </TableCell>
-                        </StyledTableRow>
-                        :
-                        allPayments.listData.map(item => (
-                            <StyledTableRow key={item.id}>
-                                <TableCell component="th" scope="row" sx={tableBodyCell}> {item.academic_year} </TableCell>
-                                <TableCell sx={tableBodyCell}>{capitalizeEveryWord(item.fee)}</TableCell>
-                                <TableCell sx={tableBodyCell}>{capitalizeEveryWord(item.methodName)}</TableCell>
-                                <TableCell sx={tableBodyCell}>{capitalizeEveryWord(item.type)}</TableCell>
-                                <TableCell sx={tableBodyCell}>{item.type_duration}</TableCell>
-                                <TableCell sx={tableBodyCell}> {item.discount_percent}% </TableCell>
-                                <TableCell sx={tableBodyCell}>&#8377; {item.final_amount}</TableCell>
-                                <TableCell sx={tableBodyCell}>{formatDate(item.created_at)}</TableCell>
-                            </StyledTableRow>
-                        )
+        <div className="w-[98%] mx-auto my-4 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-[#2a2a2a]">
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left whitespace-nowrap">
+                    <thead>
+                        <tr className="bg-red-400 dark:bg-red-900/60 text-white font-semibold">
+                            <th className="px-6 py-4 text-center border-r border-red-300 dark:border-red-800/50">Session</th>
+                            <th className="px-6 py-4 text-center border-r border-red-300 dark:border-red-800/50 bg-red-300 dark:bg-red-800/60">Fee</th>
+                            <th className="px-6 py-4 text-center border-r border-red-300 dark:border-red-800/50">Method</th>
+                            <th className="px-6 py-4 text-center border-r border-red-300 dark:border-red-800/50 bg-red-300 dark:bg-red-800/60">Type</th>
+                            <th className="px-6 py-4 text-center border-r border-red-300 dark:border-red-800/50">Period</th>
+                            <th className="px-6 py-4 text-center border-r border-red-300 dark:border-red-800/50 bg-red-300 dark:bg-red-800/60">Discount</th>
+                            <th className="px-6 py-4 text-center border-r border-red-300 dark:border-red-800/50">Amount</th>
+                            <th className="px-6 py-4 text-center bg-red-300 dark:bg-red-800/60">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
+                        {!allPayments?.listData?.length ? (
+                            <tr>
+                                <td colSpan={8} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400 font-medium">
+                                    No Record Found
+                                </td>
+                            </tr>
+                        ) : (
+                            allPayments.listData.map((item, index) => (
+                                <tr 
+                                    key={item.id}
+                                    className={`
+                                        transition-colors duration-150
+                                        ${index % 2 === 0 
+                                            ? 'bg-white dark:bg-[#1a1a1a]' 
+                                            : 'bg-slate-50/50 dark:bg-slate-800/20'
+                                        }
+                                        hover:bg-red-50 dark:hover:bg-red-900/10
+                                    `}
+                                >
+                                    <td className="px-6 py-4 text-center border-r border-slate-100 dark:border-slate-800/30 text-slate-700 dark:text-slate-300">
+                                        {item.academic_year}
+                                    </td>
+                                    <td className="px-6 py-4 text-center border-r border-slate-100 dark:border-slate-800/30 text-slate-700 dark:text-slate-300 font-medium">
+                                        {capitalizeEveryWord(item.fee)}
+                                    </td>
+                                    <td className="px-6 py-4 text-center border-r border-slate-100 dark:border-slate-800/30 text-slate-700 dark:text-slate-300">
+                                        {capitalizeEveryWord(item.methodName)}
+                                    </td>
+                                    <td className="px-6 py-4 text-center border-r border-slate-100 dark:border-slate-800/30 text-slate-700 dark:text-slate-300">
+                                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                            {capitalizeEveryWord(item.type)}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center border-r border-slate-100 dark:border-slate-800/30 text-slate-700 dark:text-slate-300">
+                                        {item.type_duration}
+                                    </td>
+                                    <td className="px-6 py-4 text-center border-r border-slate-100 dark:border-slate-800/30 font-medium text-emerald-600 dark:text-emerald-400">
+                                        {item.discount_percent}%
+                                    </td>
+                                    <td className="px-6 py-4 text-center border-r border-slate-100 dark:border-slate-800/30 font-bold text-slate-800 dark:text-slate-200">
+                                        ₹ {item.final_amount}
+                                    </td>
+                                    <td className="px-6 py-4 text-center text-slate-500 dark:text-slate-400 text-sm">
+                                        {formatDate(item.created_at)}
+                                    </td>
+                                </tr>
+                            ))
                         )}
-                </TableBody>
-            </Table>
-        </TableContainer>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     );
 };
 

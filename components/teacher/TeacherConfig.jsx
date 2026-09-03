@@ -11,15 +11,11 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import { Pencil } from 'lucide-react';
 
 import API from "../../apis";
-
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
-import { tokens } from "../../theme";
 import { Utility } from "../utility";
 
 export const datagridColumns = (rolePriority = null) => {
@@ -30,8 +26,6 @@ export const datagridColumns = (rolePriority = null) => {
 
     const dispatch = useDispatch();
     const navigateTo = useNavigate();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord } = Utility();
 
     const handleActionEdit = (id) => {
@@ -60,8 +54,6 @@ export const datagridColumns = (rolePriority = null) => {
             align: "center",
             flex: 1,
             minWidth: 120,
-            // this function combines the values of firstname and lastname into one string
-            // valueGetter: (params) => `${capitalizeEveryWord(params.row.firstname) || ''}`
         },
         {
             field: "classes",
@@ -74,18 +66,11 @@ export const datagridColumns = (rolePriority = null) => {
                 if (row.is_class_teacher.data[0] === 1 && row.classnames && row.class_section_name) {
                     const classnamesArray = row.classnames.split(',');
                     return (
-                        <div>
+                        <div className="flex flex-wrap gap-1 items-center justify-center h-full">
                             {classnamesArray.map((classname, index) => {
+                                const isClassTeacher = classname === row.class_section_name;
                                 return (
-                                    <span key={index}
-                                        style={{
-                                            color: classname === row.class_section_name
-                                                ?
-                                                 colors.greenAccent[300]
-                                                :
-                                                colors.whiteAccent[100],
-                                        }}
-                                    >
+                                    <span key={index} className={isClassTeacher ? "text-emerald-500 font-bold" : "text-slate-700 dark:text-slate-300"}>
                                         {classname}
                                         {index !== classnamesArray.length - 1 && ', '}
                                     </span>
@@ -95,12 +80,10 @@ export const datagridColumns = (rolePriority = null) => {
                     );
                 } else {
                     return (
-                        <div>
+                        <div className="flex items-center justify-center h-full">
                             {row.classnames
-                                ?
-                                <div>{row.classnames}</div>
-                                :
-                                <p style={{ color: colors.redAccent[700] }}>Add classes fisrt</p>
+                                ? <span className="text-slate-700 dark:text-slate-300">{row.classnames}</span>
+                                : <span className="text-red-500 font-medium">Add classes first</span>
                             }
                         </div>
                     )
@@ -117,7 +100,7 @@ export const datagridColumns = (rolePriority = null) => {
             renderCell: (params) => {
                 const subjectsArray = params?.value?.split(',');
                 return (
-                    <div>
+                    <div className="flex items-center justify-center h-full text-slate-700 dark:text-slate-300">
                         {params.value ? subjectsArray.join(", ") : "No subjects found"}
                     </div>
                 )
@@ -139,30 +122,23 @@ export const datagridColumns = (rolePriority = null) => {
             flex: 1,
             minWidth: 120,
             renderCell: ({ row: { status } }) => {
+                const isActive = status === "active";
                 return (
-                    <Box
-                        width="60%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center"
-                        backgroundColor={
-                            status === "active"
-                                ? colors.greenAccent[600]
-                                : status === "inactive"
-                                    ? colors.redAccent[700]
-                                    : colors.redAccent[700]
-                        }
-                        borderRadius="4px"
-                    >
-                        <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
+                    <div className="flex justify-center items-center w-full h-full">
+                        <div
+                            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase shadow-sm ${
+                                isActive 
+                                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" 
+                                    : "bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30"
+                            }`}
+                        >
                             {capitalizeEveryWord(status) || ''}
-                        </Typography>
-                    </Box>
+                        </div>
+                    </div>
                 );
             }
         },
-        rolePriority !== 1 && {
+        ...(rolePriority !== 1 ? [{
             field: "action",
             headerName: "Action",
             headerAlign: "center",
@@ -170,21 +146,17 @@ export const datagridColumns = (rolePriority = null) => {
             flex: 1,
             minWidth: 75,
             renderCell: ({ row: { id } }) => (
-                <Box width="30%"
-                    m="0 auto"
-                    p="5px"
-                    display="flex"
-                    justifyContent="center"
-                >
-                    <Button color="info" variant="contained"
+                <div className="flex justify-center items-center w-full h-full">
+                    <button
                         onClick={() => handleActionEdit(id)}
-                        sx={{ minWidth: "50px" }}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        title="Edit"
                     >
-                        <DriveFileRenameOutlineOutlinedIcon />
-                    </Button>
-                </Box>
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                </div>
             )
-        }
+        }] : [])
     ];
     return columns;
 };

@@ -11,16 +11,11 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import PreviewIcon from '@mui/icons-material/Preview';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import { Pencil, Eye } from 'lucide-react';
 
 import API from "../../apis";
-
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
-import { tokens } from "../../theme";
 import { Utility } from "../utility";
 
 export const datagridColumns = (rolePriority = null, setOpen = null) => {
@@ -31,8 +26,6 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
 
     const dispatch = useDispatch();
     const navigateTo = useNavigate();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const { appendSuffix, findById, fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate } = Utility();
 
     const handleActionEdit = (id) => {
@@ -40,7 +33,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
     };
 
     const handleActionShow = (id) => {
-        setOpen(true);
+        if (setOpen) setOpen(true);
         navigateTo("#", { state: { id: id } });
     };
 
@@ -66,8 +59,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             align: "center",
             flex: 1,
             minWidth: 150,
-            // this function combines the values of firstname and lastname into one string
-            valueGetter: (params) => `${capitalizeEveryWord(params.row.firstname) || ''} ${capitalizeEveryWord(params.row.lastname)|| ''}`
+            valueGetter: (value, row) => `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname)|| ''}`
         },
         {
             field: "class",
@@ -109,7 +101,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             align: "center",
             flex: 1,
             minWidth: 150,
-            valueFormatter: (params) => `${formatDate(params.value)}`
+            valueFormatter: (value) => `${formatDate(value)}`
         },
         {
             field: "status",
@@ -119,27 +111,19 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             flex: 1,
             minWidth: 150,
             renderCell: ({ row: { status } }) => {
+                const isActive = status === "active";
                 return (
-                    <Box
-                        width="60%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center"
-                        backgroundColor={
-                            status === "active"
-                                ? colors.greenAccent[600]
-                                : status === "inactive"
-                                    ? colors.redAccent[700]
-                                    : colors.redAccent[700]
-                        }
-                        borderRadius="4px"
-                    >
-                        <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
-                            
+                    <div className="flex justify-center items-center w-full h-full">
+                        <div
+                            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase shadow-sm ${
+                                isActive 
+                                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" 
+                                    : "bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30"
+                            }`}
+                        >
                             {capitalizeEveryWord(status) || ''}
-                        </Typography>
-                    </Box>
+                        </div>
+                    </div>
                 );
             }
         },
@@ -152,27 +136,24 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             minWidth: 100,
             renderCell: ({ row: { id } }) => {
                 return (
-                    <Box width="85%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="space-around">
-
-                        {rolePriority !== 1 &&
-                            <Button color="info" variant="contained"
+                    <div className="flex justify-center items-center gap-2 w-full h-full">
+                        {rolePriority !== 1 && (
+                            <button
                                 onClick={() => handleActionEdit(id)}
-                                sx={{ minWidth: "50px" }}
+                                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                title="Edit"
                             >
-                                <DriveFileRenameOutlineOutlinedIcon />
-                            </Button>}
-
-                        <Button color="info" variant="contained"
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                        )}
+                        <button
                             onClick={() => handleActionShow(id)}
-                            sx={{ minWidth: "50px" }}
+                            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50"
+                            title="Preview"
                         >
-                            <PreviewIcon />
-                        </Button>
-                    </Box>
+                            <Eye className="w-4 h-4" />
+                        </button>
+                    </div>
                 );
             }
         }

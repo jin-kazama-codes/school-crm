@@ -1,20 +1,16 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-// /**
-//  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
-//  *
-//  * This software is the confidential information of School CRM Inc., and is licensed as
-//  * restricted rights software. The use,reproduction, or disclosure of this software is subject to
-//  * restrictions set forth in your license agreement with School CRM.
-// */
+/**
+ * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
+ *
+ * This software is the confidential information of School CRM Inc., and is licensed as
+ * restricted rights software. The use,reproduction, or disclosure of this software is subject to
+ * restrictions set forth in your license agreement with School CRM.
+*/
 
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-
-import { Box, TextField, useMediaQuery, FormControl, InputLabel } from "@mui/material";
-import { Select, MenuItem, FormHelperText, useTheme } from "@mui/material";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { TimePicker, renderTimeViewClock, LocalizationProvider } from "@mui/x-date-pickers";
+import dayjs from "dayjs";
 import { useFormik } from "formik";
+import { Clock, Layers, Users, Building, Sunset } from "lucide-react";
 
 import SchoolPeriodValidation from "./Validation";
 
@@ -44,9 +40,6 @@ const SchoolDurationFormComponent = ({
   updatedValues = null,
 }) => {
   const [initialState, setInitialState] = useState(initialValues);
-
-  const isNonMobile = useMediaQuery("(min-width:600px)");
-  const theme = useTheme();
 
   const formik = useFormik({
     initialValues: initialState,
@@ -91,272 +84,314 @@ const SchoolDurationFormComponent = ({
     }
   }, [updatedValues]);
 
+  const inputClass = (touched, error) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all pl-11 ${
+      touched && error 
+      ? 'border-red-500 focus:ring-red-500/50' 
+      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+  } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+
+  const timeInputClass = (touched, error) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+      touched && error 
+      ? 'border-red-500 focus:ring-red-500/50' 
+      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+  } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+
+  const selectClass = (touched, error) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+      touched && error 
+      ? 'border-red-500 focus:ring-red-500/50' 
+      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+  } text-slate-800 dark:text-slate-100`;
+
+  const labelClass = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5";
+  const errorClass = "mt-1.5 text-sm text-red-500 font-medium";
+  
+  const fieldsetLegendClass = "flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100 mb-6";
+  const fieldsetClass = "p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 mt-8";
+
+  const handleTimeChange = (e, fieldName) => {
+    const time = e.target.value;
+    if (time) {
+      const [hours, minutes] = time.split(':');
+      const newTime = dayjs().hour(hours).minute(minutes).second(0);
+      formik.setFieldValue(fieldName, newTime);
+    } else {
+      formik.setFieldValue(fieldName, null);
+    }
+  };
+
+  const getTimeValue = (val) => {
+    return val && dayjs(val).isValid() ? dayjs(val).format('HH:mm') : '';
+  };
+
   return (
-    <Box m="20px">
-      <form ref={refId}>
-        <Box
-          display="grid"
-          gap="30px"
-          gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-          sx={{
-            "& > div": { gridColumn: isNonMobile ? undefined : "span 4" }
-          }}
-        >
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 220 }}
-            error={!!formik.touched.batch && !!formik.errors.batch}
-          >
-            <InputLabel>Batch</InputLabel>
-            <Select
-              variant="filled"
-              name="batch"
-              value={formik.values.batch}
-              onChange={formik.handleChange}
-            >
-              <MenuItem value="junior">Junior</MenuItem>
-              <MenuItem value="senior">Senior</MenuItem>
-              <MenuItem value="both">Both</MenuItem>
-            </Select>
-            <FormHelperText> {formik.touched.batch && formik.errors.batch} </FormHelperText>
-          </FormControl>
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            name="period"
-            label="Period"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.period}
-            error={!!formik.touched.period && !!formik.errors.period}
-            helperText={formik.touched.period && formik.errors.period}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            name="halves"
-            label="Halves"
-            onBlur={formik.handleBlur}
-            value={formik.values.halves}
-            error={!!formik.touched.halves && !!formik.errors.halves}
-            helperText={formik.touched.halves && formik.errors.halves}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            name="recess_time"
-            label="Recess Time (mintues)"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.recess_time}
-            error={!!formik.touched.recess_time && !!formik.errors.recess_time}
-            helperText={formik.touched.recess_time && formik.errors.recess_time}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            name="first_half_period_duration"
-            label="First half period duration (mintues)"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.first_half_period_duration}
-            error={!!formik.touched.first_half_period_duration && !!formik.errors.first_half_period_duration}
-            helperText={formik.touched.first_half_period_duration && formik.errors.first_half_period_duration}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            name="second_half_period_duration"
-            label="Second half period duration (mintues)"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.second_half_period_duration}
-            error={!!formik.touched.second_half_period_duration && !!formik.errors.second_half_period_duration}
-            helperText={formik.touched.second_half_period_duration && formik.errors.second_half_period_duration}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            name="cutoff_time"
-            label="CutOff Time (mintues)"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.cutoff_time}
-            error={!!formik.touched.cutoff_time && !!formik.errors.cutoff_time}
-            helperText={formik.touched.cutoff_time && formik.errors.cutoff_time}
-          />
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <TimePicker
-              name="employee_entry_time"
-              label="Employee Entry Time"
-              format="hh:mm A"
-              value={formik.values.employee_entry_time}
-              onChange={(newOpeningTime) => formik.setFieldValue("employee_entry_time", newOpeningTime)}
-              viewRenderers={{ hours: renderTimeViewClock, minutes: renderTimeViewClock, seconds: renderTimeViewClock }}
-              slotProps={{
-                textField: {
-                  error: !!formik.touched.employee_entry_time && !!formik.errors.employee_entry_time,
-                  helperText: formik.touched.employee_entry_time && formik.errors.employee_entry_time
-                }
-              }}
-            />
-            <TimePicker
-              name="employee_exit_time"
-              label="Employee Exit Time"
-              value={formik.values.employee_exit_time}
-              onChange={(newClosingTime) => formik.setFieldValue("employee_exit_time", newClosingTime)}
-              viewRenderers={{ hours: renderTimeViewClock, minutes: renderTimeViewClock, seconds: renderTimeViewClock }}
-              slotProps={{
-                textField: {
-                  error: !!formik.touched.employee_exit_time && !!formik.errors.employee_exit_time,
-                  helperText: formik.touched.employee_exit_time && formik.errors.employee_exit_time
-                }
-              }}
-            />
-          </LocalizationProvider>
-          <Box
-            display="grid"
-            gap="30px"
-            border="2px solid #BADFE7"
-            borderRadius="12px"
-            p={2}
-            sx={
-              formik.values.shifts == "morning"
-                ? {
-                  gridColumnStart: 1,
-                  gridColumnEnd: 3
-                }
-                : formik.values.shifts == "evening"
-                  ? {
-                    gridColumnStart: 1,
-                    gridColumnEnd: 3
-                  }
-                  : formik.values.shifts == "both"
-                    ? {
-                      gridColumnStart: 1,
-                      gridColumnEnd: 4
-                    }
-                    : null}
-          >
-            <FormControl
-              variant="filled"
-              sx={{ minWidth: 220 }}
-              error={!!formik.touched.shifts && !!formik.errors.shifts}
-            >
-              <InputLabel>Shifts</InputLabel>
-              <Select
-                variant="filled"
-                name="shifts"
-                value={formik.values.shifts}
-                onChange={formik.handleChange}
-              >
-                <MenuItem value="morning">Morning</MenuItem>
-                <MenuItem value="evening">Evening</MenuItem>
-                <MenuItem value="both">Both</MenuItem>
-              </Select>
-              <FormHelperText> {formik.touched.shifts && formik.errors.shifts} </FormHelperText>
-            </FormControl>
+    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full animate-in slide-in-from-bottom-4 duration-500">
+      
+      <form ref={refId} className="space-y-6">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex flex-col">
+              <label className={labelClass}>Batch*</label>
+              <div className="relative">
+                  <select
+                      name="batch"
+                      value={formik.values.batch}
+                      onChange={formik.handleChange}
+                      className={selectClass(formik.touched.batch, formik.errors.batch)}
+                  >
+                      <option value="" disabled>Select Batch</option>
+                      <option value="junior">Junior</option>
+                      <option value="senior">Senior</option>
+                      <option value="both">Both</option>
+                  </select>
+              </div>
+              {formik.touched.batch && formik.errors.batch && (
+                  <p className={errorClass}>{formik.errors.batch}</p>
+              )}
+          </div>
 
-            {formik.values.shifts !== "evening" && (
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <TimePicker
-                  name="opening_time"
-                  label="Opening time"
-                  format="hh:mm A"
-                  value={formik.values.opening_time}
-                  onChange={(newOpeningTime) => formik.setFieldValue("opening_time", newOpeningTime)}
-                  viewRenderers={{ hours: renderTimeViewClock, minutes: renderTimeViewClock, seconds: renderTimeViewClock }}
-                  slotProps={{
-                    textField: {
-                      error: !!formik.touched.opening_time && !!formik.errors.opening_time,
-                      helperText: formik.touched.opening_time && formik.errors.opening_time
-                    }
-                  }}
-                />
-                <TimePicker
-                  name="closing_time"
-                  label="Closing time"
-                  value={formik.values.closing_time}
-                  onChange={(newClosingTime) => formik.setFieldValue("closing_time", newClosingTime)}
-                  viewRenderers={{ hours: renderTimeViewClock, minutes: renderTimeViewClock, seconds: renderTimeViewClock }}
-                  slotProps={{
-                    textField: {
-                      error: !!formik.touched.closing_time && !!formik.errors.closing_time,
-                      helperText: formik.touched.closing_time && formik.errors.closing_time
-                    }
-                  }}
-                  sx={{
-                    gridColumnStart: 2,
-                    gridColumnEnd: 3
-                  }}
-                />
-              </LocalizationProvider>
-            )}
+          <div className="flex flex-col">
+              <label className={labelClass}>Total Periods*</label>
+              <div className="relative">
+                  <Layers className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                      type="number"
+                      name="period"
+                      onBlur={formik.handleBlur}
+                      onChange={formik.handleChange}
+                      value={formik.values.period}
+                      className={inputClass(formik.touched.period, formik.errors.period)}
+                      placeholder="e.g., 8"
+                  />
+              </div>
+              {formik.touched.period && formik.errors.period && (
+                  <p className={errorClass}>{formik.errors.period}</p>
+              )}
+          </div>
 
-            {formik.values.shifts !== "morning" && (
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <TimePicker
-                  name="eve_opening_time"
-                  label="Evening Opening time"
-                  format="hh:mm A"
-                  value={formik.values.eve_opening_time}
-                  onChange={(newOpeningTime) => formik.setFieldValue("eve_opening_time", newOpeningTime)}
-                  viewRenderers={{ hours: renderTimeViewClock, minutes: renderTimeViewClock, seconds: renderTimeViewClock }}
-                  slotProps={{
-                    textField: {
-                      error: !!formik.touched.eve_opening_time && !!formik.errors.eve_opening_time,
-                      helperText: formik.touched.eve_opening_time && formik.errors.eve_opening_time
-                    }
-                  }}
-                  sx={
-                    formik.values.shifts !== "both"
-                      ? null // If not "both", sx will not be applied
-                      : {
-                        gridRowStart: 1,
-                        gridRowEnd: 2,
-                        gridColumnStart: 3,
-                        gridColumnEnd: 4
-                      }
-                  }
-                />
-                <TimePicker
-                  name="eve_closing_time"
-                  label="Evening Closing time"
-                  value={formik.values.eve_closing_time}
-                  onChange={(newClosingTime) => formik.setFieldValue("eve_closing_time", newClosingTime)}
-                  viewRenderers={{ hours: renderTimeViewClock, minutes: renderTimeViewClock, seconds: renderTimeViewClock }}
-                  slotProps={{
-                    textField: {
-                      error: !!formik.touched.eve_closing_time && !!formik.errors.eve_closing_time,
-                      helperText: formik.touched.eve_closing_time && formik.errors.eve_closing_time
-                    }
-                  }}
-                  sx={
-                    formik.values.shifts !== "both"
-                      ? {
-                        gridColumnStart: 2,
-                        gridColumnEnd: 3
-                      }
-                      : {
-                        gridRowStart: 2,
-                        gridRowEnd: 3,
-                        gridColumnStart: 3,
-                        gridColumnEnd: 4
-                      }
-                  }
-                />
-              </LocalizationProvider>
-            )}
-          </Box>
-        </Box>
+          <div className="flex flex-col">
+              <label className={labelClass}>Number of Halves*</label>
+              <div className="relative">
+                  <Layers className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                      type="number"
+                      name="halves"
+                      onBlur={formik.handleBlur}
+                      onChange={formik.handleChange}
+                      value={formik.values.halves}
+                      className={inputClass(formik.touched.halves, formik.errors.halves)}
+                      placeholder="e.g., 2"
+                  />
+              </div>
+              {formik.touched.halves && formik.errors.halves && (
+                  <p className={errorClass}>{formik.errors.halves}</p>
+              )}
+          </div>
+
+          <div className="flex flex-col">
+              <label className={labelClass}>Recess Duration (mins)*</label>
+              <div className="relative">
+                  <Clock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                      type="number"
+                      name="recess_time"
+                      onBlur={formik.handleBlur}
+                      onChange={formik.handleChange}
+                      value={formik.values.recess_time}
+                      className={inputClass(formik.touched.recess_time, formik.errors.recess_time)}
+                      placeholder="e.g., 30"
+                  />
+              </div>
+              {formik.touched.recess_time && formik.errors.recess_time && (
+                  <p className={errorClass}>{formik.errors.recess_time}</p>
+              )}
+          </div>
+
+          <div className="flex flex-col md:col-span-2 lg:col-span-1">
+              <label className={labelClass}>1st Half Period Length (mins)*</label>
+              <div className="relative">
+                  <Clock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                      type="number"
+                      name="first_half_period_duration"
+                      onBlur={formik.handleBlur}
+                      onChange={formik.handleChange}
+                      value={formik.values.first_half_period_duration}
+                      className={inputClass(formik.touched.first_half_period_duration, formik.errors.first_half_period_duration)}
+                      placeholder="e.g., 40"
+                  />
+              </div>
+              {formik.touched.first_half_period_duration && formik.errors.first_half_period_duration && (
+                  <p className={errorClass}>{formik.errors.first_half_period_duration}</p>
+              )}
+          </div>
+
+          <div className="flex flex-col md:col-span-2 lg:col-span-1">
+              <label className={labelClass}>2nd Half Period Length (mins)*</label>
+              <div className="relative">
+                  <Clock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                      type="number"
+                      name="second_half_period_duration"
+                      onBlur={formik.handleBlur}
+                      onChange={formik.handleChange}
+                      value={formik.values.second_half_period_duration}
+                      className={inputClass(formik.touched.second_half_period_duration, formik.errors.second_half_period_duration)}
+                      placeholder="e.g., 35"
+                  />
+              </div>
+              {formik.touched.second_half_period_duration && formik.errors.second_half_period_duration && (
+                  <p className={errorClass}>{formik.errors.second_half_period_duration}</p>
+              )}
+          </div>
+
+          <div className="flex flex-col md:col-span-2 lg:col-span-1">
+              <label className={labelClass}>Cutoff Time (mins)*</label>
+              <div className="relative">
+                  <Clock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                      type="number"
+                      name="cutoff_time"
+                      onBlur={formik.handleBlur}
+                      onChange={formik.handleChange}
+                      value={formik.values.cutoff_time}
+                      className={inputClass(formik.touched.cutoff_time, formik.errors.cutoff_time)}
+                      placeholder="e.g., 15"
+                  />
+              </div>
+              {formik.touched.cutoff_time && formik.errors.cutoff_time && (
+                  <p className={errorClass}>{formik.errors.cutoff_time}</p>
+              )}
+          </div>
+        </div>
+
+        <div className={fieldsetClass}>
+            <h3 className={fieldsetLegendClass}>
+                <Users className="w-6 h-6 text-blue-500" />
+                Employee Timings
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                    <label className={labelClass}>Employee Entry Time</label>
+                    <input
+                        type="time"
+                        name="employee_entry_time"
+                        value={getTimeValue(formik.values.employee_entry_time)}
+                        onChange={(e) => handleTimeChange(e, "employee_entry_time")}
+                        className={timeInputClass(formik.touched.employee_entry_time, formik.errors.employee_entry_time)}
+                    />
+                    {formik.touched.employee_entry_time && formik.errors.employee_entry_time && (
+                        <p className={errorClass}>{formik.errors.employee_entry_time}</p>
+                    )}
+                </div>
+                <div className="flex flex-col">
+                    <label className={labelClass}>Employee Exit Time</label>
+                    <input
+                        type="time"
+                        name="employee_exit_time"
+                        value={getTimeValue(formik.values.employee_exit_time)}
+                        onChange={(e) => handleTimeChange(e, "employee_exit_time")}
+                        className={timeInputClass(formik.touched.employee_exit_time, formik.errors.employee_exit_time)}
+                    />
+                    {formik.touched.employee_exit_time && formik.errors.employee_exit_time && (
+                        <p className={errorClass}>{formik.errors.employee_exit_time}</p>
+                    )}
+                </div>
+            </div>
+        </div>
+
+        <div className={fieldsetClass}>
+            <h3 className={fieldsetLegendClass}>
+                <Building className="w-6 h-6 text-indigo-500" />
+                School Timings & Shifts
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="flex flex-col md:col-span-2 lg:col-span-3">
+                    <label className={labelClass}>Shift Mode*</label>
+                    <div className="relative max-w-sm">
+                        <select
+                            name="shifts"
+                            value={formik.values.shifts}
+                            onChange={formik.handleChange}
+                            className={selectClass(formik.touched.shifts, formik.errors.shifts)}
+                        >
+                            <option value="morning">Morning Only</option>
+                            <option value="evening">Evening Only</option>
+                            <option value="both">Both Shifts</option>
+                        </select>
+                    </div>
+                    {formik.touched.shifts && formik.errors.shifts && (
+                        <p className={errorClass}>{formik.errors.shifts}</p>
+                    )}
+                </div>
+
+                {formik.values.shifts !== "evening" && (
+                    <>
+                        <div className="flex flex-col">
+                            <label className={labelClass}>Morning Opening Time</label>
+                            <input
+                                type="time"
+                                name="opening_time"
+                                value={getTimeValue(formik.values.opening_time)}
+                                onChange={(e) => handleTimeChange(e, "opening_time")}
+                                className={timeInputClass(formik.touched.opening_time, formik.errors.opening_time)}
+                            />
+                            {formik.touched.opening_time && formik.errors.opening_time && (
+                                <p className={errorClass}>{formik.errors.opening_time}</p>
+                            )}
+                        </div>
+                        <div className="flex flex-col">
+                            <label className={labelClass}>Morning Closing Time</label>
+                            <input
+                                type="time"
+                                name="closing_time"
+                                value={getTimeValue(formik.values.closing_time)}
+                                onChange={(e) => handleTimeChange(e, "closing_time")}
+                                className={timeInputClass(formik.touched.closing_time, formik.errors.closing_time)}
+                            />
+                            {formik.touched.closing_time && formik.errors.closing_time && (
+                                <p className={errorClass}>{formik.errors.closing_time}</p>
+                            )}
+                        </div>
+                        <div className="hidden lg:block"></div>
+                    </>
+                )}
+
+                {formik.values.shifts !== "morning" && (
+                    <>
+                        <div className="flex flex-col">
+                            <label className={labelClass}>Evening Opening Time</label>
+                            <input
+                                type="time"
+                                name="eve_opening_time"
+                                value={getTimeValue(formik.values.eve_opening_time)}
+                                onChange={(e) => handleTimeChange(e, "eve_opening_time")}
+                                className={timeInputClass(formik.touched.eve_opening_time, formik.errors.eve_opening_time)}
+                            />
+                            {formik.touched.eve_opening_time && formik.errors.eve_opening_time && (
+                                <p className={errorClass}>{formik.errors.eve_opening_time}</p>
+                            )}
+                        </div>
+                        <div className="flex flex-col">
+                            <label className={labelClass}>Evening Closing Time</label>
+                            <input
+                                type="time"
+                                name="eve_closing_time"
+                                value={getTimeValue(formik.values.eve_closing_time)}
+                                onChange={(e) => handleTimeChange(e, "eve_closing_time")}
+                                className={timeInputClass(formik.touched.eve_closing_time, formik.errors.eve_closing_time)}
+                            />
+                            {formik.touched.eve_closing_time && formik.errors.eve_closing_time && (
+                                <p className={errorClass}>{formik.errors.eve_closing_time}</p>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+
       </form>
-    </Box>
+    </div>
   );
 };
 

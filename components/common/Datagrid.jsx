@@ -8,19 +8,15 @@
 
 import { useEffect, useState } from 'react';
 import PropTypes from "prop-types";
-
-import { Box, useTheme, Button } from "@mui/material";
 import { DataGrid, GridToolbar, GridToolbarContainer } from "@mui/x-data-grid";
-import PostAddIcon from '@mui/icons-material/PostAdd';
-import ImportComponent from "../models/ImportModel"
+import { PlusCircle } from "lucide-react";
+
+import ImportComponent from "../models/ImportModel";
 import ImportTeacher from "../models/ImportTeacher";
 import ImportEmployee from "../models/ImportEmployee";
-
 import classNames from '../modules';
 import EmptyOverlayGrid from "./EmptyOverlayGrid";
-
 import { multipleSkeletons } from "./LoadingSkeleton";
-import { tokens } from "../../theme";
 
 const ServerPaginationGrid = ({
     action,
@@ -43,24 +39,18 @@ const ServerPaginationGrid = ({
 }) => {
     const initialState = {
         page: 0,
-        pageSize: 10 || 20 || 30
+        pageSize: 10
     };
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const [paginationModel, setPaginationModel] = useState(initialState);
     const [openImport, setOpenImport] = useState(false);
 
     useEffect(() => {
-        //TO BE REFACTORED
         if (!searchFlag.search && !searchFlag.searching) {
             getQuery(paginationModel.page, paginationModel.pageSize, action, api, condition);
             setOldPagination(paginationModel);
         } else if (!searchFlag.searching) {
             getQuery(searchFlag, searchFlag, action, api, condition);
-            setPaginationModel({
-                // page: searchFlag.oldPagination.page,
-                // pageSize: searchFlag.oldPagination.pageSize
-            });
+            setPaginationModel({});
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selected, paginationModel.page, paginationModel.pageSize, searchFlag.searching]);
@@ -70,65 +60,95 @@ const ServerPaginationGrid = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selected]);
 
-    // Some API clients return undefined while loading
-    // Following lines are here to prevent `rowCountState` from being undefined during the loading
     const [rowCountState, setRowCountState] = useState(count || 0);
 
     useEffect(() => {
-        setRowCountState(() =>
-            count ? count : 0,
-        );
+        setRowCountState(() => count ? count : 0);
     }, [count, setRowCountState]);
 
-    return (
-        <Box
-            m="30px 0 0 0"
-            sx={{
-                "& .MuiDataGrid-root": {
-                    border: "none",
-                    fontSize: "1rem"
-                },
-                "& .MuiDataGrid-cell": {
-                    borderBottom: "none",
-                    whiteSpace: "normal !important",
-                    wordWrap: "break-word !important",
-                },
-                "& .MuiDataGrid-cellCheckbox": {
-                    borderBottom: "none"
-                },
-                "& .MuiDataGrid-cell:focus-within": {
-                    outline: `1px solid ${colors.greenAccent[600]}`
-                },
-                "& .MuiDataGrid-cell:hover": {
-                    color: colors.greenAccent[300]
-                },
-                "& .name-column--cell": {
-                    color: colors.greenAccent[300],
+    const isDark = document.documentElement.classList.contains("dark");
+    const accentColor = "#10b981"; // emerald-500
+    const headerBg = isDark ? "#1e293b" : "#f1f5f9"; // slate-800 / slate-100
+    const rowHoverBg = isDark ? "#0f172a" : "#f8fafc"; // slate-900 / slate-50
+    const borderColor = isDark ? "#334155" : "#e2e8f0"; // slate-700 / slate-200
+    const textColor = isDark ? "#f8fafc" : "#0f172a"; // slate-50 / slate-900
+    const textMuted = isDark ? "#94a3b8" : "#64748b"; // slate-400 / slate-500
 
-                },
-                "& .MuiDataGrid-columnHeaders": {
-                    backgroundColor: colors.blueAccent[700],
-                    borderBottom: "none"
-                },
-                "& .MuiDataGrid-columnHeader": {
-                    backgroundColor: colors.blueAccent[700],
-                },
-                "& .MuiDataGrid-virtualScroller": {
-                    minHeight: 320
-                },
-                "& .MuiDataGrid-footerContainer": {
-                    borderTop: "none",
-                    backgroundColor: colors.blueAccent[700]
-                },
-                "& .MuiCheckbox-root": {
-                    color: `${colors.greenAccent[200]} !important`
-                },
-                "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
-                    color: `${colors.grey[100]} !important`
-                },
-            }}
-        >
+    return (
+        <div className="mt-8 bg-white dark:bg-[#1a1a1a] rounded-[26px] shadow-xl border border-slate-200 dark:border-[#2a2a2a] overflow-hidden">
             <DataGrid
+                sx={{
+                    border: "none",
+                    color: textColor,
+                    "--DataGrid-containerBackground": headerBg,
+                    "& .MuiDataGrid-root": {
+                        fontSize: "0.9rem",
+                        fontFamily: "inherit",
+                    },
+                    "& .MuiDataGrid-cell": {
+                        borderBottom: `1px solid ${borderColor}`,
+                        whiteSpace: "normal !important",
+                        wordWrap: "break-word !important",
+                        display: "flex",
+                        alignItems: "center",
+                    },
+                    "& .MuiDataGrid-cellCheckbox": {
+                        borderBottom: "none"
+                    },
+                    "& .MuiDataGrid-cell:focus-within": {
+                        outline: `1px solid ${accentColor}`,
+                        outlineOffset: "-1px"
+                    },
+                    "& .MuiDataGrid-row:hover": {
+                        backgroundColor: rowHoverBg
+                    },
+                    "& .MuiDataGrid-columnHeaders": {
+                        backgroundColor: headerBg,
+                        borderBottom: `1px solid ${borderColor}`,
+                        color: textMuted,
+                        textTransform: "uppercase",
+                        fontSize: "0.75rem",
+                        letterSpacing: "0.05em",
+                        fontWeight: "700"
+                    },
+                    "& .MuiDataGrid-columnHeader": {
+                        backgroundColor: headerBg,
+                    },
+                    "& .MuiDataGrid-virtualScroller": {
+                        minHeight: 320,
+                        backgroundColor: isDark ? "#1a1a1a" : "#ffffff"
+                    },
+                    "& .MuiDataGrid-footerContainer": {
+                        borderTop: `1px solid ${borderColor}`,
+                        backgroundColor: headerBg,
+                        color: textMuted
+                    },
+                    "& .MuiTablePagination-root": {
+                        color: textColor
+                    },
+                    "& .MuiCheckbox-root": {
+                        color: `${textMuted} !important`
+                    },
+                    "& .MuiCheckbox-root.Mui-checked": {
+                        color: `${accentColor} !important`
+                    },
+                    "& .MuiDataGrid-toolbarContainer": {
+                        padding: "16px",
+                        backgroundColor: headerBg,
+                        borderBottom: `1px solid ${borderColor}`,
+                    },
+                    "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
+                        color: `${textColor} !important`,
+                        fontFamily: "inherit",
+                        fontWeight: "600",
+                        textTransform: "none",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        "&:hover": {
+                            backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"
+                        }
+                    },
+                }}
                 getRowHeight={() => 'auto'}
                 disableRowSelectionOnClick
                 getRowId={row => selected === 'Class' ? row.class_id : (selected === 'Section' ? row.section_id : row.id)}
@@ -143,24 +163,24 @@ const ServerPaginationGrid = ({
                 }}
                 components={{
                     Toolbar: () => (
-                        <Box display="flex" >
+                        <div className="flex justify-between items-center w-full">
                             <GridToolbar />
                             <GridToolbarContainer>
                                 {rolePriority > 1 && importBtn == true && (
-                                    <Button sx={{ padding: "0px" }} onClick={() => setOpenImport(true)}>
-                                        <PostAddIcon sx={{ marginRight: "5px" }} />Import
-                                    </Button>
+                                    <button 
+                                        onClick={() => setOpenImport(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors shadow-md shadow-emerald-500/20 text-sm"
+                                    >
+                                        <PlusCircle className="w-4 h-4" /> Import
+                                    </button>
                                 )}
                             </GridToolbarContainer>
-                        </Box>
+                        </div>
                     ),
                     LoadingOverlay: multipleSkeletons,
                     noRowsOverlay: EmptyOverlayGrid
-
-                    // ... other components
                 }}
                 hideFooterPagination={hidePagination}
-                ServerPaginationGrid
                 paginationMode="server"
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
@@ -169,8 +189,10 @@ const ServerPaginationGrid = ({
                 keepNonExistentRowsSelected
             />
 
-            {openImport && imports == "student" ? <ImportComponent openDialog={openImport} setOpenDialog={setOpenImport} /> : openImport && imports == "teacher" ? <ImportTeacher openDialog={openImport} setOpenDialog={setOpenImport} /> :  openImport && imports == "employee" ? <ImportEmployee openDialog={openImport} setOpenDialog={setOpenImport} /> : "" }
-        </Box>
+            {openImport && imports === "student" ? <ImportComponent openDialog={openImport} setOpenDialog={setOpenImport} /> : 
+             openImport && imports === "teacher" ? <ImportTeacher openDialog={openImport} setOpenDialog={setOpenImport} /> :  
+             openImport && imports === "employee" ? <ImportEmployee openDialog={openImport} setOpenDialog={setOpenImport} /> : ""}
+        </div>
     );
 };
 

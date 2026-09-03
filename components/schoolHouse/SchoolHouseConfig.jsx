@@ -8,20 +8,12 @@
  */
 
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
-
-import { tokens } from "../../theme";
+import { FileEdit } from 'lucide-react';
 import { Utility } from "../utility";
-
 
 export const datagridColumns = (rolePriority = null) => {
     const navigateTo = useNavigate();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const { capitalizeEveryWord } = Utility();
-
 
     const handleActionEdit = (id) => {
         navigateTo(`/school-house/update/${id}`, { state: { id: id } });
@@ -34,10 +26,7 @@ export const datagridColumns = (rolePriority = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // width: 120,
-            valueGetter: (params) => `${capitalizeEveryWord(params.row.name) || ""}`,
-
-
+            valueGetter: (value, row) => `${capitalizeEveryWord(row.name) || ""}`,
         },
         {
             field: "captainName",
@@ -45,15 +34,11 @@ export const datagridColumns = (rolePriority = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100
             valueGetter: (params) => {
                 const nameParts = (params.row.captainName || '').split(' ');
                 const capitalizedParts = nameParts.map(part => capitalizeEveryWord(part));
                 return capitalizedParts.join(' ');
             }
-
-
-
         },
         {
             field: "viceCaptainNname",
@@ -61,14 +46,11 @@ export const datagridColumns = (rolePriority = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100
             valueGetter: (params) => {
                 const nameParts = (params.row.viceCaptainNname || '').split(' ');
                 const capitalizedParts = nameParts.map(part => capitalizeEveryWord(part));
                 return capitalizedParts.join(' ');
             }
-
-
         },
         {
             field: "teacherName",
@@ -92,25 +74,15 @@ export const datagridColumns = (rolePriority = null) => {
             minWidth: 120,
             renderCell: ({ row: { status } }) => {
                 return (
-                    <Box
-                        width="60%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center"
-                        backgroundColor={
+                    <div className="flex justify-center items-center w-full h-full">
+                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
                             status === "active"
-                                ? colors.greenAccent[600]
-                                : status === "inactive"
-                                    ? colors.redAccent[700]
-                                    : colors.redAccent[700]
-                        }
-                        borderRadius="4px"
-                    >
-                        <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                                : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                        }`}>
                             {capitalizeEveryWord(status) || ''}
-                        </Typography>
-                    </Box>
+                        </div>
+                    </div>
                 );
             }
         },
@@ -120,24 +92,20 @@ export const datagridColumns = (rolePriority = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 75,
             renderCell: ({ row: { id } }) => {
                 return (
-                    <Box width="30%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center">
-                        <Button color="info" variant="contained"
+                    <div className="flex justify-center items-center w-full h-full">
+                        <button
                             onClick={() => handleActionEdit(id)}
-                            sx={{ minWidth: "50px" }}
+                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            title="Edit"
                         >
-                            <DriveFileRenameOutlineOutlinedIcon />
-                        </Button>
-                    </Box>
+                            <FileEdit className="w-5 h-5" />
+                        </button>
+                    </div>
                 );
             }
         }
-    ];
+    ].filter(Boolean);
     return columns;
 };

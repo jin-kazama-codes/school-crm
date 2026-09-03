@@ -10,8 +10,6 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Box, Button, Typography, useTheme } from "@mui/material";
 import dayjs from "dayjs";
 
 import API from "../../apis";
@@ -24,7 +22,6 @@ import Toast from "../common/Toast";
 
 import { setAllSubjects } from "../../redux/actions/SubjectAction";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
-import { tokens, themeSettings } from "../../theme";
 import { Utility } from "../utility";
 
 import formBg from "../assets/formBg.png";
@@ -68,35 +65,23 @@ const FormComponent = () => {
     const navigateTo = useNavigate();
     const dispatch = useDispatch();
     const userParams = useParams();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
 
-    const { typography } = themeSettings(theme.palette.mode);
     const { state } = useLocation();
     const { getLocalStorage, getIdsFromObject, generatePassword, findMultipleById, formatImageName, fetchAndSetAll,
         toastAndNavigate, generateNormalPassword, formateName } = Utility();
 
-    //after page refresh the id in router state becomes undefined, so getting student id from url params
     let id = state?.id || userParams?.id;
     const showIdCard = !id || (id && !updatedValues?.studentData?.id_card);
     const formValidated = formData.studentData.validated && formData.addressData.validated && formData.imageData.validated && formData.parentImageData.validated;
 
     const schoolInformation = getLocalStorage("auth");
 
-    // useEffect(() => {
-    //     if (!state.reload) {
-    //         console.log('reload', state.reload);
-    //         navigateTo(`/student/update/${id}`, { state: { id: id, reload: true } });
-    //         location.reload();
-    //     }
-    // }, []);
-
     useEffect(() => {
         const selectedMenu = getLocalStorage("menu");
-        dispatch(setMenuItem(selectedMenu.selected));
+        if (selectedMenu?.selected) {
+            dispatch(setMenuItem(selectedMenu.selected));
+        }
     }, []);
-
-
 
     const updateStudentAndAddress = useCallback(async formData => {
         setLoading(true);
@@ -234,12 +219,6 @@ const FormComponent = () => {
                 setUpdatedValues(dataObj);
                 setUpdatedStudentImage(dataObj?.studentImage);
                 setUpdatedParentImage(dataObj?.parentImage);
-                // setICardDetails({
-                //     // ...iCardDetails,
-                //     ...dataObj.studentData,
-                //     ...dataObj.addressData,
-                //     imageData: dataObj.studentImage 
-                // });
                 setLoading(false);
             })
             .catch(err => {
@@ -249,8 +228,6 @@ const FormComponent = () => {
             });
     }, [formSubjectsInRedux?.listData]);
 
-    console.log("schol>>", schoolInformation.school_code);
-
     const createStudent = useCallback(async formData => {
         let promise1;
         let promise2;
@@ -258,7 +235,7 @@ const FormComponent = () => {
         setLoading(true);
         const username = await formateName(formData.studentData.values?.father_name || formData.studentData.values?.mother_name ||
             formData.studentData.values?.guardian);
-        const password = await generateNormalPassword(username, schoolInformation.school_code);
+        const password = await generateNormalPassword(username, schoolInformation?.school_code || 'DEMO');
 
         formData.studentData.values = {
             ...formData.studentData.values,
@@ -372,13 +349,12 @@ const FormComponent = () => {
     useEffect(() => {
         if (id) {
             setICardDetails({
-                // ...iCardDetails,
                 ...updatedValues?.studentData,
                 ...updatedValues?.addressData,
-                ...updatedValues?.studentImage[0]
+                ...(updatedValues?.studentImage && updatedValues?.studentImage[0])
             });
         }
-    }, [updatedValues?.studentData, updatedValues?.addressData, updatedValues?.imageData]);
+    }, [updatedValues?.studentData, updatedValues?.addressData, updatedValues?.studentImage]);
 
     //Create/Update/Populate student
     useEffect(() => {
@@ -413,8 +389,7 @@ const FormComponent = () => {
         }
     };
 
-    console.log("i card cond>>", !(
-        previewStudent?.length > 0
+    const isICardValid = previewStudent?.length > 0
         && iCardDetails.firstname?.length > 0
         && iCardDetails.father_name?.length > 0
         && iCardDetails.lastname?.length > 0
@@ -423,165 +398,170 @@ const FormComponent = () => {
         && iCardDetails.contact_no?.length > 0
         && iCardDetails.street?.length > 0
         && iCardDetails.landmark?.length > 0
-        && iCardDetails.zipcode?.length > 0
-        // && iCardDetails.studentCity?.length > 0
-        // && iCardDetails.studentState?.length > 0
-    ), previewStudent?.length
-        , iCardDetails.firstname?.length
-        , iCardDetails.father_name?.length
-        , iCardDetails.lastname?.length
-        , iCardDetails.class
-        , iCardDetails.section
-        , iCardDetails.contact_no?.length
-        , iCardDetails.street?.length
-        , iCardDetails.landmark?.length
-        , iCardDetails.zipcode?.length
-        , iCardDetails.studentCity?.length
-        , iCardDetails.studentState?.length
-    );
-
-    console.log(updatedValues, "updatedvalues");
+        && iCardDetails.zipcode?.length > 0;
 
     return (
-        <Box m="10px"
-            sx={{
-                backgroundImage: theme.palette.mode == "light" ? `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${formBg})`
-                    : `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url(${formBg})`,
+        <div 
+            className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300 min-h-[70vh]"
+            style={{
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${formBg?.src || formBg})`,
                 backgroundRepeat: "no-repeat",
-                backgroundPosition: "start",
+                backgroundPosition: "center",
                 backgroundSize: "cover",
                 backgroundAttachment: "fixed"
-            }}>
-            <Typography
-                fontFamily={typography.fontFamily}
-                fontSize={typography.h2.fontSize}
-                color={colors.grey[100]}
-                fontWeight="bold"
-                display="inline-block"
-                marginLeft="20px"
-            >
-                {`${title} ${selected}`}
-            </Typography>
-            <StudentFormComponent
-                onChange={(data) => {
-                    handleFormChange(data, 'student');
-                }}
-                refId={studentFormRef}
-                setDirty={setDirty}
-                reset={reset}
-                setReset={setReset}
-                userId={id}
-                classData={classData}
-                setClassData={setClassData}
-                allSubjects={formSubjectsInRedux?.listData}
-                updatedValues={updatedValues?.studentData}
-                iCardDetails={iCardDetails}
-                setICardDetails={setICardDetails}
-            />
-            <AddressFormComponent
-                onChange={(data) => {
-                    handleFormChange(data, 'address');
-                }}
-                refId={addressFormRef}
-                update={id ? true : false}
-                setDirty={setDirty}
-                reset={reset}
-                setReset={setReset}
-                updatedValues={updatedValues?.addressData}
-                iCardDetails={iCardDetails}
-                setICardDetails={setICardDetails}
-            />
-            <ImagePicker
-                key="student"
-                onChange={data => handleFormChange(data, 'student_image')}
-                refId={imageFormRef}
-                reset={reset}
-                setReset={setReset}
-                setDirty={setDirty}
-                preview={previewStudent}
-                setPreview={setPreviewStudent}
-                deletedImage={deletedImage}
-                setDeletedImage={setDeletedImage}
-                updatedImage={updatedStudentImage}            //these are updated Values
-                setUpdatedImage={setUpdatedStudentImage}
-                imageType="Student"
-                ENV={ENV}
-                iCardDetails={iCardDetails}
-                setICardDetails={setICardDetails}
-            />
-            <ImagePicker
-                key="parent"
-                onChange={data => handleFormChange(data, 'parent_image')}
-                refId={parentImageFormRef}
-                reset={reset}
-                setReset={setReset}
-                setDirty={setDirty}
-                preview={previewParent}
-                setPreview={setPreviewParent}
-                deletedImage={deletedParentImage}
-                setDeletedImage={setDeletedParentImage}
-                updatedImage={updatedParentImage}            //these are updated Values
-                setUpdatedImage={setUpdatedParentImage}
-                imageType="Parent"
-                ENV={ENV}
-                validation={false}
-            />
+            }}
+        >
+            <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md border-b border-white/20 dark:border-white/5 p-6 sticky top-0 z-10">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize">
+                    {`${title} ${selected}`}
+                </h2>
+            </div>
 
-            <Box display="flex" justifyContent="end" m="20px" pb="20px">
-                {showIdCard && <>
-                    <Button color="info" variant="contained" sx={{ mr: 30 }}
-                        onClick={() => setOpenDialog(!openDialog)}
-                        disabled={!id &&
-                            !(
-                                previewStudent?.length > 0
-                                && iCardDetails.firstname?.length > 0
-                                && iCardDetails.father_name?.length > 0
-                                && iCardDetails.lastname?.length > 0
-                                && iCardDetails.class > 0
-                                && iCardDetails.section > 0
-                                && iCardDetails.contact_no?.length > 0
-                                && iCardDetails.street?.length > 0
-                                && iCardDetails.landmark?.length > 0
-                                && iCardDetails.zipcode?.length > 0
-                                // && iCardDetails.studentCity?.length > 0
-                                // && iCardDetails.studentState?.length > 0
-                            )
-                        }
-                    >
-                        Generate ICard
-                    </Button>
-                    <ICardModal iCardDetails={iCardDetails} setICardDetails={setICardDetails} previewStudent={previewStudent}
-                        openDialog={openDialog} setOpenDialog={setOpenDialog} />
-                </>}
-                {   //hide reset button on student update
-                    title === "Update" ? null :
-                        <Button type="reset" color="warning" variant="contained" sx={{ mr: 3 }}
+            <div className="p-4 md:p-6 bg-white/50 dark:bg-black/50 backdrop-blur-sm space-y-6">
+                <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <StudentFormComponent
+                        onChange={(data) => {
+                            handleFormChange(data, 'student');
+                        }}
+                        refId={studentFormRef}
+                        setDirty={setDirty}
+                        reset={reset}
+                        setReset={setReset}
+                        userId={id}
+                        classData={classData}
+                        setClassData={setClassData}
+                        allSubjects={formSubjectsInRedux?.listData}
+                        updatedValues={updatedValues?.studentData}
+                        iCardDetails={iCardDetails}
+                        setICardDetails={setICardDetails}
+                    />
+                </div>
+
+                <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <AddressFormComponent
+                        onChange={(data) => {
+                            handleFormChange(data, 'address');
+                        }}
+                        refId={addressFormRef}
+                        update={id ? true : false}
+                        setDirty={setDirty}
+                        reset={reset}
+                        setReset={setReset}
+                        updatedValues={updatedValues?.addressData}
+                        iCardDetails={iCardDetails}
+                        setICardDetails={setICardDetails}
+                    />
+                </div>
+
+                <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+                    <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Student Image</h3>
+                    <ImagePicker
+                        key="student"
+                        onChange={data => handleFormChange(data, 'student_image')}
+                        refId={imageFormRef}
+                        reset={reset}
+                        setReset={setReset}
+                        setDirty={setDirty}
+                        preview={previewStudent}
+                        setPreview={setPreviewStudent}
+                        deletedImage={deletedImage}
+                        setDeletedImage={setDeletedImage}
+                        updatedImage={updatedStudentImage}            //these are updated Values
+                        setUpdatedImage={setUpdatedStudentImage}
+                        imageType="Student"
+                        ENV={ENV}
+                        iCardDetails={iCardDetails}
+                        setICardDetails={setICardDetails}
+                    />
+                </div>
+
+                <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+                    <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Parent Image</h3>
+                    <ImagePicker
+                        key="parent"
+                        onChange={data => handleFormChange(data, 'parent_image')}
+                        refId={parentImageFormRef}
+                        reset={reset}
+                        setReset={setReset}
+                        setDirty={setDirty}
+                        preview={previewParent}
+                        setPreview={setPreviewParent}
+                        deletedImage={deletedParentImage}
+                        setDeletedImage={setDeletedParentImage}
+                        updatedImage={updatedParentImage}            //these are updated Values
+                        setUpdatedImage={setUpdatedParentImage}
+                        imageType="Parent"
+                        ENV={ENV}
+                        validation={false}
+                    />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-4 p-6 bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border-t border-slate-200 dark:border-slate-800 rounded-b-2xl">
+                    
+                    {showIdCard && (
+                        <div className="mr-auto">
+                            <button
+                                onClick={() => setOpenDialog(!openDialog)}
+                                disabled={!id && !isICardValid}
+                                className="px-6 py-2.5 rounded-xl font-semibold text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-indigo-500/20"
+                            >
+                                Generate ICard
+                            </button>
+                            <ICardModal 
+                                iCardDetails={iCardDetails} 
+                                setICardDetails={setICardDetails} 
+                                previewStudent={previewStudent}
+                                openDialog={openDialog} 
+                                setOpenDialog={setOpenDialog} 
+                            />
+                        </div>
+                    )}
+                    
+                    {title !== "Update" && (
+                        <button 
+                            type="reset" 
                             disabled={!dirty || submitted}
                             onClick={() => {
                                 if (window.confirm("Do You Really Want To Reset?")) {
                                     setReset(true);
                                 }
                             }}
+                            className="px-6 py-2.5 rounded-xl font-semibold text-white bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-yellow-500/20"
                         >
                             Reset
-                        </Button>
-                }
-                <Button color="error" variant="contained" sx={{ mr: 3 }}
-                    onClick={() => navigateTo(`/student/listing/${getLocalStorage('class') || ''}`)}>
-                    Cancel
-                </Button>
-                <Button type="submit" onClick={() => handleSubmit()} disabled={!dirty}
-                    color={title === "Update" ? "info" : "success"} variant="contained"
-                >
-                    Submit
-                </Button>
-                <Toast alerting={toastInfo.toastAlert}
-                    severity={toastInfo.toastSeverity}
-                    message={toastInfo.toastMessage}
-                />
-            </Box>
-            {loading === true ? <Loader /> : null}
-        </Box >
+                        </button>
+                    )}
+                    
+                    <button 
+                        onClick={() => navigateTo(`/student/listing/${getLocalStorage('class') || ''}`)}
+                        className="px-6 py-2.5 rounded-xl font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md shadow-red-500/20"
+                    >
+                        Cancel
+                    </button>
+                    
+                    <button 
+                        type="submit" 
+                        onClick={() => handleSubmit()} 
+                        disabled={!dirty}
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md ${
+                            title === "Update" 
+                            ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/20" 
+                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                        }`}
+                    >
+                        Submit
+                    </button>
+                </div>
+            </div>
+
+            <Toast 
+                alerting={toastInfo.toastAlert}
+                severity={toastInfo.toastSeverity}
+                message={toastInfo.toastMessage}
+            />
+
+            {loading && <Loader />}
+        </div>
     );
 };
 

@@ -8,9 +8,7 @@
  */
 
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button} from '@mui/material';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import { FileEdit } from 'lucide-react';
 
 export const datagridColumns = () => {
     const navigateTo = useNavigate();
@@ -26,7 +24,6 @@ export const datagridColumns = () => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // width: 120,
         },
         {
             field: "halves",
@@ -34,40 +31,35 @@ export const datagridColumns = () => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100
         },
         {
             field: "recess_time",
-            headerName: "Recess Time",
+            headerName: "Recess (mins)",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100
         },
         {
             field: "first_half_period_duration",
-            headerName: "First Half periods Duration",
+            headerName: "First Half Duration",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100
         },
         {
             field: "second_half_period_duration",
-            headerName: "Second Half periods Duration",
+            headerName: "Second Half Duration",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100
         },
         {
             field: "opening_time",
-            headerName: "Opening Time",
+            headerName: "Opening",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100,
-            valueFormatter: params => new Date(params?.value).toLocaleString('en-US', {
+            valueFormatter: (value) => new Date(value).toLocaleString('en-US', {
                 hour: 'numeric',
                 minute: 'numeric',
                 hour12: true,
@@ -75,12 +67,11 @@ export const datagridColumns = () => {
         },
         {
             field: "closing_time",
-            headerName: "Closing Time",
+            headerName: "Closing",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100,
-            valueFormatter: params => new Date(params?.value).toLocaleString('en-US', {
+            valueFormatter: (value) => new Date(value).toLocaleString('en-US', {
                 hour: 'numeric',
                 minute: 'numeric',
                 hour12: true,
@@ -88,12 +79,11 @@ export const datagridColumns = () => {
         },
         {
             field: "employee_entry_time",
-            headerName: "Employee Entry",
+            headerName: "Emp Entry",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100,
-            valueFormatter: params => new Date(params?.value).toLocaleString('en-US', {
+            valueFormatter: (value) => new Date(value).toLocaleString('en-US', {
                 hour: 'numeric',
                 minute: 'numeric',
                 hour12: true,
@@ -101,12 +91,11 @@ export const datagridColumns = () => {
         },
         {
             field: "employee_exit_time",
-            headerName: "Employee Exit",
+            headerName: "Emp Exit",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 100,
-            valueFormatter: params => new Date(params?.value).toLocaleString('en-US', {
+            valueFormatter: (value) => new Date(value).toLocaleString('en-US', {
                 hour: 'numeric',
                 minute: 'numeric',
                 hour12: true,
@@ -118,21 +107,17 @@ export const datagridColumns = () => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            // minWidth: 75,
             renderCell: ({ row: { id } }) => {
                 return (
-                    <Box width="30%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center">
-                        <Button color="info" variant="contained"
+                    <div className="flex justify-center items-center w-full h-full">
+                        <button
                             onClick={() => handleActionEdit(id)}
-                            sx={{ minWidth: "50px" }}
+                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            title="Edit"
                         >
-                            <DriveFileRenameOutlineOutlinedIcon />
-                        </Button>
-                    </Box>
+                            <FileEdit className="w-5 h-5" />
+                        </button>
+                    </div>
                 );
             },
         }

@@ -9,21 +9,12 @@
 
 import { useNavigate } from "@/lib/routerAdapter";
 import { useSelector } from "react-redux";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import PreviewIcon from '@mui/icons-material/Preview';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
-
-import { tokens } from "../../theme";
+import { Eye, FileEdit } from 'lucide-react';
 import { Utility } from "../utility";
-
 
 export const datagridColumns = (setOpen = null) => {
 
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const { capitalizeEveryWord } = Utility();
-
     const selected = useSelector(state => state.menuItems.selected);
     const navigateTo = useNavigate();
 
@@ -70,16 +61,13 @@ export const datagridColumns = (setOpen = null) => {
             minWidth: 150
         },
         {
-
             field: "sub_type",
             headerName: "Sub Type",
             headerAlign: "center",
             align: "center",
             flex: 1,
             minWidth: 150,
-            valueGetter: params => capitalizeEveryWord(params.row.sub_type) || ''
-
-
+            valueGetter: (value, row) => capitalizeEveryWord(row.sub_type) || ''
         },
         {
             field: "contact_no_1",
@@ -97,26 +85,17 @@ export const datagridColumns = (setOpen = null) => {
             flex: 1,
             minWidth: 150,
             renderCell: ({ row: { status } }) => {
+                const isActive = status === "active";
                 return (
-                    <Box
-                        width="60%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center"
-                        backgroundColor={
-                            status === "active"
-                                ? colors.greenAccent[600]
-                                : status === "inactive"
-                                    ? colors.redAccent[700]
-                                    : colors.redAccent[700]
-                        }
-                        borderRadius="4px"
-                    >
-                        <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
+                    <div className="flex justify-center items-center w-full h-full">
+                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            isActive 
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30' 
+                            : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400 border border-red-200 dark:border-red-500/30'
+                        }`}>
                             {capitalizeEveryWord(status) || ''}
-                        </Typography>
-                    </Box>
+                        </div>
+                    </div>
                 );
             },
         },
@@ -129,25 +108,23 @@ export const datagridColumns = (setOpen = null) => {
             minWidth: 150,
             renderCell: ({ row: { id } }) => {
                 return (
-                    <Box width="30%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center">
-                        <Button color="info" variant="contained"
+                    <div className="flex justify-center items-center gap-2 w-full h-full">
+                        <button
                             onClick={() => handleActionEdit(id)}
-                            sx={{ minWidth: "50px" }}
+                            className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                            title="Edit"
                         >
-                            <DriveFileRenameOutlineOutlinedIcon />
-                        </Button>
+                            <FileEdit className="w-4 h-4" />
+                        </button>
 
-                        <Button color="info" variant="contained"
+                        <button
                             onClick={() => handleActionShow(id)}
-                            sx={{ minWidth: "50px" }}
+                            className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 rounded-lg transition-colors"
+                            title="View Details"
                         >
-                            <PreviewIcon />
-                        </Button>
-                    </Box>
+                            <Eye className="w-4 h-4" />
+                        </button>
+                    </div>
                 );
             },
         }

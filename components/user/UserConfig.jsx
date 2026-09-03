@@ -10,24 +10,17 @@
 import { useEffect } from "react";
 import { useNavigate } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Box, Button, Typography, useTheme } from "@mui/material";
-import DriveFileRenameOutlineOutlinedIcon from "@mui/icons-material/DriveFileRenameOutlineOutlined";
+import { FileEdit } from 'lucide-react';
 
 import API from "../../apis";
-
 import { setAllUserRoles } from "../../redux/actions/UserRoleAction";
-import { tokens } from "../../theme";
 import { Utility } from "../utility";
 
 export const datagridColumns = () => {
   const selected = useSelector((state) => state.menuItems.selected);
   const allUserRoles = useSelector((state) => state.allUserRoles);
 
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const { capitalizeEveryWord, formatDate } = Utility();
-
   const dispatch = useDispatch();
   const navigateTo = useNavigate();
   const { findById, fetchAndSetAll } = Utility();
@@ -52,8 +45,7 @@ export const datagridColumns = () => {
       align: "center",
       flex: 1,
       minWidth: 120,
-      valueGetter: (params) => `${capitalizeEveryWord(params.row.username) || ""}`,
-
+      valueGetter: (value, row) => `${capitalizeEveryWord(row.username) || ""}`,
     },
     {
       field: "role",
@@ -65,7 +57,7 @@ export const datagridColumns = () => {
       renderCell: (params) => {
         let roleName = findById(params?.row?.role, allUserRoles?.listData)?.name;
         return (
-          <div>
+          <div className="font-medium text-slate-700 dark:text-slate-300">
             {roleName ? capitalizeEveryWord(roleName) : '/'}
           </div>
         );
@@ -94,7 +86,7 @@ export const datagridColumns = () => {
       align: "center",
       flex: 1,
       minWidth: 100,
-      valueFormatter: (params) => `${ formatDate(params.value)}`
+      valueFormatter: (value) => `${formatDate(value)}`
     },
     {
       field: "status",
@@ -105,26 +97,15 @@ export const datagridColumns = () => {
       minWidth: 120,
       renderCell: ({ row: { status } }) => {
         return (
-          <Box
-            width="60%"
-            m="0 auto"
-            p="5px"
-            display="flex"
-            justifyContent="center"
-            backgroundColor={
-              status === "active"
-                ? colors.greenAccent[600]
-                : status === "inactive"
-                  ? colors.redAccent[700]
-                  : colors.redAccent[700]
-            }
-            borderRadius="4px"
-          >
-            <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
-              {capitalizeEveryWord(status) || ''}
-
-            </Typography>
-          </Box>
+          <div className="flex justify-center items-center w-full h-full">
+            <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                status === "active"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                    : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+            }`}>
+                {capitalizeEveryWord(status) || ''}
+            </div>
+          </div>
         );
       }
     },
@@ -137,22 +118,15 @@ export const datagridColumns = () => {
       minWidth: 75,
       renderCell: ({ row: { id } }) => {
         return (
-          <Box
-            width="30%"
-            m="0 auto"
-            p="5px"
-            display="flex"
-            justifyContent="center"
-          >
-            <Button
-              color="info"
-              variant="contained"
-              onClick={() => handleActionEdit(id)}
-              sx={{ minWidth: "50px" }}
+          <div className="flex justify-center items-center w-full h-full">
+            <button
+                onClick={() => handleActionEdit(id)}
+                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                title="Edit"
             >
-              <DriveFileRenameOutlineOutlinedIcon />
-            </Button>
-          </Box>
+                <FileEdit className="w-5 h-5" />
+            </button>
+          </div>
         );
       }
     }

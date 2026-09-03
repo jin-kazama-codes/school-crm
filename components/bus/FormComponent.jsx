@@ -10,9 +10,8 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Box, Button, Typography, useTheme } from "@mui/material";
 import dayjs from "dayjs";
+import { Bus, Save, RotateCcw, X } from "lucide-react";
 
 import API from "../../apis";
 import AddressFormComponent from "../address/AddressFormComponent";
@@ -21,7 +20,6 @@ import Toast from "../common/Toast";
 import BusFormComponent from "./BusFormComponent";
 
 import { setMenuItem } from "../../redux/actions/NavigationAction";
-import { tokens, themeSettings } from "../../theme";
 import { Utility } from "../utility";
 
 import formBg from "../assets/formBg.png";
@@ -48,18 +46,16 @@ const FormComponent = () => {
   const navigateTo = useNavigate();
   const dispatch = useDispatch();
   const userParams = useParams();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-  const { typography } = themeSettings(theme.palette.mode);
   const { state } = useLocation();
   const { toastAndNavigate, getLocalStorage } = Utility();
 
-  //after page refresh the id in router state becomes undefined, so getting Bus id from url params
   let id = state?.id || userParams?.id;
 
   useEffect(() => {
     const selectedMenu = getLocalStorage("menu");
-    dispatch(setMenuItem(selectedMenu.selected));
+    if(selectedMenu?.selected) {
+        dispatch(setMenuItem(selectedMenu.selected));
+    }
   }, []);
 
   const updateBusAndAddress = useCallback(
@@ -67,10 +63,6 @@ const FormComponent = () => {
       setLoading(true);
       const paths = [];
       const dataFields = [];
-
-      //   [      { ...formData.teacherData.values },
-      //         { ...formData.addressData.values },
-      //       ];
 
       try {
         if (formData.busData.dirty) {
@@ -119,7 +111,6 @@ const FormComponent = () => {
     API.CommonAPI.multipleAPICall("GET", paths)
       .then((responses) => {
         if (responses[0].data.data) {
-          // responses[0].data.data.subjects = findMultipleById(responses[0].data.data.subjects, subjectsInRedux?.listData?.rows)
           responses[0].data.data.dob = dayjs(responses[0].data.data.dob);
           responses[0].data.data.admission_date = dayjs(
             responses[0].data.data.admission_date
@@ -181,7 +172,6 @@ const FormComponent = () => {
     [formData]
   );
 
-  //Create/Update/Populate Bus
   useEffect(() => {
     if (id && !submitted) {
       setTitle("Update");
@@ -211,101 +201,113 @@ const FormComponent = () => {
   };
 
   return (
-    <Box
-      m="10px"
-      sx={{
-        backgroundImage:
-          theme.palette.mode == "light"
-            ? `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${formBg})`
-            : `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url(${formBg})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "start",
-        backgroundSize: "cover",
-        backgroundAttachment: "fixed",
-        marginBottom: "20px !important",
-        height: "95vh",
-      }}
+    <div 
+        className="min-h-[90vh] m-4 md:m-8 rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in duration-500 relative border border-slate-200 dark:border-slate-800"
+        style={{
+            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url(${formBg?.src || formBg})`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "start",
+            backgroundSize: "cover",
+            backgroundAttachment: "fixed",
+        }}
     >
-      <Typography
-        fontFamily={typography.fontFamily}
-        fontSize={typography.h2.fontSize}
-        color={colors.grey[100]}
-        fontWeight="bold"
-        display="inline-block"
-        marginLeft="20px"
-      >
-        {`${title} ${selected}`}
-      </Typography>
-      <BusFormComponent
-        onChange={(data) => {
-          handleFormChange(data, "bus");
-        }}
-        refId={busFormRef}
-        setDirty={setDirty}
-        reset={reset}
-        setReset={setReset}
-        userId={id}
-        updatedValues={updatedValues?.busData}
-      />
-      <AddressFormComponent
-        onChange={(data) => {
-          handleFormChange(data, "address");
-        }}
-        refId={addressFormRef}
-        update={id ? true : false}
-        setDirty={setDirty}
-        reset={reset}
-        setReset={setReset}
-        updatedValues={updatedValues?.addressData}
-      />
+      <div className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 p-6 md:px-10 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-2xl shadow-inner">
+                <Bus className="w-8 h-8" />
+            </div>
+            <div>
+                <h1 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                    {title} {selected}
+                </h1>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                    Fill in the required information below
+                </p>
+            </div>
+        </div>
+      </div>
 
-      <Box display="flex" justifyContent="end" m="20px">
-        {
-          //hide reset button on Bus update
-          title === "Update" ? null : (
-            <Button
-              type="reset"
-              color="warning"
-              variant="contained"
-              sx={{ mr: 3 }}
-              disabled={!dirty || submitted}
-              onClick={() => {
-                if (window.confirm("Do You Really Want To Reset?")) {
-                  setReset(true);
-                }
-              }}
-            >
-              Reset
-            </Button>
-          )
-        }
-        <Button
-          color="error"
-          variant="contained"
-          sx={{ mr: 3 }}
-          onClick={() =>
-            navigateTo(`/bus/listing/${getLocalStorage("class") || ""}`)
-          }
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          onClick={() => handleSubmit()}
-          disabled={!dirty}
-          color={title === "Update" ? "info" : "success"}
-          variant="contained"
-        >
-          Submit
-        </Button>
-        <Toast
-          alerting={toastInfo.toastAlert}
-          severity={toastInfo.toastSeverity}
-          message={toastInfo.toastMessage}
+      <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto pb-32">
+        <BusFormComponent
+            onChange={(data) => {
+            handleFormChange(data, "bus");
+            }}
+            refId={busFormRef}
+            setDirty={setDirty}
+            reset={reset}
+            setReset={setReset}
+            userId={id}
+            updatedValues={updatedValues?.busData}
         />
-      </Box>
-      {loading === true ? <Loader /> : null}
-    </Box>
+
+        <AddressFormComponent
+            onChange={(data) => {
+            handleFormChange(data, "address");
+            }}
+            refId={addressFormRef}
+            update={id ? true : false}
+            setDirty={setDirty}
+            reset={reset}
+            setReset={setReset}
+            updatedValues={updatedValues?.addressData}
+        />
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shadow-[-0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[-0_-10px_40px_rgba(0,0,0,0.2)] z-20">
+        <div className="max-w-7xl mx-auto flex items-center justify-end gap-4">
+            {title !== "Update" && (
+                <button
+                    type="button"
+                    disabled={!dirty || submitted}
+                    onClick={() => {
+                        if (window.confirm("Do You Really Want To Reset?")) {
+                            setReset(true);
+                        }
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md shadow-amber-500/20"
+                >
+                    <RotateCcw className="w-5 h-5" />
+                    Reset
+                </button>
+            )}
+            
+            <button
+                type="button"
+                onClick={() => navigateTo(`/bus/listing/${getLocalStorage("class") || ""}`)}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all active:scale-95"
+            >
+                <X className="w-5 h-5" />
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                onClick={() => handleSubmit()}
+                disabled={!dirty}
+                className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg ${
+                    title === "Update"
+                    ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40"
+                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
+                }`}
+            >
+                <Save className="w-5 h-5" />
+                Submit
+            </button>
+        </div>
+      </div>
+
+      <Toast
+        alerting={toastInfo.toastAlert}
+        severity={toastInfo.toastSeverity}
+        message={toastInfo.toastMessage}
+      />
+      
+      {loading && (
+        <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <Loader />
+        </div>
+      )}
+    </div>
   );
 };
 

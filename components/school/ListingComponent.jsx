@@ -9,8 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "@/lib/routerAdapter";
 import { useSelector, useDispatch } from "react-redux";
-
-import { Box, Typography, Button, useMediaQuery, useTheme } from "@mui/material";
+import { Plus } from "lucide-react";
 
 import API from "../../apis";
 import Search from "../common/Search";
@@ -21,7 +20,6 @@ import { datagridColumns } from "./SchoolConfig";
 import { setFormAmenities } from "../../redux/actions/AmenityAction";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
 import { setListingSchools } from "../../redux/actions/SchoolAction";
-import { tokens } from "../../theme";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
@@ -41,19 +39,14 @@ const ListingComponent = () => {
     const formAmenitiesInRedux = useSelector(state => state.allFormAmenities);
     const { listData, loading } = useSelector(state => state.listingSchools);
 
-    const theme = useTheme();
     const navigateTo = useNavigate();
     const dispatch = useDispatch();
     const { state } = useLocation();
-    const isMobile = useMediaQuery("(max-width:480px)");
-    const isTab = useMediaQuery("(max-width:920px)");
     let id = state?.id;
 
-    //revisit for pagination
     const [searchFlag, setSearchFlag] = useState({ search: false, searching: false });
     const [oldPagination, setOldPagination] = useState();
 
-    const colors = tokens(theme.palette.mode);
     const reloadBtn = document.getElementById("reload-btn");
     const { getPaginatedData } = useCommon();
     const { findMultipleById, getLocalStorage, toastAndNavigate } = Utility();
@@ -150,79 +143,64 @@ const ListingComponent = () => {
         Type: schoolDetail?.schoolData?.schoolData?.type,
         Sub_type: schoolDetail?.schoolData?.schoolData?.sub_type,
         Principal: schoolDetail?.schoolData?.schoolData?.principal,
-
     };
 
 
     return (
-        <Box m="10px" position="relative"
-            sx={{
-                borderRadius: "20px",
-                border: "0.5px solid black",
-                overflow: "hidden",
-                boxShadow: "1px 1px 10px black",
-                backgroundImage: theme.palette.mode === "light"
-                    ? `linear-gradient(rgb(151 203 255 / 80%), rgb(151 203 255 / 80%)), url(${listBg})`
-                    : `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url(${listBg})`,
+        <div 
+            className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300"
+            style={{
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url(${listBg?.src || listBg})`,
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
                 backgroundSize: "cover"
-            }}>
-            <Box
-                height={isMobile ? "19vh" : isTab ? "8vh" : "11vh"}
-                borderRadius="4px"
-                padding={isMobile ? "1vh" : "2vh"}
-                backgroundColor={colors.blueAccent[700]}
-                position="relative"
-            >
-                <Box
-                    display="flex"
-                    height={isMobile ? "16vh" : "7vh"}
-                    flexDirection={isMobile ? "column" : "row"}
-                    justifyContent="space-between"
-                    alignItems={isMobile ? "center" : "normal"}
-                >
-                    <Typography
-                        component="h2"
-                        variant="h2"
-                        color={colors.grey[100]}
-                        fontWeight="bold"
-                    >
+            }}
+        >
+            <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md p-4 md:p-6 border-b border-white/20 dark:border-white/5">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize">
                         {selected}
-                    </Typography>
-                    <Search
-                        action={setListingSchools}
-                        api={API.SchoolAPI}
-                        getSearchData={getPaginatedData}
-                        oldPagination={oldPagination}
-                        reloadBtn={reloadBtn}
-                        setSearchFlag={setSearchFlag}
-                    />
-                    <Button
-                        type="submit"
-                        color="success"
-                        variant="contained"
-                        onClick={() => { navigateTo(`/${selected.toLowerCase()}/create`) }}
-                        sx={{ height: isTab ? "4vh" : "auto" }}
-                    >
-                        Create New {selected}
-                    </Button>
-                </Box>
-            </Box>
-            <ServerPaginationGrid
-                action={setListingSchools}
-                api={API.SchoolAPI}
-                getQuery={getPaginatedData}
-                columns={datagridColumns(setOpenModal)}
-                rows={listData.rows}
-                count={listData.count}
-                loading={loading}
-                selected={selected}
-                pageSizeOptions={pageSizeOptions}
-                setOldPagination={setOldPagination}
-                searchFlag={searchFlag}
-                setSearchFlag={setSearchFlag}
-            />
+                    </h2>
+                    
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                        <div className="w-full sm:w-auto">
+                            <Search
+                                action={setListingSchools}
+                                api={API.SchoolAPI}
+                                getSearchData={getPaginatedData}
+                                oldPagination={oldPagination}
+                                reloadBtn={reloadBtn}
+                                setSearchFlag={setSearchFlag}
+                            />
+                        </div>
+
+                        <button
+                            onClick={() => navigateTo(`/${selected.toLowerCase()}/create`)}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-600/30 transition-all duration-200 whitespace-nowrap"
+                        >
+                            <Plus className="w-5 h-5" />
+                            Create New {selected}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 md:p-6">
+                <ServerPaginationGrid
+                    action={setListingSchools}
+                    api={API.SchoolAPI}
+                    getQuery={getPaginatedData}
+                    columns={datagridColumns(setOpenModal)}
+                    rows={listData.rows}
+                    count={listData.count}
+                    loading={loading}
+                    selected={selected}
+                    pageSizeOptions={pageSizeOptions}
+                    setOldPagination={setOldPagination}
+                    searchFlag={searchFlag}
+                    setSearchFlag={setSearchFlag}
+                />
+            </div>
             <ViewDetailModal
                 open={openModal}
                 setOpen={setOpenModal}
@@ -234,7 +212,7 @@ const ListingComponent = () => {
                 stateData={stateData}
                 cityData={cityData}
             />
-        </Box>
+        </div>
     );
 };
 

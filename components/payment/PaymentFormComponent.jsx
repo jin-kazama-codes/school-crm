@@ -8,13 +8,9 @@
  */
 
 import PropTypes from "prop-types";
-
 import React, { useState, useEffect } from "react";
 import { useLocation } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Box, InputLabel, MenuItem, FormHelperText, FormControl } from "@mui/material";
-import { Select, TextField, useMediaQuery } from "@mui/material";
 import { useFormik } from "formik";
 
 import API from "../../apis";
@@ -36,7 +32,7 @@ const initialValues = {
   final_amount: "",
   discount_percent: "",
   late_fee: "",
-  class_fee_by_mapping: "",     // These 2 must be excluded when creating payment
+  class_fee_by_mapping: "",
   current_date: null
 };
 
@@ -51,12 +47,11 @@ const PaymentFormComponent = ({
   const [initialState, setInitialState] = useState(initialValues);
   const [schoolPaymentMethods, setSchoolPaymentMethods] = useState([]);
   const [schoolPaymentData, setSchoolPaymentData] = useState([]);
+  
   const allPaymentMethods = useSelector(state => state.allPaymentMethods);
   const toastInfo = useSelector(state => state.toastInfo);
 
   const dispatch = useDispatch();
-  const isNonMobile = useMediaQuery("(min-width:600px)");
-  // const isMobile = useMediaQuery("(max-width:480px)");
   const { state } = useLocation();
   const { createDivider, createDropdown, createSchoolFee, createSession, fetchAndSetAll, findMultipleById } = Utility();
 
@@ -88,38 +83,42 @@ const PaymentFormComponent = ({
     }
   };
 
-  let final_amount = Math.ceil((formik.values.amount - (formik.values.amount * formik.values.discount_percent / 100)) +
-    formik.values.late_fee);
+  let final_amount = Math.ceil((formik.values.amount - (formik.values.amount * (formik.values.discount_percent || 0) / 100)) +
+    (Number(formik.values.late_fee) || 0));
 
-  const typeDuration = formik.values.type;    // Variable created after initializing formik
+  const typeDuration = formik.values.type;
+  
+  const inputClass = (fieldName) => `w-full px-4 py-2.5 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+    formik.touched[fieldName] && formik.errors[fieldName] 
+    ? 'border-red-500 focus:ring-red-500/50' 
+    : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+  } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+  
+  const labelClass = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5";
+  const errorClass = "mt-1.5 text-sm text-red-500 font-medium";
+
   const renderMonthsDropdown = () => {
-    if (!schoolPaymentData) {
-      return <div>Loading...</div>;
-    }
-    if (typeDuration === 'annually') {
-      return null;
-    }
+    if (!schoolPaymentData) return <div className="p-2 text-slate-500">Loading...</div>;
+    if (typeDuration === 'annually') return null;
+    
     return (
-      <FormControl
-        variant="filled"
-        sx={{ minWidth: 120 }}
-        error={!!formik.touched.type_duration && !!formik.errors.type_duration}
-      >
-        <InputLabel>Period</InputLabel>
-        <Select
+      <div className="flex flex-col">
+        <label className={labelClass}>Period*</label>
+        <select
           name="type_duration"
-          variant="filled"
           value={formik.values.type_duration}
           onChange={event => formik.setFieldValue('type_duration', event.target.value)}
+          className={inputClass('type_duration')}
         >
+          <option value="" disabled>Select Period</option>
           {createDropdown(createDivider(typeDuration), schoolPaymentData?.session_start).map((period, index) => (
-            <MenuItem key={index} value={period}>
-              {period}
-            </MenuItem>
+            <option key={index} value={period}>{period}</option>
           ))}
-        </Select>
-        <FormHelperText> {formik.touched.type_duration && formik.errors.type_duration} </FormHelperText>
-      </FormControl>
+        </select>
+        {formik.touched.type_duration && formik.errors.type_duration && (
+          <p className={errorClass}>{formik.errors.type_duration}</p>
+        )}
+      </div>
     );
   };
 
@@ -152,7 +151,7 @@ const PaymentFormComponent = ({
     API.PaymentAPI.getPaymentData(studentClass, studentSection)
       .then(({ data: res }) => {
         if (res.status === "Success") {
-          setSchoolPaymentData(...res.data);
+          setSchoolPaymentData(res.data[0] || []);
         }
       })
       .catch(err => {
@@ -165,14 +164,15 @@ const PaymentFormComponent = ({
       .then(res => {
         const selectedClassData = res.data.filter(item => item.class_id === studentClass &&
           item.section_id === studentSection);
-        formik.setFieldValue("class_fee_by_mapping", ...selectedClassData);   // If we directly update the amount field here then,
+        if(selectedClassData.length > 0) {
+            formik.setFieldValue("class_fee_by_mapping", selectedClassData[0]);
+        }
       })
       .catch(err => {
         console.log('error occured in school mapping api', err)
       })
   }, []);
 
-  // Updates the "amount" field in the form based on the selected fee type and typeDuration.
   useEffect(() => {
     if (formik.values.fee === 'school' && typeDuration !== 'annually') {
       formik.setFieldValue("amount", createSchoolFee(createDivider(typeDuration), formik.values.class_fee_by_mapping?.class_fee));
@@ -193,7 +193,6 @@ const PaymentFormComponent = ({
         const currentDate = new Date();
         formik.setFieldValue("current_date", currentDate);
 
-        // Calculate the payment date based on the current year, month and payment date from school
         let paymentMonth;
         const currentYear = currentDate.getFullYear();
 
@@ -256,165 +255,165 @@ const PaymentFormComponent = ({
   }, [schoolPaymentData, formik.values.fee, formik.values.type_duration, formik.values.academic_year]);
 
   useEffect(() => {
-    if (final_amount) {
+    if (final_amount !== undefined && !isNaN(final_amount)) {
       formik.setFieldValue("final_amount", final_amount);
     }
   }, [final_amount]);
 
   return (
-    <Box m="20px">
-      <form ref={refId}>
-        <Box
-          display="grid"
-          gap="30px"
-          gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-          sx={{
-            "& > div": { gridColumn: isNonMobile ? undefined : "span 4" }
-          }}
-        >
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.academic_year && !!formik.errors.academic_year}
-          >
-            <InputLabel>Session*</InputLabel>
-            <Select
-              variant="filled"
+    <div className="w-full">
+      <form ref={refId} onSubmit={formik.handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
+          
+          <div className="flex flex-col">
+            <label className={labelClass}>Session*</label>
+            <select
               name="academic_year"
               value={formik.values.academic_year}
               onChange={event => formik.setFieldValue("academic_year", event.target.value)}
+              className={inputClass('academic_year')}
             >
+              <option value="" disabled>Select Session</option>
               {createSession().map(year => (
-                <MenuItem value={year} name={year} key={year}>
-                  {year}
-                </MenuItem>
+                <option key={year} value={year}>{year}</option>
               ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.academic_year && formik.errors.academic_year}
-            </FormHelperText>
-          </FormControl>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.fee && !!formik.errors.fee}
-          >
-            <InputLabel>Fee*</InputLabel>
-            <Select
+            </select>
+            {formik.touched.academic_year && formik.errors.academic_year && (
+              <p className={errorClass}>{formik.errors.academic_year}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <label className={labelClass}>Fee*</label>
+            <select
               name="fee"
-              variant="filled"
               value={formik.values.fee}
               onChange={formik.handleChange}
+              className={inputClass('fee')}
             >
+              <option value="" disabled>Select Fee</option>
               {Object.keys(config.fee).map(item => (
-                <MenuItem key={item} value={item}>
-                  {config.fee[item]}
-                </MenuItem>
+                <option key={item} value={item}>{config.fee[item]}</option>
               ))}
-            </Select>
-            <FormHelperText> {formik.touched.fee && formik.errors.fee} </FormHelperText>
-          </FormControl>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.type && !!formik.errors.type}
-          >
-            <InputLabel>Type*</InputLabel>
-            <Select
+            </select>
+            {formik.touched.fee && formik.errors.fee && (
+              <p className={errorClass}>{formik.errors.fee}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <label className={labelClass}>Type*</label>
+            <select
               name="type"
-              variant="filled"
               value={formik.values.type}
               onChange={event => {
                 formik.setFieldValue('type', event.target.value);
                 formik.setFieldValue('type_duration', '');
               }}
+              className={inputClass('type')}
             >
+              <option value="" disabled>Select Type</option>
               {Object.keys(config.payment_type).map(item => (
-                <MenuItem key={item} value={item}>
-                  {config.payment_type[item]}
-                </MenuItem>
+                <option key={item} value={item}>{config.payment_type[item]}</option>
               ))}
-            </Select>
-            <FormHelperText> {formik.touched.type && formik.errors.type} </FormHelperText>
-          </FormControl>
-          {formik.values.type &&
-            renderMonthsDropdown()
-          }
+            </select>
+            {formik.touched.type && formik.errors.type && (
+              <p className={errorClass}>{formik.errors.type}</p>
+            )}
+          </div>
 
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            name="amount"
-            label="Amount*"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.amount}
-            error={!!formik.touched.amount && !!formik.errors.amount}
-            helperText={formik.touched.amount && formik.errors.amount}
-          />
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.method && !!formik.errors.method}
-          >
-            <InputLabel>Payment Method*</InputLabel>
-            <Select
-              variant="filled"
+          {formik.values.type && renderMonthsDropdown()}
+
+          <div className="flex flex-col">
+            <label className={labelClass}>Amount*</label>
+            <input
+              type="number"
+              name="amount"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.amount}
+              className={inputClass('amount')}
+              placeholder="0"
+            />
+            {formik.touched.amount && formik.errors.amount && (
+              <p className={errorClass}>{formik.errors.amount}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <label className={labelClass}>Payment Method*</label>
+            <select
               name="method"
               value={formik.values.method}
               onChange={event => formik.setFieldValue("method", event.target.value)}
+              className={inputClass('method')}
             >
-              {!schoolPaymentMethods?.length ? null :
-                schoolPaymentMethods.map(value => (
-                  <MenuItem value={value.id} name={value.name} key={value.id}>
-                    {value.name}
-                  </MenuItem>
-                ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.method && formik.errors.method}
-            </FormHelperText>
-          </FormControl>
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            label="Late Fees"
-            name="late_fee"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.late_fee}
-            error={!!formik.touched.late_fee && !!formik.errors.late_fee}
-            helperText={formik.touched.late_fee && formik.errors.late_fee}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="number"
-            label="Discount Percent"
-            name="discount_percent"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.discount_percent}
-            error={!!formik.touched.discount_percent && !!formik.errors.discount_percent}
-            helperText={formik.touched.discount_percent && formik.errors.discount_percent}
-          />
-          <InputLabel
-            sx={{
-              fontWeight: '600', fontSize: '16px', justifySelf: 'center'
-            }}
-          >
-            Final Payment: &#8377; {final_amount + " INR."}
-          </InputLabel>
-        </Box>
+              <option value="" disabled>Select Method</option>
+              {schoolPaymentMethods?.map(value => (
+                <option key={value.id} value={value.id}>{value.name}</option>
+              ))}
+            </select>
+            {formik.touched.method && formik.errors.method && (
+              <p className={errorClass}>{formik.errors.method}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <label className={labelClass}>Late Fees</label>
+            <input
+              type="number"
+              name="late_fee"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.late_fee}
+              className={inputClass('late_fee')}
+              placeholder="0"
+            />
+            {formik.touched.late_fee && formik.errors.late_fee && (
+              <p className={errorClass}>{formik.errors.late_fee}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <label className={labelClass}>Discount Percent</label>
+            <div className="relative">
+              <input
+                type="number"
+                name="discount_percent"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.discount_percent}
+                className={`${inputClass('discount_percent')} pr-8`}
+                placeholder="0"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">%</span>
+            </div>
+            {formik.touched.discount_percent && formik.errors.discount_percent && (
+              <p className={errorClass}>{formik.errors.discount_percent}</p>
+            )}
+          </div>
+
+        </div>
+
+        {/* Final Amount Display */}
+        <div className="mt-8 mx-6 p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/50 flex flex-col md:flex-row items-center justify-between shadow-sm">
+          <div className="mb-4 md:mb-0">
+            <h4 className="text-emerald-800 dark:text-emerald-400 font-bold text-lg">Total Payment Summary</h4>
+            <p className="text-emerald-600/80 dark:text-emerald-500/80 text-sm font-medium mt-1">Amount + Late Fee - Discount</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-black text-emerald-700 dark:text-emerald-400 tracking-tight">₹ {final_amount || 0}</span>
+            <span className="text-lg font-bold text-emerald-600/60 dark:text-emerald-500/60">INR</span>
+          </div>
+        </div>
+
         <Toast
           alerting={toastInfo.toastAlert}
           severity={toastInfo.toastSeverity}
           message={toastInfo.toastMessage}
         />
       </form>
-    </Box>
+    </div>
   );
 };
 

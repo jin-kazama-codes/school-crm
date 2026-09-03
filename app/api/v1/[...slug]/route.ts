@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import Utility from "@/lib/utility";
-import { withAuth, applyRateLimit, verifyJwtToken } from "@/lib/apiHelpers";
+import { withAuth, applyRateLimit } from "@/lib/apiHelpers";
 import { genericList, genericCreate, genericUpdate } from "@/lib/crudHelpers";
 
 // Mapping of route endpoint names to Prisma model names
@@ -60,7 +60,7 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
   // Verify Token
   if (endpoint === "verify-token") {
     const authHeader = req.headers.get("x-access-token") || req.headers.get("authorization");
-    const payload = verifyJwtToken(authHeader);
+    const payload = Utility.verifyTokenString(authHeader as string);
     if (!payload) return NextResponse.json(Utility.formatResponse(401, "Unauthorized"), { status: 401 });
     return NextResponse.json(Utility.formatResponse(200, "Verified"), { status: 200 });
   }
@@ -172,7 +172,7 @@ async function handlePost(req: NextRequest, endpoint: string) {
     const mapping = MODEL_MAPPING[entityKey];
     if (mapping) {
       const authHeader = req.headers.get("x-access-token") || req.headers.get("authorization");
-      const payload = verifyJwtToken(authHeader);
+      const payload = Utility.verifyTokenString(authHeader as string);
       const userId = payload ? (payload as any).id : 1;
       return genericCreate(req, mapping.model, userId);
     }
@@ -188,7 +188,7 @@ async function handlePatch(req: NextRequest, endpoint: string) {
     const mapping = MODEL_MAPPING[entityKey];
     if (mapping) {
       const authHeader = req.headers.get("x-access-token") || req.headers.get("authorization");
-      const payload = verifyJwtToken(authHeader);
+      const payload = Utility.verifyTokenString(authHeader as string);
       const userId = payload ? (payload as any).id : 1;
       return genericUpdate(req, mapping.model, userId);
     }

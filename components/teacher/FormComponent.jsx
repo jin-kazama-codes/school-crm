@@ -10,8 +10,6 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Box, Button, Typography, useTheme } from "@mui/material";
 import dayjs from "dayjs";
 
 import API from "../../apis";
@@ -24,7 +22,6 @@ import TeacherFormComponent from "./TeacherFormComponent";
 import { setAllSections } from "../../redux/actions/SectionAction";
 import { setAllSubjects } from "../../redux/actions/SubjectAction";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
-import { tokens, themeSettings } from "../../theme";
 import { Utility } from "../utility";
 
 import formBg from "../assets/formBg.png";
@@ -60,10 +57,7 @@ const FormComponent = () => {
   const navigateTo = useNavigate();
   const dispatch = useDispatch();
   const userParams = useParams();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
 
-  const { typography } = themeSettings(theme.palette.mode);
   const { state } = useLocation();
   const {
     formatImageName,
@@ -83,7 +77,9 @@ const FormComponent = () => {
 
   useEffect(() => {
     const selectedMenu = getLocalStorage("menu");
-    dispatch(setMenuItem(selectedMenu.selected));
+    if (selectedMenu?.selected) {
+        dispatch(setMenuItem(selectedMenu.selected));
+    }
   }, []);
 
 
@@ -125,13 +121,6 @@ const FormComponent = () => {
   }, [formData]);
 
   const updateImageAndClassData = useCallback(async (formData) => {
-    // delete the selected (removed) images from Azure which are in deletedImage state
-    // if (deletedImage.length) {
-    //     deletedImage.forEach(image => {
-    //         deleteFileFromAzure("teacher", image);
-    //         console.log("Deleted normal image from azure");
-    //     });
-    // }
     let updatePromises = [];
     let status = null;
 
@@ -405,7 +394,7 @@ const FormComponent = () => {
   const handleSubmit = async () => {
     await teacherFormRef.current.Submit();
     await addressFormRef.current.Submit();
-    await imageFormRef.current.Submit();
+    await imageFormRef.current?.Submit();
     setSubmitted(true);
   };
 
@@ -420,119 +409,123 @@ const FormComponent = () => {
   };
 
   return (
-    <Box
-      m="10px"
-      sx={{
-        backgroundImage:
-          theme.palette.mode == "light"
-            ? `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${formBg})`
-            : `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url(${formBg})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "start",
-        backgroundSize: "cover",
-        backgroundAttachment: "fixed",
-      }}
+    <div 
+        className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300 min-h-[70vh]"
+        style={{
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${formBg?.src || formBg})`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+            backgroundAttachment: "fixed"
+        }}
     >
-      <Typography
-        fontFamily={typography.fontFamily}
-        fontSize={typography.h2.fontSize}
-        color={colors.grey[100]}
-        fontWeight="bold"
-        display="inline-block"
-        marginLeft="20px"
-      >
-        {`${title} ${selected}`}
-      </Typography>
-      <TeacherFormComponent
-        onChange={(data) => {
-          handleFormChange(data, "teacher");
-        }}
-        refId={teacherFormRef}
-        setDirty={setDirty}
-        reset={reset}
-        setReset={setReset}
-        classData={classData}
-        setClassData={setClassData}
-        allSections={allSections?.listData}
-        allSubjects={allSubjects?.listData}
-        updatedValues={updatedValues?.teacherData}
-      />
-      <AddressFormComponent
-        onChange={(data) => {
-          handleFormChange(data, "address");
-        }}
-        refId={addressFormRef}
-        update={id ? true : false}
-        setDirty={setDirty}
-        reset={reset}
-        setReset={setReset}
-        updatedValues={updatedValues?.addressData}
-      />
-      <ImagePicker
-        key="image"
-        onChange={(data) => {
-          handleFormChange(data, "image");
-        }}
-        refId={imageFormRef}
-        reset={reset}
-        setReset={setReset}
-        setDirty={setDirty}
-        preview={preview}
-        setPreview={setPreview}
-        deletedImage={deletedImage}
-        setDeletedImage={setDeletedImage}
-        updatedImage={updatedImage} //these are updated Values
-        setUpdatedImage={setUpdatedImage}
-        imageType="Teacher"
-        ENV={ENV}
-        validation={true}
-      />
+        <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md border-b border-white/20 dark:border-white/5 p-6 sticky top-0 z-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize">
+                {`${title} ${selected}`}
+            </h2>
+        </div>
 
-      <Box display="flex" justifyContent="end" m="20px">
-        {
-          //hide reset button on teacher update
-          title === "Update" ? null : (
-            <Button
-              type="reset"
-              color="warning"
-              variant="contained"
-              sx={{ mr: 3 }}
-              disabled={!dirty || submitted}
-              onClick={() => {
-                if (window.confirm("Do You Really Want To Reset?")) {
-                  setReset(true);
-                }
-              }}
-            >
-              Reset
-            </Button>
-          )
-        }
-        <Button
-          color="error"
-          variant="contained"
-          sx={{ mr: 3 }}
-          onClick={() => navigateTo(`/${selected.toLowerCase()}/listing`)}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          onClick={() => handleSubmit()}
-          disabled={!dirty}
-          color={title === "Update" ? "info" : "success"}
-          variant="contained"
-        >
-          Submit
-        </Button>
-        <Toast
-          alerting={toastInfo.toastAlert}
-          severity={toastInfo.toastSeverity}
-          message={toastInfo.toastMessage}
+        <div className="p-4 md:p-6 bg-white/50 dark:bg-black/50 backdrop-blur-sm space-y-6">
+            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                <TeacherFormComponent
+                    onChange={(data) => {
+                        handleFormChange(data, "teacher");
+                    }}
+                    refId={teacherFormRef}
+                    setDirty={setDirty}
+                    reset={reset}
+                    setReset={setReset}
+                    classData={classData}
+                    setClassData={setClassData}
+                    allSections={allSections?.listData}
+                    allSubjects={allSubjects?.listData}
+                    updatedValues={updatedValues?.teacherData}
+                />
+            </div>
+
+            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                <AddressFormComponent
+                    onChange={(data) => {
+                        handleFormChange(data, "address");
+                    }}
+                    refId={addressFormRef}
+                    update={id ? true : false}
+                    setDirty={setDirty}
+                    reset={reset}
+                    setReset={setReset}
+                    updatedValues={updatedValues?.addressData}
+                />
+            </div>
+
+            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+                <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Teacher Image</h3>
+                <ImagePicker
+                    key="image"
+                    onChange={(data) => {
+                        handleFormChange(data, "image");
+                    }}
+                    refId={imageFormRef}
+                    reset={reset}
+                    setReset={setReset}
+                    setDirty={setDirty}
+                    preview={preview}
+                    setPreview={setPreview}
+                    deletedImage={deletedImage}
+                    setDeletedImage={setDeletedImage}
+                    updatedImage={updatedImage} //these are updated Values
+                    setUpdatedImage={setUpdatedImage}
+                    imageType="Teacher"
+                    ENV={ENV}
+                    validation={true}
+                />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-4 p-6 bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border-t border-slate-200 dark:border-slate-800 rounded-b-2xl">
+                {title !== "Update" && (
+                    <button 
+                        type="reset" 
+                        disabled={!dirty || submitted}
+                        onClick={() => {
+                            if (window.confirm("Do You Really Want To Reset?")) {
+                                setReset(true);
+                            }
+                        }}
+                        className="px-6 py-2.5 rounded-xl font-semibold text-white bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-yellow-500/20"
+                    >
+                        Reset
+                    </button>
+                )}
+                
+                <button 
+                    onClick={() => navigateTo(`/${selected.toLowerCase()}/listing`)}
+                    className="px-6 py-2.5 rounded-xl font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md shadow-red-500/20"
+                >
+                    Cancel
+                </button>
+                
+                <button 
+                    type="submit" 
+                    onClick={() => handleSubmit()} 
+                    disabled={!dirty}
+                    className={`px-6 py-2.5 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md ${
+                        title === "Update" 
+                        ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/20" 
+                        : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                    }`}
+                >
+                    Submit
+                </button>
+            </div>
+        </div>
+
+        <Toast 
+            alerting={toastInfo.toastAlert}
+            severity={toastInfo.toastSeverity}
+            message={toastInfo.toastMessage}
         />
-      </Box>
-      {loading === true ? <Loader /> : null}
-    </Box>
+
+        {loading && <Loader />}
+    </div>
   );
 };
 

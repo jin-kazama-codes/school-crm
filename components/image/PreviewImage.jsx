@@ -9,9 +9,7 @@
 
 import { useEffect } from "react";
 import PropTypes from "prop-types";
-
-import { IconButton, ImageList, ImageListItem, Tooltip, useMediaQuery } from "@mui/material";
-import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
+import { X } from "lucide-react";
 
 import Loader from "../common/Loader";
 
@@ -28,9 +26,6 @@ const PreviewImage = ({
     updatedImage,
     setUpdatedImage
 }) => {
-    const isMobile = useMediaQuery("(max-width:480px)");
-    const isTab = useMediaQuery("(max-width:920px)");
-
     // On form update
     useEffect(() => {
         const dbImgFiles = [];
@@ -62,7 +57,7 @@ const PreviewImage = ({
             }
         }
         setPreview([
-            ...dbImgFiles,         //We are not doing ...preview because in imagePicker file we have already
+            ...dbImgFiles,
             ...pickerFiles
         ]);
     }, [updatedImage?.length, imageFiles, setPreview]);
@@ -134,50 +129,37 @@ const PreviewImage = ({
         }
     };
 
+    if (!preview) {
+        return <Loader />;
+    }
+
+    if (preview.length === 0) {
+        return null;
+    }
+
     return (
-        <ImageList sx={{ width: "80%", height: "60%", overflow: "inherit" }}
-            cols={3} rowHeight={isMobile ? 80 : isTab ? 160 : 220} gap={8}>
-            {preview ? preview.map((item, index) => (
-                <ImageListItem key={index}>
-                    <IconButton
-                        sx={{
-                            position: "absolute",
-                            left: "87%",
-                            '@media screen and (max-width: 920px)': {
-                                left: '77%',
-                            },
-                            '@media screen and (max-width: 480px)': {
-                                left: '60%',
-                            },
-                            top: "-2%"
-                        }}
-                        onClick={() => handleDeleteClick(item)}
-                    >
-                        <Tooltip title="DELETE">
-                            <HighlightOffOutlinedIcon sx={{
-                                color: "#002147",
-                                "&:hover": {
-                                    color: "red", fontSize: "1.5rem", transition: "all 0.3s ease-in-out"
-                                }
-                            }}
-                            />
-                        </Tooltip>
-                    </IconButton>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+            {preview.map((item, index) => (
+                <div key={index} className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1a1a1a]">
                     <img
                         src={item.value}
-                        alt="This image is not available"
+                        alt="Preview"
                         loading="lazy"
-                        style={{
-                            objectFit: "cover",
-                            height: "100%",
-                            width: "100%",
-                            borderRadius: isMobile ? "6px" : "12px",
-                            boxShadow: "2px 2px 4px hsl(0, 0%, 30%)"
-                        }}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                </ImageListItem>
-            )) : <Loader />}
-        </ImageList>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-start justify-end p-2">
+                        <button
+                            type="button"
+                            onClick={() => handleDeleteClick(item)}
+                            className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                            title="Remove image"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
     );
 };
 

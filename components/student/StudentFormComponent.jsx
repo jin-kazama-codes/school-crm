@@ -10,22 +10,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
-
 import { useFormik } from "formik";
-import {
-  Box,
-  InputLabel,
-  MenuItem,
-  FormHelperText,
-  FormControl,
-  FormControlLabel,
-  Autocomplete,
-  Typography,
-  useTheme
-} from "@mui/material";
-import { Checkbox, Select, TextField, useMediaQuery } from "@mui/material";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import dayjs from "dayjs";
 
 import API from "../../apis";
 import Toast from "../common/Toast";
@@ -39,7 +25,6 @@ import { setListingSchoolHouses } from "../../redux/actions/SchoolHouseAction";
 
 import { Utility } from "../utility";
 import { useCommon } from "../hooks/common";
-
 import config from "../config";
 
 const initialValues = {
@@ -55,7 +40,7 @@ const initialValues = {
   guardian_name: "",
   guardian_contact_no: "",
   guardian_aadhar: "",
-  house:"",
+  house: "",
   contact_no: "",
   email: "",
   class: "",
@@ -106,10 +91,7 @@ const StudentFormComponent = ({
 
   const dispatch = useDispatch();
   const genderRef = useRef();
-  const theme = useTheme()
-  const checkboxLabel = { inputProps: { "aria-label": "Checkboxes" } };
-  const isNonMobile = useMediaQuery("(min-width:600px)");
-  const isMobile = useMediaQuery("(max-width:480px)");
+
   const { getPaginatedData } = useCommon();
   const {
     createSession,
@@ -123,7 +105,7 @@ const StudentFormComponent = ({
     initialValues: initialState,
     validationSchema: studentValidation,
     enableReinitialize: true,
-    validateOnBlur: true, // Set to true to trigger validation on blur or on change
+    validateOnBlur: true,
     validateOnChange: true,
     onSubmit: () => watchForm(),
   });
@@ -260,838 +242,641 @@ const StudentFormComponent = ({
     }
   }, [formik.values?.class, classData?.length]);
 
+  const formatDateForInput = (dateValue) => {
+    if (!dateValue) return "";
+    return dayjs(dateValue).format('YYYY-MM-DD');
+  };
+
+  const handleDateChange = (field, e) => {
+    const val = e.target.value;
+    formik.setFieldValue(field, val ? dayjs(val) : null);
+  };
+
+  const handleSubjectsChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions);
+    const selectedValues = selectedOptions.map(option => {
+        return (schoolSubjects?.listData || []).find(sub => sub.id == option.value);
+    }).filter(Boolean);
+    formik.setFieldValue("subjects", selectedValues);
+  };
+
+  const inputClass = (fieldName) => `w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+    formik.touched[fieldName] && formik.errors[fieldName] 
+    ? 'border-red-500 focus:ring-red-500/50' 
+    : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
+  } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+  
+  const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
+  const errorClass = "mt-1 text-sm text-red-500";
+
   return (
-    <Box m="20px">
-      <form ref={refId}>
-        <Box
-          display="grid"
-          gap="30px"
-          gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-          sx={{
-            "& > div": { gridColumn: isNonMobile ? undefined : "span 4" },
-          }}
-        >
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.session && !!formik.errors.session}
-          >
-            <InputLabel>Session*</InputLabel>
-            <Select
-              variant="filled"
+    <div className="p-6">
+      <form ref={refId} onSubmit={formik.handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* Session */}
+          <div className="col-span-1">
+            <label className={labelClass}>Session*</label>
+            <select
               name="session"
               value={formik.values.session}
-              onChange={(event) =>
-                formik.setFieldValue("session", event.target.value)
-              }
+              onChange={(e) => formik.setFieldValue("session", e.target.value)}
+              onBlur={formik.handleBlur}
+              className={inputClass("session")}
             >
+              <option value="" disabled>Select Session</option>
               {createSession().map((session) => (
-                <MenuItem value={session} name={session} key={session}>
-                  {session}
-                </MenuItem>
+                <option value={session} key={session}>{session}</option>
               ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.session && formik.errors.session}
-            </FormHelperText>
-          </FormControl>
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            name="firstname"
-            label="Firstname*"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.firstname}
-            error={!!formik.touched.firstname && !!formik.errors.firstname}
-            helperText={formik.touched.firstname && formik.errors.firstname}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            name="lastname"
-            label="Lastname*"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.lastname}
-            error={!!formik.touched.lastname && !!formik.errors.lastname}
-            helperText={formik.touched.lastname && formik.errors.lastname}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            label="Contact Number*"
-            name="contact_no"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.contact_no}
-            error={!!formik.touched.contact_no && !!formik.errors.contact_no}
-            helperText={formik.touched.contact_no && formik.errors.contact_no}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            label="Email"
-            name="email"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.email}
-            error={!!formik.touched.email && !!formik.errors.email}
-            helperText={formik.touched.email && formik.errors.email}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            name="aadhaar_no"
-            label="Aadhaar Number*"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.aadhaar_no}
-            error={!!formik.touched.aadhaar_no && !!formik.errors.aadhaar_no}
-            helperText={formik.touched.aadhaar_no && formik.errors.aadhaar_no}
-          />
-          <FormControlLabel
-            label="Is Specially Abled"
-            sx={{ gridColumn: isMobile ? "span 2" : "" }}
-            control={
-              <Checkbox
-                {...checkboxLabel}
-                color="default"
-                checked={formik.values.is_specially_abled ? true : false}
+            </select>
+            {formik.touched.session && formik.errors.session && <p className={errorClass}>{formik.errors.session}</p>}
+          </div>
+
+          {/* First Name */}
+          <div className="col-span-1 md:col-span-1 lg:col-span-2">
+            <label className={labelClass}>Firstname*</label>
+            <input
+              type="text"
+              name="firstname"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.firstname}
+              className={inputClass("firstname")}
+            />
+            {formik.touched.firstname && formik.errors.firstname && <p className={errorClass}>{formik.errors.firstname}</p>}
+          </div>
+
+          {/* Last Name */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-1">
+            <label className={labelClass}>Lastname*</label>
+            <input
+              type="text"
+              name="lastname"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.lastname}
+              className={inputClass("lastname")}
+            />
+            {formik.touched.lastname && formik.errors.lastname && <p className={errorClass}>{formik.errors.lastname}</p>}
+          </div>
+
+          {/* Contact Number */}
+          <div className="col-span-1">
+            <label className={labelClass}>Contact Number*</label>
+            <input
+              type="text"
+              name="contact_no"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.contact_no}
+              className={inputClass("contact_no")}
+            />
+            {formik.touched.contact_no && formik.errors.contact_no && <p className={errorClass}>{formik.errors.contact_no}</p>}
+          </div>
+
+          {/* Email */}
+          <div className="col-span-1">
+            <label className={labelClass}>Email</label>
+            <input
+              type="email"
+              name="email"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.email}
+              className={inputClass("email")}
+            />
+            {formik.touched.email && formik.errors.email && <p className={errorClass}>{formik.errors.email}</p>}
+          </div>
+
+          {/* Aadhaar Number */}
+          <div className="col-span-1 lg:col-span-2">
+            <label className={labelClass}>Aadhaar Number*</label>
+            <input
+              type="text"
+              name="aadhaar_no"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.aadhaar_no}
+              className={inputClass("aadhaar_no")}
+            />
+            {formik.touched.aadhaar_no && formik.errors.aadhaar_no && <p className={errorClass}>{formik.errors.aadhaar_no}</p>}
+          </div>
+
+          {/* Is Specially Abled */}
+          <div className="col-span-1 flex flex-col justify-center">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
                 name="is_specially_abled"
-                onChange={(event, value) =>
-                  formik.setFieldValue("is_specially_abled", value)
-                }
-                value={formik.values.is_specially_abled}
+                checked={formik.values.is_specially_abled}
+                onChange={(e) => formik.setFieldValue("is_specially_abled", e.target.checked)}
+                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
               />
-            }
-          />
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.gender && !!formik.errors.gender}
-          >
-            <InputLabel>Gender</InputLabel>
-            <Select
-              ref={genderRef} //head ka issue hai
-              variant="filled"
+              <span className="font-medium text-slate-700 dark:text-slate-300">Is Specially Abled</span>
+            </label>
+          </div>
+
+          {/* Gender */}
+          <div className="col-span-1">
+            <label className={labelClass}>Gender</label>
+            <select
+              ref={genderRef}
               name="gender"
               value={formik.values.gender}
               onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={inputClass("gender")}
             >
+              <option value="" disabled>Select Gender</option>
               {Object.keys(config.gender).map((item) => (
-                <MenuItem key={item} value={item}>
-                  {config.gender[item]}
-                </MenuItem>
+                <option key={item} value={item}>{config.gender[item]}</option>
               ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.gender && formik.errors.gender}
-            </FormHelperText>
-          </FormControl>
+            </select>
+            {formik.touched.gender && formik.errors.gender && <p className={errorClass}>{formik.errors.gender}</p>}
+          </div>
+
+          {/* Head */}
           {userId && (
-            <FormControl
-              variant="filled"
-              sx={{ minWidth: 120 }}
-              error={!!formik.touched.head && !!formik.errors.head}
-            >
-              <InputLabel>
-                {updatedValues?.gender === "male"
-                  ? "Head Boy"
-                  : updatedValues?.gender === "female"
-                    ? "Head Girl"
-                    : "Select Head of School"}
-              </InputLabel>
-              <Select
-                variant="filled"
+            <div className="col-span-1 lg:col-span-2">
+              <label className={labelClass}>
+                {updatedValues?.gender === "male" ? "Head Boy" : updatedValues?.gender === "female" ? "Head Girl" : "Select Head of School"}
+              </label>
+              <select
                 name="head"
                 value={formik.values.head}
-                onChange={(event) => {
+                onChange={(e) => {
                   if (formik.values.gender) {
-                    formik.setFieldValue("head", event.target.value);
-                    if (event.target.value == 1) {
+                    formik.setFieldValue("head", e.target.value);
+                    if (e.target.value == 1) {
                       validateHead();
                     }
                   } else {
-                    toastAndNavigate(
-                      dispatch,
-                      true,
-                      "info",
-                      "Please Select Gender"
-                    );
+                    toastAndNavigate(dispatch, true, "info", "Please Select Gender");
                   }
                 }}
+                onBlur={formik.handleBlur}
+                className={inputClass("head")}
               >
                 {Object.keys(config.head).map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {config.head[item]}
-                  </MenuItem>
+                  <option key={item} value={item}>{config.head[item]}</option>
                 ))}
-              </Select>
-              <FormHelperText>
-                {formik.touched.head && formik.errors.head}
-              </FormHelperText>
-            </FormControl>
+              </select>
+              {formik.touched.head && formik.errors.head && <p className={errorClass}>{formik.errors.head}</p>}
+            </div>
           )}
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              format="DD MMMM YYYY" //ex - 25 July 2023
-              views={["day", "month", "year"]}
-              label="Select Date Of Birth*"
+
+          {/* DOB */}
+          <div className="col-span-1">
+            <label className={labelClass}>Date Of Birth*</label>
+            <input
+              type="date"
               name="dob"
-              value={formik.values.dob}
-              onChange={(newDob) => formik.setFieldValue("dob", newDob)}
-              onBlur={() => formik.setFieldTouched('dob', true)}
-              renderInput={(params) => (
-                <>
-                  <TextField
-                    {...params}
-                    error={formik.touched.dob && Boolean(formik.errors.dob)}
-                    helperText={formik.touched.dob && formik.errors.dob}
-                    fullWidth
-                    margin="normal"
-                  />
-                  <FormHelperText>
-                    {formik.touched.dob && formik.errors.dob}
-                  </FormHelperText>
-                </>
-
-              )}
+              onBlur={formik.handleBlur}
+              onChange={(e) => handleDateChange("dob", e)}
+              value={formatDateForInput(formik.values.dob)}
+              className={inputClass("dob")}
             />
+            {formik.touched.dob && formik.errors.dob && <p className={errorClass}>{formik.errors.dob}</p>}
+          </div>
 
-            <DatePicker
-              format="DD MMMM YYYY"
-              views={["day", "month", "year"]}
-              label="Select Admission Date*"
+          {/* Admission Date */}
+          <div className="col-span-1">
+            <label className={labelClass}>Admission Date*</label>
+            <input
+              type="date"
               name="admission_date"
-              value={formik.values.admission_date}
-              onChange={(new_admission_date) =>
-                formik.setFieldValue("admission_date", new_admission_date)
-              }
-              onBlur={() => formik.setFieldTouched('admission_date', true)}
-              renderInput={(params) => (
-                <>
-                  <TextField
-                    {...params}
-                    error={
-                      formik.touched.admission_date && Boolean(formik.errors.admission_date)
-                    }
-                    helperText={formik.touched.admission_date && formik.errors.admission_date}
-                    fullWidth
-                    margin="normal"
-                  />
-                  <FormHelperText>
-                    {formik.touched.admission_date && formik.errors.admission_date}
-                  </FormHelperText>
-                </>
-              )}
-
+              onBlur={formik.handleBlur}
+              onChange={(e) => handleDateChange("admission_date", e)}
+              value={formatDateForInput(formik.values.admission_date)}
+              className={inputClass("admission_date")}
             />
-          </LocalizationProvider>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={
-              !!formik.touched.admission_type && !!formik.errors.admission_type
-            }
-          >
-            <InputLabel>Admission Type*</InputLabel>
-            <Select
-              variant="filled"
+            {formik.touched.admission_date && formik.errors.admission_date && <p className={errorClass}>{formik.errors.admission_date}</p>}
+          </div>
+
+          {/* Admission Type */}
+          <div className="col-span-1">
+            <label className={labelClass}>Admission Type*</label>
+            <select
               name="admission_type"
               value={formik.values.admission_type}
               onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={inputClass("admission_type")}
             >
               {Object.keys(config.admission_type).map((item) => (
-                <MenuItem key={item} value={item}>
-                  {config.admission_type[item]}
-                </MenuItem>
+                <option key={item} value={item}>{config.admission_type[item]}</option>
               ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.admission_type && formik.errors.admission_type}
-            </FormHelperText>
-          </FormControl>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.class && !!formik.errors.class}
-          >
-            <InputLabel>Class*</InputLabel>
-            <Select
-              variant="filled"
+            </select>
+            {formik.touched.admission_type && formik.errors.admission_type && <p className={errorClass}>{formik.errors.admission_type}</p>}
+          </div>
+
+          {/* Class */}
+          <div className="col-span-1">
+            <label className={labelClass}>Class*</label>
+            <select
               name="class"
               value={formik.values.class}
-              onChange={(event) => {
-                formik.setFieldValue("class", event.target.value);
-                if (formik.values.section) {
-                  //if old values are there, clean them according to change
-                  formik.setFieldValue("section", "");
-                }
-                if (formik.values.subjects) {
-                  formik.setFieldValue("subjects", []);
-                }
+              onChange={(e) => {
+                formik.setFieldValue("class", e.target.value);
+                if (formik.values.section) formik.setFieldValue("section", "");
+                if (formik.values.subjects) formik.setFieldValue("subjects", []);
               }}
+              onBlur={formik.handleBlur}
+              className={inputClass("class")}
             >
-              {!schoolClasses?.listData?.length
-                ? null
-                : schoolClasses.listData.map((cls) => (
-                  <MenuItem
-                    value={cls.class_id}
-                    name={cls.class_name}
-                    key={cls.class_id}
-                  >
-                    {cls.class_name}
-                  </MenuItem>
-                ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.class && formik.errors.class}
-            </FormHelperText>
-          </FormControl>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.section && !!formik.errors.section}
-          >
-            <InputLabel>Section*</InputLabel>
-            <Select
-              variant="filled"
+              <option value="" disabled>Select Class</option>
+              {schoolClasses?.listData?.map((cls) => (
+                <option value={cls.class_id} key={cls.class_id}>{cls.class_name}</option>
+              ))}
+            </select>
+            {formik.touched.class && formik.errors.class && <p className={errorClass}>{formik.errors.class}</p>}
+          </div>
+
+          {/* Section */}
+          <div className="col-span-1">
+            <label className={labelClass}>Section*</label>
+            <select
               name="section"
               value={formik.values.section}
-              onChange={(event) => {
-                formik.setFieldValue("section", event.target.value);
-                if (formik.values.subjects) {
-                  formik.setFieldValue("subjects", []);
-                }
+              onChange={(e) => {
+                formik.setFieldValue("section", e.target.value);
+                if (formik.values.subjects) formik.setFieldValue("subjects", []);
               }}
+              onBlur={formik.handleBlur}
+              className={inputClass("section")}
             >
-              {!schoolSections?.listData?.length
-                ? null
-                : schoolSections.listData.map((section) => (
-                  <MenuItem
-                    value={section.section_id}
-                    name={section.section_name}
-                    key={section.section_id}
-                  >
-                    {section.section_name}
-                  </MenuItem>
-                ))}
-            </Select>
-            <FormHelperText>
-              {formik.touched.section && formik.errors.section}
-            </FormHelperText>
-          </FormControl>
-          <Autocomplete
-            multiple
-            options={schoolSubjects?.listData || []}
-            getOptionLabel={(option) => option.name}
-            disableCloseOnSelect
-            value={formik.values.subjects}
-            onBlur={formik.handleBlur}
-            onChange={(event, value) => formik.setFieldValue("subjects", value)}
-            sx={{ gridColumn: "span 2" }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                variant="filled"
-                type="text"
-                name="subjects"
-                label="Subjects*"
-                onBlur={formik.handleBlur}
-                error={!!formik.touched.subjects && !!formik.errors.subjects}
-                helperText={formik.touched.subjects && formik.errors.subjects}
-              />
-            )}
-          />
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.blood_group && !!formik.errors.blood_group}
-          >
-            <InputLabel>Blood Group</InputLabel>
-            <Select
-              variant="filled"
+              <option value="" disabled>Select Section</option>
+              {schoolSections?.listData?.map((section) => (
+                <option value={section.section_id} key={section.section_id}>{section.section_name}</option>
+              ))}
+            </select>
+            {formik.touched.section && formik.errors.section && <p className={errorClass}>{formik.errors.section}</p>}
+          </div>
+
+          {/* Subjects (Multiple Select workaround for Autocomplete) */}
+          <div className="col-span-1 md:col-span-2">
+            <label className={labelClass}>Subjects*</label>
+            <select
+              multiple
+              name="subjects"
+              value={formik.values.subjects.map(s => s.id)}
+              onChange={handleSubjectsChange}
+              onBlur={formik.handleBlur}
+              className={`${inputClass("subjects")} h-24`}
+            >
+              {schoolSubjects?.listData?.map((sub) => (
+                <option value={sub.id} key={sub.id}>{sub.name}</option>
+              ))}
+            </select>
+            {formik.touched.subjects && formik.errors.subjects && <p className={errorClass}>{formik.errors.subjects}</p>}
+            <p className="text-xs text-slate-500 mt-1">Hold Ctrl (or Cmd) to select multiple.</p>
+          </div>
+
+          {/* Blood Group */}
+          <div className="col-span-1">
+            <label className={labelClass}>Blood Group</label>
+            <select
               name="blood_group"
               value={formik.values.blood_group}
               onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={inputClass("blood_group")}
             >
-              <MenuItem value="A+">A+</MenuItem>
-              <MenuItem value="A-">A-</MenuItem>
-              <MenuItem value="B+">B+</MenuItem>
-              <MenuItem value="B-">B-</MenuItem>
-              <MenuItem value="AB+">AB+</MenuItem>
-              <MenuItem value="AB-">AB-</MenuItem>
-              <MenuItem value="O+">O+</MenuItem>
-              <MenuItem value="O-">O-</MenuItem>
-            </Select>
-            <FormHelperText>
-              {formik.touched.blood_group && formik.errors.blood_group}
-            </FormHelperText>
-          </FormControl>
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            name="birth_mark"
-            label="Birth Mark"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.birth_mark}
-            error={!!formik.touched.birth_mark && !!formik.errors.birth_mark}
-            helperText={formik.touched.birth_mark && formik.errors.birth_mark}
-          />
-          <TextField
-            fullWidth
-            variant="filled"
-            type="text"
-            name="religion"
-            label="Religion"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.religion}
-            error={!!formik.touched.religion && !!formik.errors.religion}
-            helperText={formik.touched.religion && formik.errors.religion}
-          />
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.nationality && !!formik.errors.nationality}
-          >
-            <InputLabel>Nationality</InputLabel>
-            <Select
-              variant="filled"
+              <option value="" disabled>Select Blood Group</option>
+              {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
+                <option value={bg} key={bg}>{bg}</option>
+              ))}
+            </select>
+            {formik.touched.blood_group && formik.errors.blood_group && <p className={errorClass}>{formik.errors.blood_group}</p>}
+          </div>
+
+          {/* Birth Mark */}
+          <div className="col-span-1">
+            <label className={labelClass}>Birth Mark</label>
+            <input
+              type="text"
+              name="birth_mark"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.birth_mark}
+              className={inputClass("birth_mark")}
+            />
+            {formik.touched.birth_mark && formik.errors.birth_mark && <p className={errorClass}>{formik.errors.birth_mark}</p>}
+          </div>
+
+          {/* Religion */}
+          <div className="col-span-1">
+            <label className={labelClass}>Religion</label>
+            <input
+              type="text"
+              name="religion"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.religion}
+              className={inputClass("religion")}
+            />
+            {formik.touched.religion && formik.errors.religion && <p className={errorClass}>{formik.errors.religion}</p>}
+          </div>
+
+          {/* Nationality */}
+          <div className="col-span-1">
+            <label className={labelClass}>Nationality</label>
+            <select
               name="nationality"
               value={formik.values.nationality}
               onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={inputClass("nationality")}
             >
-              <MenuItem value="indian">Indian</MenuItem>
-              <MenuItem value="nri">NRI</MenuItem>
-            </Select>
-            <FormHelperText>
-              {formik.touched.nationality && formik.errors.nationality}
-            </FormHelperText>
-          </FormControl>
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.nationality && !!formik.errors.nationality}
-          >
-            <InputLabel>Caste Group</InputLabel>
-            <Select
-              variant="filled"
+              <option value="indian">Indian</option>
+              <option value="nri">NRI</option>
+            </select>
+            {formik.touched.nationality && formik.errors.nationality && <p className={errorClass}>{formik.errors.nationality}</p>}
+          </div>
+
+          {/* Caste Group */}
+          <div className="col-span-1">
+            <label className={labelClass}>Caste Group</label>
+            <select
               name="caste_group"
               value={formik.values.caste_group}
               onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={inputClass("caste_group")}
             >
-              <MenuItem value="general">General</MenuItem>
-              <MenuItem value="obc">OBC</MenuItem>
-              <MenuItem value="sc">SC</MenuItem>
-              <MenuItem value="st">ST</MenuItem>
-            </Select>
-            <FormHelperText>
-              {formik.touched.caste_group && formik.errors.caste_group}
-            </FormHelperText>
-          </FormControl>
+              <option value="" disabled>Select Caste</option>
+              <option value="general">General</option>
+              <option value="obc">OBC</option>
+              <option value="sc">SC</option>
+              <option value="st">ST</option>
+            </select>
+            {formik.touched.caste_group && formik.errors.caste_group && <p className={errorClass}>{formik.errors.caste_group}</p>}
+          </div>
 
-          <FormControl variant="filled" sx={{ minWidth: 120 }}
-            error={!!formik.touched.house && !!formik.errors.house}
-          >
-            <InputLabel id="houseField">Student house</InputLabel>
-            <Select
-              labelId="houseField"
+          {/* Student House */}
+          <div className="col-span-1">
+            <label className={labelClass}>Student House</label>
+            <select
               name="house"
-              value={formik.values.house || ''}
-              onChange={event => formik.setFieldValue("house", event.target.value)}
+              value={formik.values.house || ""}
+              onChange={(e) => formik.setFieldValue("house", e.target.value)}
+              onBlur={formik.handleBlur}
+              className={inputClass("house")}
             >
-              {!listingSchoolHouses?.listData?.rows?.length ?  (
-                  <MenuItem>
-                    {'No House Created'}
-                  </MenuItem>
-                ) :
+              <option value="" disabled>Select House</option>
+              {!listingSchoolHouses?.listData?.rows?.length ? (
+                <option disabled>No House Created</option>
+              ) : (
                 listingSchoolHouses.listData.rows.map(item => (
-                  <MenuItem value={item.id} name={item.name} key={item.id}>
-                    {item.name}
-                  </MenuItem>
-                ))}
-            </Select>
-            <FormHelperText>{formik.touched.house && formik.errors.house}</FormHelperText>
-          </FormControl>
+                  <option value={item.id} key={item.id}>{item.name}</option>
+                ))
+              )}
+            </select>
+            {formik.touched.house && formik.errors.house && <p className={errorClass}>{formik.errors.house}</p>}
+          </div>
 
-          <FormControl
-            variant="filled"
-            sx={{ minWidth: 120 }}
-            error={!!formik.touched.status && !!formik.errors.status}
-          >
-            <InputLabel>Status</InputLabel>
-            <Select
-              variant="filled"
+          {/* Status */}
+          <div className="col-span-1">
+            <label className={labelClass}>Status</label>
+            <select
               name="status"
               value={formik.values.status}
               onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className={inputClass("status")}
             >
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </Select>
-            <FormHelperText>
-              {formik.touched.status && formik.errors.status}
-            </FormHelperText>
-          </FormControl>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            {formik.touched.status && formik.errors.status && <p className={errorClass}>{formik.errors.status}</p>}
+          </div>
 
-          <Box
-            sx={{
-              border: "2px solid #BADFE7",
-              borderRadius: "12px",
-              display: "grid",
-              gap: "40px",
-              alignItems: "center",
-              width: isMobile
-                ? "100%"
-                : formik.values.is_taking_bus
-                  ? "215%"
-                  : formik.values.is_taking_bus
-                    ? "200%"
-                    : "290px",
-              padding: "5px",
-              gridTemplateColumns: formik.values.is_taking_bus
-                ? "repeat(2, minmax(0, 1fr))"
-                : "1fr",
-              gridColumnStart: 1,
-            }}
-          >
-            <FormControlLabel
-              label="Bus Required"
-              sx={{ gridColumn: isMobile ? "span 2" : "", margin: "auto 0px" }}
-              control={
-                <Checkbox
-                  {...checkboxLabel}
-                  color="default"
-                  checked={formik.values.is_taking_bus}
-                  name="is_taking_bus"
-                  onChange={(event, value) => {
-                    formik.setFieldValue("is_taking_bus", value);
-                  }}
-                />
-              }
-            />
+          {/* Bus Checkbox and Selector */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 flex flex-col md:flex-row items-center gap-6">
+            <label className="flex items-center gap-3 cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                name="is_taking_bus"
+                checked={formik.values.is_taking_bus}
+                onChange={(e) => formik.setFieldValue("is_taking_bus", e.target.checked)}
+                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="font-medium text-slate-700 dark:text-slate-300">Bus Required</span>
+            </label>
             {formik.values.is_taking_bus && (
-              <FormControl
-                variant="filled"
-                sx={{ minWidth: 120 }}
-                error={!!formik.touched.bus && !!formik.errors.bus}
-              >
-                <InputLabel>Bus Number</InputLabel>
-                <Select
+              <div className="w-full md:w-64">
+                <label className={labelClass}>Bus Number</label>
+                <select
                   name="bus"
                   value={formik.values.bus || ""}
-                  onChange={(event) =>
-                    formik.setFieldValue("bus", event.target.value)
-                  }
+                  onChange={(e) => formik.setFieldValue("bus", e.target.value)}
+                  onBlur={formik.handleBlur}
+                  className={inputClass("bus")}
                 >
-                  {!allBuses?.listData?.rows?.length
-                    ? null
-                    : allBuses.listData.rows.map((item) => (
-                      <MenuItem
-                        value={item.id}
-                        name={`${item.registration_no}`}
-                        key={item.id}
-                      >
-                        {`${item.registration_no}`}
-                      </MenuItem>
-                    ))}
-                </Select>
-                <FormHelperText>
-                  {formik.touched.bus && formik.errors.bus}
-                </FormHelperText>
-              </FormControl>
+                  <option value="" disabled>Select Bus</option>
+                  {allBuses?.listData?.rows?.map((item) => (
+                    <option value={item.id} key={item.id}>{item.registration_no}</option>
+                  ))}
+                </select>
+                {formik.touched.bus && formik.errors.bus && <p className={errorClass}>{formik.errors.bus}</p>}
+              </div>
             )}
-          </Box>
-          <Box
-            sx={{
-              border: "2px solid #BADFE7",
-              borderRadius: "12px",
-              display: "grid",
-              gap: "40px",
-              alignItems: "center",
-              width: isMobile
-                ? "100%"
-                : formik.values.fee_waiver_type === "partial" &&
-                  formik.values.is_fee_waiver
-                  ? "326%"
-                  : formik.values.is_fee_waiver
-                    ? "200%"
-                    : "290px",
-              padding: "5px",
-              gridTemplateColumns:
-                formik.values.fee_waiver_type === "partial" &&
-                  formik.values.is_fee_waiver
-                  ? "repeat(3, minmax(0, 1fr))"
-                  : formik.values.is_fee_waiver
-                    ? "repeat(2, minmax(0, 1fr))"
-                    : "1fr",
-              gridColumnStart: 1,
-              "& > div": { gridColumn: isNonMobile ? undefined : "span 4" },
-            }}
-          >
-            <FormControlLabel
-              label="Is Fee Waiver"
-              sx={{ gridColumn: isMobile ? "span 2" : "", margin: "auto 0px" }}
-              control={
-                <Checkbox
-                  {...checkboxLabel}
-                  color="default"
-                  checked={formik.values.is_fee_waiver}
-                  name="is_fee_waiver"
-                  onChange={(event, value) => {
-                    formik.setFieldValue("is_fee_waiver", value);
-                    if (formik.values.is_fee_waiver) {
-                      formik.setFieldValue("fee_waiver_type", "");
-                      formik.setFieldValue("waived_fees", "");
-                    }
-                  }}
-                />
-              }
-            />
+          </div>
+
+          {/* Fee Waiver Checkbox and Selectors */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 flex flex-col md:flex-row items-center gap-6">
+            <label className="flex items-center gap-3 cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                name="is_fee_waiver"
+                checked={formik.values.is_fee_waiver}
+                onChange={(e) => {
+                  formik.setFieldValue("is_fee_waiver", e.target.checked);
+                  if (e.target.checked) {
+                    formik.setFieldValue("fee_waiver_type", "");
+                    formik.setFieldValue("waived_fees", "");
+                  }
+                }}
+                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="font-medium text-slate-700 dark:text-slate-300">Is Fee Waiver</span>
+            </label>
             {formik.values.is_fee_waiver && (
-              <FormControl
-                variant="filled"
-                sx={{ minWidth: 120 }}
-                error={
-                  !!formik.touched.fee_waiver_type &&
-                  !!formik.errors.fee_waiver_type
-                }
-              >
-                <InputLabel>Fee Waiver Type</InputLabel>
-                <Select
-                  variant="filled"
+              <div className="w-full md:w-48">
+                <label className={labelClass}>Fee Waiver Type</label>
+                <select
                   name="fee_waiver_type"
                   value={formik.values.fee_waiver_type}
                   onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={inputClass("fee_waiver_type")}
                 >
-                  <MenuItem value="partial">Partial</MenuItem>
-                  <MenuItem value="full">Full</MenuItem>
-                </Select>
-                <FormHelperText>
-                  {formik.touched.fee_waiver_type &&
-                    formik.errors.fee_waiver_type}
-                </FormHelperText>
-              </FormControl>
+                  <option value="" disabled>Select Type</option>
+                  <option value="partial">Partial</option>
+                  <option value="full">Full</option>
+                </select>
+                {formik.touched.fee_waiver_type && formik.errors.fee_waiver_type && <p className={errorClass}>{formik.errors.fee_waiver_type}</p>}
+              </div>
             )}
-            {formik.values.fee_waiver_type === "partial" &&
-              formik.values.is_fee_waiver && (
-                <TextField
-                  fullWidth
-                  variant="filled"
+            {formik.values.fee_waiver_type === "partial" && formik.values.is_fee_waiver && (
+              <div className="w-full md:w-64">
+                <label className={labelClass}>Waived Fees (in rupees)</label>
+                <input
                   type="text"
                   name="waived_fees"
-                  label="Waived Fees (in rupees)"
                   onBlur={formik.handleBlur}
                   onChange={formik.handleChange}
                   value={formik.values.waived_fees}
-                  error={
-                    !!formik.touched.waived_fees && !!formik.errors.waived_fees
-                  }
-                  helperText={
-                    formik.touched.waived_fees && formik.errors.waived_fees
-                  }
+                  className={inputClass("waived_fees")}
                 />
-              )}
-          </Box>
+                {formik.touched.waived_fees && formik.errors.waived_fees && <p className={errorClass}>{formik.errors.waived_fees}</p>}
+              </div>
+            )}
+          </div>
 
-          <fieldset style={{
-            border: theme.palette.mode === 'light' ? "2px solid rgb(0 165 201)" : "2px solid #BADFE7",
-            borderRadius: "10px",
-            padding: "10px",
-            margin: "5px 0px 5px 0px",
-            gridColumnStart: 1,
-            gridColumn: "span 4"
-          }}>
-            <legend style={{
-              color: theme.palette.mode === 'light' ? "rgb(0 165 201)" : "#BADFE7",
-              fontWeight: "bold",
-              padding: "5px",
-              fontSize: "larger"
-            }}>
-              Mother's Details
-            </legend>
-            <Box
-              display='grid'
-              gap="30px"
-              gridTemplateColumns="repeat(3, minmax(0, 1fr))"
-            >
-              <TextField
-                fullWidth
-                variant="filled"
-                type="text"
-                name="mother_name"
-                label="Mother's Name*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.mother_name}
-                error={!!formik.touched.mother_name && !!formik.errors.mother_name}
-                helperText={formik.touched.mother_name && formik.errors.mother_name}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="number"
-                name="mother_contact_no"
-                label="Mother Contact Number*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.mother_contact_no}
-                error={!!formik.touched.mother_contact_no && !!formik.errors.mother_contact_no}
-                helperText={formik.touched.mother_contact_no && formik.errors.mother_contact_no}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="number"
-                name="mother_aadhar"
-                label="Mother Aadhar*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.mother_aadhar}
-                error={!!formik.touched.mother_aadhar && !!formik.errors.mother_aadhar}
-                helperText={formik.touched.mother_aadhar && formik.errors.mother_aadhar}
-              />
-            </Box>
-          </fieldset>
+          {/* Mother's Details */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4 mt-4">
+            <fieldset className="border-2 border-emerald-500/30 rounded-2xl p-6 bg-emerald-50/30 dark:bg-emerald-900/10">
+              <legend className="text-emerald-700 dark:text-emerald-400 font-bold px-3 text-lg">Mother's Details</legend>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className={labelClass}>Mother's Name*</label>
+                  <input
+                    type="text"
+                    name="mother_name"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.mother_name}
+                    className={inputClass("mother_name")}
+                  />
+                  {formik.touched.mother_name && formik.errors.mother_name && <p className={errorClass}>{formik.errors.mother_name}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>Mother Contact Number*</label>
+                  <input
+                    type="number"
+                    name="mother_contact_no"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.mother_contact_no}
+                    className={inputClass("mother_contact_no")}
+                  />
+                  {formik.touched.mother_contact_no && formik.errors.mother_contact_no && <p className={errorClass}>{formik.errors.mother_contact_no}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>Mother Aadhar*</label>
+                  <input
+                    type="number"
+                    name="mother_aadhar"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.mother_aadhar}
+                    className={inputClass("mother_aadhar")}
+                  />
+                  {formik.touched.mother_aadhar && formik.errors.mother_aadhar && <p className={errorClass}>{formik.errors.mother_aadhar}</p>}
+                </div>
+              </div>
+            </fieldset>
+          </div>
 
-          <fieldset style={{
-            border: theme.palette.mode === 'light' ? "2px solid rgb(0 165 201)" : "2px solid #BADFE7",
-            borderRadius: "10px",
-            padding: "10px",
-            margin: "5px 0px 5px 0px",
-            gridColumnStart: 1,
-            gridColumn: "span 4"
-          }}>
-            <legend style={{
-              color: theme.palette.mode === 'light' ? "rgb(0 165 201)" : "#BADFE7",
-              fontWeight: "bold",
-              padding: "5px",
-              fontSize: "larger"
-            }}>
-              Father's Details
-            </legend>
-            <Box
-              display='grid'
-              gap="30px"
-              gridTemplateColumns="repeat(3, minmax(0, 1fr))"
-            >
-              <TextField
-                fullWidth
-                variant="filled"
-                type="text"
-                name="father_name"
-                label="Father's Name*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.father_name}
-                error={!!formik.touched.father_name && !!formik.errors.father_name}
-                helperText={formik.touched.father_name && formik.errors.father_name}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="number"
-                name="father_contact_no"
-                label="Father's Contact Number*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.father_contact_no}
-                error={!!formik.touched.father_contact_no && !!formik.errors.father_contact_no}
-                helperText={formik.touched.father_contact_no && formik.errors.father_contact_no}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="number"
-                name="father_aadhar"
-                label="Father's Aadhar*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.father_aadhar}
-                error={!!formik.touched.father_aadhar && !!formik.errors.father_aadhar}
-                helperText={formik.touched.father_aadhar && formik.errors.father_aadhar}
-              />
-            </Box>
-          </fieldset>
+          {/* Father's Details */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4">
+            <fieldset className="border-2 border-blue-500/30 rounded-2xl p-6 bg-blue-50/30 dark:bg-blue-900/10">
+              <legend className="text-blue-700 dark:text-blue-400 font-bold px-3 text-lg">Father's Details</legend>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className={labelClass}>Father's Name*</label>
+                  <input
+                    type="text"
+                    name="father_name"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.father_name}
+                    className={inputClass("father_name")}
+                  />
+                  {formik.touched.father_name && formik.errors.father_name && <p className={errorClass}>{formik.errors.father_name}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>Father's Contact Number*</label>
+                  <input
+                    type="number"
+                    name="father_contact_no"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.father_contact_no}
+                    className={inputClass("father_contact_no")}
+                  />
+                  {formik.touched.father_contact_no && formik.errors.father_contact_no && <p className={errorClass}>{formik.errors.father_contact_no}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>Father's Aadhar*</label>
+                  <input
+                    type="number"
+                    name="father_aadhar"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.father_aadhar}
+                    className={inputClass("father_aadhar")}
+                  />
+                  {formik.touched.father_aadhar && formik.errors.father_aadhar && <p className={errorClass}>{formik.errors.father_aadhar}</p>}
+                </div>
+              </div>
+            </fieldset>
+          </div>
 
-          <fieldset style={{
-            border: theme.palette.mode === 'light' ? "2px solid rgb(0 165 201)" : "2px solid #BADFE7",
-            borderRadius: "10px",
-            padding: "10px",
-            margin: "5px 0px 10px 0px",
-            gridColumnStart: 1,
-            gridColumn: "span 4"
-          }}>
-            <legend style={{
-              color: theme.palette.mode === 'light' ? "rgb(0 165 201)" : "#BADFE7",
-              fontWeight: "bold",
-              padding: "5px",
-              fontSize: "larger"
-            }}>
-              Gurdian's Details ( if any )
-            </legend>
-            <Box
-              display='grid'
-              gap="30px"
-              gridTemplateColumns="repeat(3, minmax(0, 1fr))"
-            >
-              <TextField
-                fullWidth
-                variant="filled"
-                type="text"
-                name="guardian_name"
-                label="Guardian's Name*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.guardian_name}
-                error={!!formik.touched.guardian_name && !!formik.errors.guardian_name}
-                helperText={formik.touched.guardian_name && formik.errors.guardian_name}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="number"
-                name="guardian_contact_no"
-                label="Guardian's Contact Number*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.guardian_contact_no}
-                error={!!formik.touched.guardian_contact_no && !!formik.errors.guardian_contact_no}
-                helperText={formik.touched.guardian_contact_no && formik.errors.guardian_contact_no}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="number"
-                name="guardian_aadhar"
-                label="Guardian's Aadhar*"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.guardian_aadhar}
-                error={!!formik.touched.guardian_aadhar && !!formik.errors.guardian_aadhar}
-                helperText={formik.touched.guardian_aadhar && formik.errors.guardian_aadhar}
-              />
-            </Box>
-          </fieldset>
+          {/* Guardian's Details */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4">
+            <fieldset className="border-2 border-purple-500/30 rounded-2xl p-6 bg-purple-50/30 dark:bg-purple-900/10">
+              <legend className="text-purple-700 dark:text-purple-400 font-bold px-3 text-lg">Guardian's Details (if any)</legend>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className={labelClass}>Guardian's Name</label>
+                  <input
+                    type="text"
+                    name="guardian_name"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.guardian_name}
+                    className={inputClass("guardian_name")}
+                  />
+                  {formik.touched.guardian_name && formik.errors.guardian_name && <p className={errorClass}>{formik.errors.guardian_name}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>Guardian's Contact Number</label>
+                  <input
+                    type="number"
+                    name="guardian_contact_no"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.guardian_contact_no}
+                    className={inputClass("guardian_contact_no")}
+                  />
+                  {formik.touched.guardian_contact_no && formik.errors.guardian_contact_no && <p className={errorClass}>{formik.errors.guardian_contact_no}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>Guardian's Aadhar</label>
+                  <input
+                    type="number"
+                    name="guardian_aadhar"
+                    onBlur={formik.handleBlur}
+                    onChange={formik.handleChange}
+                    value={formik.values.guardian_aadhar}
+                    className={inputClass("guardian_aadhar")}
+                  />
+                  {formik.touched.guardian_aadhar && formik.errors.guardian_aadhar && <p className={errorClass}>{formik.errors.guardian_aadhar}</p>}
+                </div>
+              </div>
+            </fieldset>
+          </div>
 
-
-        </Box>
+        </div>
       </form>
       <Toast
         alerting={toastInfo.toastAlert}
         severity={toastInfo.toastSeverity}
         message={toastInfo.toastMessage}
       />
-    </Box>
+    </div>
   );
 };
 
@@ -1107,7 +892,7 @@ StudentFormComponent.propTypes = {
   setClassData: PropTypes.func,
   setFormikData: PropTypes.func,
   allSubjects: PropTypes.array,
-  userId: PropTypes.number,
+  userId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   updatedValues: PropTypes.object,
   iCardDetails: PropTypes.object,
   setICardDetails: PropTypes.func,

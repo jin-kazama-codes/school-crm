@@ -7,51 +7,28 @@
  * restrictions set forth in your license agreement with School CRM.
  */
 
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
+import { useNavigate } from "@/lib/routerAdapter";
 
 import {
-  Avatar,
-  Box,
-  Divider,
-  useTheme,
-  IconButton,
-  Tooltip,
-  MenuItem,
-} from "@mui/material";
-import {
-  Autocomplete,
-  Paper,
   Menu,
-  ListItemIcon,
-  TextField,
-  Typography,
-  useMediaQuery,
-} from "@mui/material";
-
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
-import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
-import Logout from "@mui/icons-material/Logout";
-import LockResetIcon from "@mui/icons-material/LockReset";
-import * as React from "react";
+  Sun,
+  Moon,
+  LogOut,
+  Key
+} from "lucide-react";
 
 import API from "../../apis";
 import ChangePwModal from "../models/ChangePwModal";
-import "./index.css"
-
 import { setAllSchools } from "../../redux/actions/SchoolAction";
-import { ColorModeContext, tokens } from "../../theme";
+import { ColorModeContext } from "../../theme";
 import { Utility } from "../utility";
-import { useNavigate } from "@/lib/routerAdapter";
-import { red } from "@mui/material/colors";
 
 const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollapsed, schoolInfo }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
   const [isOpen, setIsOpen] = useState(true);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [changePwModalOpen, setChangePwModalOpen] = useState(false);
   const [schoolName, setSchoolName] = useState("");
   const [schoolObj, setSchoolObj] = useState({});
@@ -59,11 +36,11 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
 
   const dispatch = useDispatch();
   const navigateTo = useNavigate();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
-  const isMobile = useMediaQuery("(max-width:480px)");
-  const isTab = useMediaQuery("(max-width:920px)");
+  
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 480;
+  const isTab = typeof window !== "undefined" && window.innerWidth <= 920;
+  const profileMenuRef = useRef(null);
 
   const {
     fetchAndSetAll,
@@ -74,25 +51,11 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
     setLocalStorage,
   } = Utility();
   const { username, role } = getNameAndType(roleName);
-  
-
-  const CustomOption = {
-    id: null,
-    name: "All Schools",
-  };
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleSignOut = () => {
     localStorage.clear();
     navigateTo("/login", { replace: true });
-    location.reload();
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -101,20 +64,17 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
     }
   }, [getLocalStorage("auth")]);
 
-  //on refresh autocomplete state gets empty so doing this
   useEffect(() => {
     if (schoolInfo?.encrypted_id) {
       API.CommonAPI.decryptText(schoolInfo).then((result) => {
         if (result.status === "Success") {
-          const filteredSchool = allSchools?.listData.find(
+          const filteredSchool = allSchools?.listData?.find(
             (value) => value.id === parseInt(result.data)
           );
           setSchoolObj({
             id: filteredSchool?.id,
             name: filteredSchool?.name,
           });
-        } else if (result.status === "Error") {
-          console.log("Error Encrypting Data");
         }
       });
     }
@@ -127,287 +87,143 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
   }, []);
 
   useEffect(() => {
-    // Set up the timeout to close the tooltip after 6 seconds
     const timeoutId = setTimeout(() => {
       setIsOpen(false);
     }, 6000);
-
-    // Cleanup function to clear the timeout
-    return () => {
-      clearTimeout(timeoutId);
-    };
+    return () => clearTimeout(timeoutId);
   }, []);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const isDarkMode = document.documentElement.classList.contains("dark");
 
   return (
     <>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          textAlign: "center",
-          justifyContent: "space-between",
-          backgroundColor:
-            theme.palette.mode === "light" ? "white !important" : "#141b2d",
-          boxShadow: "1px 1px 10px black",
-          position: "sticky",
-          top: "0px",
-          zIndex: 1000,
-        }}
-      >
-        {/* ICONS */}
-        {isMobile &&
-          <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
-            <MenuOutlinedIcon sx={{ marginLeft: "15px" }} />
-          </IconButton>
-        }
-        {rolePriority == 1 && !isMobile &&
-          <Box></Box>
-        }
-        {schoolName && rolePriority !== 1 &&
-          <Box>
-            <Typography
-              sx={{
-                m: "20px",
-                fontSize: isMobile ? "15px" : isTab ? "30" : "40px",
-                fontWeight: "bolder",
-                textAlign: "center",
-                textShadow: " 2px 8px 10px #aba8a8;",
-                color:
-                  theme.palette.mode === "light"
-                    ? `rgb(51 153 254) !important`
-                    : "white",
-                wordSpacing: "5px",
-              }}
+      <header className="sticky top-0 z-[1000] bg-white dark:bg-[#0f0f0f] border-b border-slate-100 dark:border-[#1a1a1a]/80 shadow-sm px-4 py-2 flex items-center justify-between transition-colors duration-300 min-h-[57px]">
+        {/* Left Section */}
+        <div className="flex items-center space-x-4">
+          {isMobile && (
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1a1a1a] transition-colors"
             >
-              {schoolName}
-            </Typography>
-          </Box>
-        }
-        <Box
-          sx={{
-            display: "flex",
-            textAlign: "center",
-            justifyContent: "flex-end",
-            p: 2,
-            backgroundColor:
-              theme.palette.mode === "light" ? "white !important" : "#141b2d",
-          }}
-        >
-          {rolePriority === 1 && (
-            <Tooltip
-              title="Select School"
-              placement="left-start"
-              open={isOpen && allSchools?.listData?.length > 0}
-              arrow
-              slotProps={{
-                arrow: {
-                  sx: {
-                    color: "#f50057",
-
-                  }
-                },
-                tooltip: {
-                  sx: {
-                    animation: 'blinking 1s infinite',
-                    backgroundColor: "#f50057",
-                    color: "#ffffff",
-                    padding: "8px 16px",
-                    borderRadius: "4px",
-                    boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.2)",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    letterSpacing: "0.5px"
-                  }
-                }
-              }}
-            >
-              <Autocomplete
-                options={[CustomOption, ...(allSchools?.listData || [])]}
-                getOptionLabel={(option) => option.name || ""}
-                disableCloseOnSelect
-                value={schoolObj}
-                onChange={(event, value) => {
-                  if (value && value.id === null) {
-                    remLocalStorage("schoolInfo");
-                    location.reload();
-                  }
-                  setSchoolObj({
-                    id: value.id,
-                    name: value.name,
-                  });
-                  API.CommonAPI.encryptText({ data: value?.id }).then(
-                    (result) => {
-                      if (result.status === "Success") {
-                        setLocalStorage("schoolInfo", result.data);
-                        location.reload();
-                      } else if (result.status === "Error") {
-                        console.log("Error Encrypting Data");
-                      }
-                    }
-                  );
-                }}
-                sx={{ width: isMobile ? "150px" : "280px", marginRight: "0px" }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select School"
-                    sx={{
-                      fieldset: {
-                        boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
-                        borderRadius: "50px",
-                      },
-                    }}
-                  />
-                )}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      background:
-                        theme.palette.mode === "light"
-                          ? `#6ac6ff !important`
-                          : "black",
-                      borderRadius: "10px",
-                      boxShadow:
-                        "rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;",
-                      color: colors.redAccent[400],
-                      fontSize: "25px",
-                      "&:hover": {
-                        border: "1px solid #00FF00",
-                        color: "gray",
-                        backgroundColor: "white !important",
-                      },
-                      width: isMobile ? "150px" : "280px"
-                    }
-                  }
-                }}
-              />
-            </Tooltip>
+              <Menu className="w-5 h-5" />
+            </button>
           )}
 
-          <IconButton onClick={colorMode.toggleColorMode}>
-            {theme.palette.mode === "dark" ? (
-              <Tooltip title="Dark Mode">
-                <DarkModeOutlinedIcon />
-              </Tooltip>
-            ) : (
-              <Tooltip title="Light Mode">
-                <LightModeOutlinedIcon />
-              </Tooltip>
-            )}
-          </IconButton>
-          {/* <Tooltip title="Notifications">
-            <IconButton>
-              <NotificationsOutlinedIcon />
-            </IconButton>
-          </Tooltip> */}
-          {/* <Tooltip title="Settings">
-          <IconButton>
-            <SettingsOutlinedIcon />
-          </IconButton>
-        </Tooltip>
-        <PersonOutlinedIcon /> */}
-          <Tooltip title="Account">
-            <IconButton
-              onClick={handleClick}
-              size="small"
-              sx={{ ml: 1 }}
-              aria-controls={open ? "account-menu" : undefined}
-              aria-haspopup="true"
-              aria-expanded={open ? "true" : undefined}
-            >
-              <Avatar
-                sx={{
-                  padding: "2px",
-                  width: 36,
-                  height: 33,
-                  bgcolor: colors.grey[100],
+          {schoolName && rolePriority !== 1 && (
+            <h1 className="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 drop-shadow-sm tracking-tight hidden sm:block">
+              {schoolName}
+            </h1>
+          )}
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          {rolePriority === 1 && (
+            <div className="relative">
+              <select
+                className="appearance-none bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 text-sm rounded-xl px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer min-w-[150px] md:min-w-[200px]"
+                value={schoolObj.id || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    remLocalStorage("schoolInfo");
+                    window.location.reload();
+                    return;
+                  }
+                  const selectedId = parseInt(val);
+                  const selectedSchool = allSchools?.listData?.find(s => s.id === selectedId);
+                  setSchoolObj({ id: selectedId, name: selectedSchool?.name });
+                  API.CommonAPI.encryptText({ data: selectedId }).then(result => {
+                    if (result.status === "Success") {
+                      setLocalStorage("schoolInfo", result.data);
+                      window.location.reload();
+                    }
+                  });
                 }}
               >
-                {getInitials()}
-              </Avatar>
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <Menu
-          anchorEl={anchorEl}
-          id="account-menu"
-          open={open}
-          onClose={handleClose}
-          onClick={handleClose}
-          PaperProps={{
-            elevation: 0,
-            sx: {
-              overflow: "visible",
-              filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-              mt: 1.5,
-              "& .MuiAvatar-root": {
-                width: 32,
-                height: 32,
-                ml: -0.5,
-                mr: 1,
-              },
-              "&:before": {
-                content: '""',
-                display: "block",
-                position: "absolute",
-                top: 0,
-                right: 14,
-                width: 10,
-                height: 10,
-                bgcolor: "background.paper",
-                transform: "translateY(-50%) rotate(45deg)",
-                zIndex: 0,
-              },
-            },
-          }}
-          transformOrigin={{ horizontal: "right", vertical: "top" }}
-          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-        >
-          <MenuItem onClick={handleClose} sx={{ flexDirection: "column" }}>
-            <Box textAlign="center">
-              <Typography
-                variant="h3"
-                color={colors.blueAccent[300]}
-                fontWeight="bold"
-                sx={{ m: "10px 0 4px 0" }}
-              >
-                {username}
-              </Typography>
-              <Typography variant="h5" color={colors.greenAccent[1000]}>
-                {" "}
-                {role}{" "}
-              </Typography>
-            </Box>
-          </MenuItem>
+                <option value="">All Schools</option>
+                {allSchools?.listData?.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          <Divider />
-          <MenuItem
-            onClick={() => setChangePwModalOpen(true)}
-            sx={{ color: colors.blueAccent[300], justifyContent: "center" }}
+          {/* Theme Toggle */}
+          <button
+            onClick={() => {
+              // We trigger the context toggle to let the app know, 
+              // but we can also manually toggle dark mode on document element
+              colorMode.toggleColorMode();
+              if (isDarkMode) {
+                document.documentElement.classList.remove('dark');
+              } else {
+                document.documentElement.classList.add('dark');
+              }
+            }}
+            className="p-2 rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-slate-50 dark:hover:bg-[#1a1a1a] transition-colors"
           >
-            <ListItemIcon>
-              <LockResetIcon
-                sx={{ color: colors.blueAccent[300], fontSize: "22px" }}
-              />
-            </ListItemIcon>
-            <Typography variant="h5"> Change Password </Typography>
-          </MenuItem>
+            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
 
-          <Divider />
-          <MenuItem
-            onClick={handleSignOut}
-            sx={{ color: colors.blueAccent[300] }}
-          >
-            <ListItemIcon>
-              <Logout
-                fontSize="medium"
-                sx={{ color: colors.blueAccent[300] }}
-              />
-            </ListItemIcon>
-            <Typography variant="h5"> Logout </Typography>
-          </MenuItem>
-        </Menu>
-      </Box>
+          {/* Profile Dropdown */}
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold text-sm shadow-sm hover:ring-2 ring-emerald-500/50 transition-all focus:outline-none"
+            >
+              {getInitials()}
+            </button>
+
+            {profileMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#0f0f0f] rounded-2xl shadow-xl border border-slate-100 dark:border-[#1a1a1a] p-2 animate-in fade-in slide-in-from-top-2 z-50">
+                <div className="px-3 py-3 border-b border-slate-100 dark:border-[#1a1a1a] text-center">
+                  <p className="font-bold text-slate-800 dark:text-white truncate">{username}</p>
+                  <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{role}</p>
+                </div>
+                
+                <div className="p-1 space-y-1 mt-1">
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      setChangePwModalOpen(true);
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-[#1a1a1a] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-sm text-slate-600 dark:text-slate-300"
+                  >
+                    <Key className="w-4 h-4" />
+                    <span>Change Password</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      handleSignOut();
+                    }}
+                    className="w-full flex items-center justify-center space-x-2 px-3 py-2 mt-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-rose-500/20"
+                  >
+                    <span>Logout</span>
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
       <ChangePwModal
         openDialog={changePwModalOpen}
         setOpenDialog={setChangePwModalOpen}
@@ -419,6 +235,9 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
 Topbar.propTypes = {
   roleName: PropTypes.string,
   rolePriority: PropTypes.number,
+  isCollapsed: PropTypes.bool,
+  setIsCollapsed: PropTypes.func,
+  schoolInfo: PropTypes.object
 };
 
 export default Topbar;

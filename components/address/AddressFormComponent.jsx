@@ -11,7 +11,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 
 import { useFormik } from "formik";
-import { Box, FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField, useMediaQuery } from "@mui/material";
+import { MapPin, Navigation, Map } from "lucide-react";
 
 import './index.css';
 import API from "../../apis";
@@ -44,10 +44,7 @@ const AddressFormComponent = ({
     const [states, setStates] = useState([]);
     const [stateId, setStateId] = useState(null);
     const [cities, setCities] = useState([]);
-    // const [_cityId, setCityId] = useState(null);
     const [zipcodeCity, setZipcodeCity] = useState(null);
-
-    const isNonMobile = useMediaQuery("(min-width:600px)");
 
     const { getStateCityFromZipCode } = Utility();
 
@@ -111,23 +108,6 @@ const AddressFormComponent = ({
         }
     }, [updatedValues]);
 
-    // useEffect(() => {        not required now, because this web app is only for india
-    //     const getCountry = () => {
-    //         API.CountryAPI.getCountries()
-    //             .then(country => {
-    //                 if (country?.status === 'Success') {
-    //                     setCountries(country.data.list);
-    //                 } else {
-    //                     console.log("An Error Occurred, Please Try Again");
-    //                 }
-    //             })
-    //             .catch(err => {
-    //                 throw err;
-    //             });
-    //     };
-    //     getCountry();
-    // }, []);
-
     useEffect(() => {
         const getStates = () => {
             if (formik.values.country || countryId) {
@@ -136,9 +116,6 @@ const AddressFormComponent = ({
                         if (data?.status === 'Success') {
                             setStates(data.data.list);
                             setCities([]);
-                            // if (update) {
-                            //     getCities();
-                            // }
                         } else {
                             setStates([]);
                             setCities([]);
@@ -192,7 +169,6 @@ const AddressFormComponent = ({
     useEffect(() => {
         if (cities.length) {
             formik.setFieldValue("city", updatedValues?.city);
-            // setCityId(updatedValues?.city);
         }
     }, [cities.length]);
 
@@ -216,109 +192,148 @@ const AddressFormComponent = ({
         fetchStateCity();
     }, [formik?.values?.zipcode]);
 
+    const inputClass = (touched, error) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all pl-11 ${
+        touched && error 
+        ? 'border-red-500 focus:ring-red-500/50' 
+        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+    } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+
+    const selectClass = (touched, error) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all pl-11 ${
+        touched && error 
+        ? 'border-red-500 focus:ring-red-500/50' 
+        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
+    } text-slate-800 dark:text-slate-100`;
+
+    const labelClass = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5";
+    const errorClass = "mt-1.5 text-sm text-red-500 font-medium";
+    const fieldsetLegendClass = "flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100 mb-6";
+    const fieldsetClass = "p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 mt-8";
+
     return (
-        <Box m="20px" marginBottom="60px">
-            <form ref={refId}>
-                <Box
-                    display="grid"
-                    gap="30px"
-                    gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-                    position='relative'
-                    id='box-shadow'
-                    sx={{
-                        "& > div": { gridColumn: isNonMobile ? undefined : "span 4" },
-                        transform: 'translate(0)',
-                        transformStyle: 'preserve-3d'
-                    }}
-                >
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        name="street"
-                        label="Street*"
-                        autoComplete="new-street"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.street}
-                        error={!!formik.touched.street && !!formik.errors.street}
-                        helperText={formik.touched.street && formik.errors.street}
-                        sx={{ gridColumn: "span 2" }}
-                    />
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        name="landmark"
-                        label="Landmark"
-                        autoComplete="new-landmark"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.landmark}
-                        error={!!formik.touched.landmark && !!formik.errors.landmark}
-                        helperText={formik.touched.landmark && formik.errors.landmark}
-                        sx={{ gridColumn: "span 2" }}
-                    />
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        type="text"
-                        name="zipcode"
-                        label="Zipcode*"
-                        autoComplete="new-zipcode"
-                        onBlur={formik.handleBlur}
-                        onChange={formik.handleChange}
-                        value={formik.values.zipcode}
-                        error={!!formik.touched.zipcode && !!formik.errors.zipcode}
-                        helperText={formik.touched.zipcode && formik.errors.zipcode}
-                    />
-                    <FormControl variant="filled" sx={{ minWidth: 120 }}
-                        error={!!formik.touched.state && !!formik.errors.state}
-                    >
-                        <InputLabel id="stateField">--Select State*--</InputLabel>
-                        <Select
-                            id="state"
-                            name="state"
-                            variant="filled"
-                            value={formik.values.state}
-                            onChange={event => {
-                                setStateId(event.target.value);
-                                formik.setFieldValue("state", event.target.value);
-                            }}
-                        >
-                            {states.map(item => (
-                                <MenuItem value={item.id} name={item.name} key={item.name}>
-                                    {item.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        <FormHelperText>{formik.touched.state && formik.errors.state}</FormHelperText>
-                    </FormControl>
-                    <FormControl variant="filled" sx={{ minWidth: 120 }}
-                        error={!!formik.touched.city && !!formik.errors.city}
-                    >
-                        <InputLabel id="cityField">--Select City*--</InputLabel>
-                        <Select
-                            id="city"
-                            name="city"
-                            variant="filled"
-                            value={formik.values.city || updatedValues?.city}
-                            onChange={event => {
-                                // setCityId(event.target.value);
-                                formik.setFieldValue("city", event.target.value);
-                            }}
-                        >
-                            {cities.map(item => (
-                                <MenuItem value={item.id} key={item.name} name={item.name}>
-                                    {item.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        <FormHelperText>{formik.touched.city && formik.errors.city}</FormHelperText>
-                    </FormControl>
-                </Box>
+        <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full animate-in slide-in-from-bottom-4 duration-500 mt-8">
+            <form ref={refId} className="space-y-6">
+                
+                <div className={fieldsetClass}>
+                    <h3 className={fieldsetLegendClass}>
+                        <MapPin className="w-6 h-6 text-red-500" />
+                        Address Details
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="flex flex-col md:col-span-2">
+                            <label className={labelClass}>Street Address*</label>
+                            <div className="relative">
+                                <MapPin className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    name="street"
+                                    autoComplete="new-street"
+                                    onBlur={formik.handleBlur}
+                                    onChange={formik.handleChange}
+                                    value={formik.values.street}
+                                    className={inputClass(formik.touched.street, formik.errors.street)}
+                                    placeholder="e.g., 123 Main St, Apt 4B"
+                                />
+                            </div>
+                            {formik.touched.street && formik.errors.street && (
+                                <p className={errorClass}>{formik.errors.street}</p>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col md:col-span-2">
+                            <label className={labelClass}>Landmark</label>
+                            <div className="relative">
+                                <Navigation className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    name="landmark"
+                                    autoComplete="new-landmark"
+                                    onBlur={formik.handleBlur}
+                                    onChange={formik.handleChange}
+                                    value={formik.values.landmark}
+                                    className={inputClass(formik.touched.landmark, formik.errors.landmark)}
+                                    placeholder="e.g., Near Central Park"
+                                />
+                            </div>
+                            {formik.touched.landmark && formik.errors.landmark && (
+                                <p className={errorClass}>{formik.errors.landmark}</p>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col">
+                            <label className={labelClass}>Zipcode / Postal Code*</label>
+                            <div className="relative">
+                                <Map className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    name="zipcode"
+                                    autoComplete="new-zipcode"
+                                    onBlur={formik.handleBlur}
+                                    onChange={formik.handleChange}
+                                    value={formik.values.zipcode}
+                                    className={inputClass(formik.touched.zipcode, formik.errors.zipcode)}
+                                    placeholder="e.g., 10001"
+                                />
+                            </div>
+                            {formik.touched.zipcode && formik.errors.zipcode && (
+                                <p className={errorClass}>{formik.errors.zipcode}</p>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col">
+                            <label className={labelClass}>State*</label>
+                            <div className="relative">
+                                <Map className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <select
+                                    name="state"
+                                    value={formik.values.state}
+                                    onChange={event => {
+                                        setStateId(event.target.value);
+                                        formik.setFieldValue("state", event.target.value);
+                                    }}
+                                    className={selectClass(formik.touched.state, formik.errors.state)}
+                                >
+                                    <option value={0} disabled>--Select State--</option>
+                                    {states.map(item => (
+                                        <option value={item.id} key={item.name}>
+                                            {item.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {formik.touched.state && formik.errors.state && (
+                                <p className={errorClass}>{formik.errors.state}</p>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col">
+                            <label className={labelClass}>City*</label>
+                            <div className="relative">
+                                <Map className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <select
+                                    name="city"
+                                    value={formik.values.city || updatedValues?.city || 0}
+                                    onChange={event => {
+                                        formik.setFieldValue("city", event.target.value);
+                                    }}
+                                    className={selectClass(formik.touched.city, formik.errors.city)}
+                                >
+                                    <option value={0} disabled>--Select City--</option>
+                                    {cities.map(item => (
+                                        <option value={item.id} key={item.name}>
+                                            {item.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {formik.touched.city && formik.errors.city && (
+                                <p className={errorClass}>{formik.errors.city}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </form>
-        </Box>
+        </div>
     );
 };
 

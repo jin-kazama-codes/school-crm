@@ -6,15 +6,12 @@
  * restrictions set forth in your license agreement with School CRM.
  */
 
+import React from "react";
 import { useNavigate } from "@/lib/routerAdapter";
 import { useDispatch } from "react-redux";
-
 import PropTypes from "prop-types";
-import { MenuItem } from "react-pro-sidebar";
-import { Typography, useTheme, Divider, useMediaQuery } from "@mui/material";
 
 import { setMenuItem } from "../../redux/actions/NavigationAction";
-import { tokens } from "../../theme";
 import { Utility } from "../utility";
 
 export const SidebarItem = ({
@@ -30,58 +27,57 @@ export const SidebarItem = ({
     setIsCollapsed,
     isCollapsed
 }) => {
-    const theme = useTheme();
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const colors = tokens(theme.palette.mode);
-    const isMobile = useMediaQuery("(max-width:480px)");
     const { setLocalStorage } = Utility();
 
-    if (rolePriority > menuVisibility) { // 2 > 2
-        return false;
+    if (rolePriority > menuVisibility) {
+        return null;
     }
 
+    const isActive = title === selected;
+
     return (
-        <>
-            <MenuItem
-                active={title === selected}
-                style={{
-                    color: colors.grey[100],
-                    marginLeft: className ? '-15px' : 'auto',
-                    marginRight: className ? '-15px' : 'auto'
-                }}
+        <div className="mb-1">
+            <button
                 onClick={(e) => {
                     if (isSubMenu) {
                         e.stopPropagation();
                     }
-                    handleClassClick ? handleClassClick() : null;
+                    if (handleClassClick) handleClassClick();
                     dispatch(setMenuItem(title));
                     setLocalStorage("menu", { selected: title });
-                    if (isMobile && setIsCollapsed) {
-                        setIsCollapsed(!isCollapsed);
+                    if (setIsCollapsed && window.innerWidth <= 480) {
+                        setIsCollapsed(true);
                     }
                     if (to) {
                         navigate(to);
                     }
                 }}
-                icon={icon}
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+                    isActive
+                        ? "bg-emerald-600 text-white font-bold shadow-xs shadow-emerald-600/10 dark:neon-glow dark:bg-emerald-500"
+                        : "text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-[#1a1a1a]/50"
+                } ${className || ""}`}
             >
-                <Typography>{title}</Typography>
-            </MenuItem>
-            <Divider />
-        </>
+                <div className="flex shrink-0">{icon}</div>
+                {!isCollapsed && <span className="text-xs">{title}</span>}
+            </button>
+        </div>
     );
 };
 
 SidebarItem.propTypes = {
     title: PropTypes.string,
     to: PropTypes.string,
-    icon: PropTypes.object,
+    icon: PropTypes.node,
     selected: PropTypes.string,
     rolePriority: PropTypes.number,
     menuVisibility: PropTypes.number,
     className: PropTypes.string,
     handleClassClick: PropTypes.func,
-    isSubMenu: PropTypes.bool
+    isSubMenu: PropTypes.bool,
+    setIsCollapsed: PropTypes.func,
+    isCollapsed: PropTypes.bool
 };

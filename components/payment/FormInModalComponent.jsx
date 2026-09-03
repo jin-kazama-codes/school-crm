@@ -8,13 +8,10 @@
  */
 
 import PropTypes from "prop-types";
-
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "@/lib/routerAdapter";
-
-import { Box, Button, Dialog, Divider, Typography, useMediaQuery } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { X, CreditCard, History } from "lucide-react";
 
 import API from "../../apis";
 import Loader from "../common/Loader";
@@ -22,24 +19,16 @@ import PaymentFormComponent from "./PaymentFormComponent";
 import Toast from "../common/Toast";
 
 import { setMenuItem } from "../../redux/actions/NavigationAction";
-import { tokens, themeSettings } from "../../theme";
 import { Utility } from "../utility";
-
-import formBg from "../assets/formBg.png";
 import PaymentDataTable from "./PaymentDataTable";
 
-const FormComponent = ({ openDialog, setOpenDialog }) => {
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    // const fullScreen = useMediaQuery(theme.breakpoints.down("lg"));
-    const isMobile = useMediaQuery("(max-width:480px)");
-    const isTab = useMediaQuery("(max-width:920px)");
+import formBg from "../assets/formBg.png";
 
+const FormComponent = ({ openDialog, setOpenDialog }) => {
     const handleDialogClose = () => {
         setOpenDialog(false);
     };
 
-    //form component starts
     const [title, setTitle] = useState("Create");
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -56,13 +45,14 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
 
     const dispatch = useDispatch();
     const { state } = useLocation();
-    const { typography } = themeSettings(theme.palette.mode);
     const { capitalizeEveryWord, toastAndNavigate, getLocalStorage } = Utility();
     const studentName = state?.lastname ? `${state?.firstname} ${state?.lastname}` : state?.firstname;
 
     useEffect(() => {
         const selectedMenu = getLocalStorage("menu");
-        dispatch(setMenuItem(selectedMenu.selected));
+        if(selectedMenu?.selected) {
+            dispatch(setMenuItem(selectedMenu.selected));
+        }
     }, []);
 
     const createPayment = useCallback(formData => {
@@ -80,16 +70,12 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
             .catch(err => {
                 setLoading(false);
                 toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, '#', true);
-                console.log('Error in Creating Payment:', err);
             });
     }, [formData]);
 
-    // Create Payment
     useEffect(() => {
         if (formData.paymentData.validated) {
             createPayment(formData);
-        } else {
-            // setSubmitted(false);
         }
     }, [submitted]);
 
@@ -99,102 +85,132 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
     };
 
     const handleFormChange = (data, form) => {
-        form === 'payment' ? setFormData({ ...formData, paymentData: data }) : null;
+        if(form === 'payment') setFormData({ ...formData, paymentData: data });
     };
 
+    if (!openDialog) return null;
+
     return (
-        <Dialog
-            open={openDialog}
-            onClose={handleDialogClose}
-            aria-labelledby="responsive-dialog-title"
-            fullWidth
-            maxWidth='xl'
-            PaperProps={{
-                sx: {
-                    minHeight: '96%'
-                }
-            }}
-            sx={{
-                top: isMobile ? "13%" : isTab ? "5%" : "0%",
-                height: isMobile ? "79%" : isTab ? "69%" : "90%",
-                "& .MuiDialog-container": {
-                    height: '95vh',
-                },
-                "& .MuiPaper-root": {
-                    backgroundImage: theme.palette.mode == "light" ?
-                        `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${formBg})`
-                        : `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url(${formBg})`,
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-12 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+                className="w-full max-w-7xl h-[95vh] flex flex-col bg-white dark:bg-[#1a1a1a] rounded-[24px] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url(${formBg?.src || formBg})`,
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "center",
                     backgroundSize: "cover"
-                }
-            }}
-        >
-            <Typography
-                fontFamily={typography.fontFamily}
-                fontSize={typography.h2.fontSize}
-                color={colors.grey[100]}
-                fontWeight="600"
-                display="inline-block"
-                textAlign="center"
-                margin="10px auto 10px auto"
-            >
-                {`${selected} History for ${studentName ? capitalizeEveryWord(studentName) : ''}`}
-            </Typography>
-            <PaymentDataTable />
-
-            <Typography
-                fontFamily={typography.fontFamily}
-                fontSize={typography.h2.fontSize}
-                color={colors.grey[100]}
-                fontWeight="600"
-                display="inline-block"
-                textAlign="center"
-                margin="20px auto 10px auto"
-            >
-                {`${title} ${selected} for ${studentName ? capitalizeEveryWord(studentName) : ''}`}
-            </Typography>
-            <PaymentFormComponent
-                onChange={(data) => {
-                    handleFormChange(data, 'payment');
                 }}
-                refId={paymentFormRef}
-                setDirty={setDirty}
-                reset={reset}
-                setReset={setReset}
-            />
-            <Divider />
-            <Box display="flex" justifyContent="end" m="20px">
-                {   //hide reset button on Payment update
-                    title === "Update" ? null :
-                        <Button type="reset" color="warning" variant="contained" sx={{ mr: 3 }}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-black/50 backdrop-blur-md sticky top-0 z-10">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                            <CreditCard className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                                {selected} Management
+                            </h2>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                {studentName ? capitalizeEveryWord(studentName) : 'Student'}
+                            </p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleDialogClose}
+                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 custom-scrollbar">
+                    
+                    {/* History Section */}
+                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center gap-2">
+                            <History className="w-5 h-5 text-slate-500" />
+                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                                Payment History
+                            </h3>
+                        </div>
+                        <div className="p-2 md:p-4">
+                            <PaymentDataTable />
+                        </div>
+                    </div>
+
+                    {/* New Payment Section */}
+                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                                {title} New Payment
+                            </h3>
+                        </div>
+                        <div className="p-2 md:p-4">
+                            <PaymentFormComponent
+                                onChange={(data) => handleFormChange(data, 'payment')}
+                                refId={paymentFormRef}
+                                setDirty={setDirty}
+                                reset={reset}
+                                setReset={setReset}
+                            />
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-black/50 backdrop-blur-md flex justify-end gap-4 sticky bottom-0 z-10">
+                    {title !== "Update" && (
+                        <button 
+                            type="reset" 
                             disabled={!dirty || submitted}
                             onClick={() => {
                                 if (window.confirm("Do You Really Want To Reset?")) {
                                     setReset(true);
-                                    setOpenDialog(false);
                                 }
                             }}
+                            className="px-6 py-2.5 rounded-xl font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-amber-500/20"
                         >
                             Reset
-                        </Button>
-                }
-                <Button color="error" variant="contained" sx={{ mr: 3 }}
-                    onClick={() => setOpenDialog(false)}>
-                    Cancel
-                </Button>
-                <Button type="submit" onClick={() => handleSubmit()} disabled={!dirty}
-                    color={title === "Update" ? "info" : "success"} variant="contained"
-                >
-                    Submit
-                </Button>
-                <Toast alerting={toastInfo.toastAlert}
+                        </button>
+                    )}
+                    
+                    <button 
+                        onClick={handleDialogClose}
+                        className="px-6 py-2.5 rounded-xl font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    
+                    <button 
+                        type="submit" 
+                        onClick={handleSubmit} 
+                        disabled={!dirty}
+                        className={`px-8 py-2.5 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg ${
+                            title === "Update" 
+                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
+                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
+                        }`}
+                    >
+                        Submit Payment
+                    </button>
+                </div>
+
+                <Toast 
+                    alerting={toastInfo.toastAlert}
                     severity={toastInfo.toastSeverity}
                     message={toastInfo.toastMessage}
                 />
-            </Box>
-            {loading === true ? <Loader /> : null}
-        </Dialog>
+
+                {loading && (
+                    <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                        <Loader />
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 

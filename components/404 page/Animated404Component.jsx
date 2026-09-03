@@ -7,17 +7,12 @@
 */
 
 import { Link } from "@/lib/routerAdapter";
-import { Button } from '@mui/material';
-
 import "./Animated404Component.css";
 
 const Animated404Component = () => {
-
     return (
         <>
-            <div className="background">
-                {/* <div className="ground"></div> */}
-            </div>
+            <div className="background"></div>
 
             <div className="container">
                 <div className="left-section">
@@ -29,26 +24,16 @@ const Animated404Component = () => {
                             <span className="four"><span className="screen-reader-text">4</span></span>
                         </section>
 
-                        {/* <h1 className="heading">404</h1> */}
                         <p className="subheading">Oops. Looks like you took a wrong turn.</p>
 
-                        <div style={{ display: "flex", justifyContent: "space-evenly", margin: "22px" }}>
-                            <Button variant="outlined" sx={{
-                                fontSize: "14px", letterSpacing: "0.05em", lineHeight: "2em", fontWeight: "400",
-                                borderColor: "#ededed", padding: "6px 10px", gridColumn: "span 2", textTransform: "capitalize",
-                                "&:hover": { borderColor: "#e4c1b1" }
-                            }}>
-                                <Link to="/" style={{ textDecoration: "none", color: "#ffffff" }}>
-                                    Go To Dashboard </Link> </Button>
+                        <div className="flex justify-center mt-6">
+                            <Link 
+                                to="/" 
+                                className="px-6 py-3 rounded-full border border-slate-300 text-white text-sm font-semibold uppercase tracking-wider hover:border-emerald-400 hover:text-emerald-400 hover:bg-white/5 transition-all duration-300"
+                            >
+                                Go To Dashboard
+                            </Link>
                         </div>
-
-                        {/* <Box sx={{ width: "140px", display: "flex", justifyContent: "space-between", marginLeft: "160px" }}>
-                            <FacebookOutlinedIcon sx={{ cursor: "pointer", fontSize: "20px", letterSpacing: "0.05em", "&:hover": { color: "#e4c1b1" } }} />
-                            <TwitterIcon sx={{ cursor: "pointer", fontSize: "20px", letterSpacing: "0.05em", "&:hover": { color: "#e4c1b1" } }} />
-                            <InstagramIcon sx={{ cursor: "pointer", fontSize: "20px", letterSpacing: "0.05em", "&:hover": { color: "#e4c1b1" } }} />
-                            <YouTubeIcon sx={{ cursor: "pointer", fontSize: "20px", letterSpacing: "0.05em", "&:hover": { color: "#e4c1b1" } }} />
-                        </Box> */}
-
                     </div>
                 </div>
 

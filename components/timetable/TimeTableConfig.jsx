@@ -8,12 +8,9 @@
  */
 import { useSelector } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button } from "@mui/material";
-import DriveFileRenameOutlineOutlinedIcon from "@mui/icons-material/DriveFileRenameOutlineOutlined";
+import { Pencil } from "lucide-react";
 
 import { Utility } from "../utility";
-
 
 export const datagridColumns = () => {
   const schoolClasses = useSelector((state) => state.schoolClasses);
@@ -37,7 +34,6 @@ export const datagridColumns = () => {
       headerAlign: "center",
       align: "center",
       flex: 1,
-      // width: 120,
       renderCell: (params) => {
         let className;
         let sectionName;
@@ -50,23 +46,19 @@ export const datagridColumns = () => {
           sectionName = findById(params?.row?.section_id, schoolSections?.listData)?.section_name;
         }
         return (
-          <div>
+          <div className="flex items-center justify-center w-full h-full font-medium">
             {className ? appendSuffix(className) : "/"} {sectionName}
           </div>
         );
       },
     },
     {
-
       field: "batch",
       headerName: "Batch",
       headerAlign: "center",
       align: "center",
       flex: 1,
-      // minWidth: 100,
-      valueGetter: (params) => `${capitalizeEveryWord(params.row.batch) || ''} `
-
-
+      valueGetter: (value, row) => `${capitalizeEveryWord(row.batch) || ''} `
     },
     {
       field: "day",
@@ -74,10 +66,7 @@ export const datagridColumns = () => {
       headerAlign: "center",
       align: "center",
       flex: 1,
-      // minWidth: 100,
-      valueGetter: (params) => `${capitalizeEveryWord(params.row.day) || ''} `
-     
-
+      valueGetter: (value, row) => `${capitalizeEveryWord(row.day) || ''} `
     },
     {
       field: "action",
@@ -85,25 +74,17 @@ export const datagridColumns = () => {
       headerAlign: "center",
       align: "center",
       flex: 1,
-      // minWidth: 75,
       renderCell: ({ row: { class_id, section_id, day, batch } }) => {
         return (
-          <Box
-            width="30%"
-            m="0 auto"
-            p="5px"
-            display="flex"
-            justifyContent="center"
-          >
-            <Button
-              color="info"
-              variant="contained"
+          <div className="flex justify-center items-center w-full h-full">
+            <button
               onClick={() => handleActionEdit(class_id, section_id, day, batch)}
-              sx={{ minWidth: "50px" }}
+              className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              title="Edit"
             >
-              <DriveFileRenameOutlineOutlinedIcon />
-            </Button>
-          </Box>
+              <Pencil className="w-4 h-4" />
+            </button>
+          </div>
         );
       },
     },

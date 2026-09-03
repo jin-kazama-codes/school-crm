@@ -1,61 +1,33 @@
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
- */
-
-import { Box, Typography, useTheme, useMediaQuery } from "@mui/material";
 import PropTypes from "prop-types";
-
 import ProgressCircle from "./ProgressCircle";
 
-const StatBox = ({ title, subtitle, icon, progress, increase, role, showPercentage }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery("(max-width:480px)");
-
-  const textShadowColor = theme.palette.mode == "light" ? "white" : "black";
-
+const StatBox = ({ title, subtitle, icon, progress, increase, role, showPercentage, color }) => {
   return (
-    <Box sx={{ width: "100%", m: isMobile ? "0px" : "0 30px" }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-        <Box>
-          {icon}
-          <Typography
-            variant={isMobile ? "h6" : "h4"}
-            fontWeight="900"
-            sx={{
-              textShadow: `-2px 0 ${textShadowColor}, 0 2px ${textShadowColor}, 2px 0 ${textShadowColor}, 0 -2px ${textShadowColor}`,
-            }}
-          >
+    <div className="w-full h-full flex flex-col justify-between p-2 drop-shadow-md">
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col">
+          <div className="text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] mb-2">
+            {icon}
+          </div>
+          <h4 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {title}
-          </Typography>
-        </Box>
-        <Box>{role !== 1 && showPercentage && <ProgressCircle progress={progress} />}</Box>
-      </Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: "2px" }}>
-        <Typography
-          fontWeight="900"
-          variant={isMobile ? "h6" : "h4"}
-          sx={{
-            textShadow: `-2px 0 ${textShadowColor}, 0 2px ${textShadowColor}, 2px 0 ${textShadowColor}, 0 -2px ${textShadowColor}`,
-          }}
-        >
-          {subtitle ? subtitle.charAt(0).toUpperCase() + subtitle.slice(1) : ""}
-        </Typography>
-       {role !== 1 && showPercentage && <Typography
-          variant={isMobile ? "h6" : "h5"}
-          fontStyle="italic"
-          fontWeight="900"
-          sx={{
-            textShadow: `-2px 0 ${textShadowColor}, 0 2px ${textShadowColor}, 2px 0 ${textShadowColor}, 0 -2px ${textShadowColor}`,
-          }}
-        >
-          {increase}
-        </Typography>}
-      </Box>
-    </Box>
+          </h4>
+        </div>
+        <div>
+          {role !== 1 && showPercentage && <ProgressCircle progress={progress} />}
+        </div>
+      </div>
+      <div className="flex justify-between items-end mt-4">
+        <h5 className="text-lg md:text-xl font-bold text-emerald-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] capitalize">
+          {subtitle}
+        </h5>
+        {role !== 1 && showPercentage && (
+          <p className="text-sm md:text-base italic font-bold text-emerald-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+            {increase}
+          </p>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -66,7 +38,8 @@ StatBox.propTypes = {
   increase: PropTypes.string,
   progress: PropTypes.string,
   role: PropTypes.number,
-  showPercentage: PropTypes.bool
+  showPercentage: PropTypes.bool,
+  color: PropTypes.string
 };
 
 export default StatBox;

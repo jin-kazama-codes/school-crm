@@ -1,54 +1,39 @@
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
- */
-
 import PropTypes from "prop-types";
-import Box from '@mui/material/Box';
-import CircularProgress, {
-    circularProgressClasses,
-} from '@mui/material/CircularProgress';
 
-function FacebookCircularProgress({ progress }) {
+export default function ProgressCircle({ progress = "0" }) {
+    const value = parseFloat(progress) * 100; // converting 0.5 to 50%
+    const radius = 18;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (value / 100) * circumference;
+
     return (
-        <Box sx={{ position: 'relative' }}>
-            <CircularProgress
-                variant="determinate"
-                sx={{
-                    color: (theme) =>
-                        theme.palette.grey[theme.palette.mode === 'light' ? 200 : 800],
-                }}
-                size={40}
-                thickness={4}
-                value={100}
-            />
-            <CircularProgress
-                variant="determinate"
-                sx={{
-                    color: (theme) => (theme.palette.mode === 'light' ? '#1a90ff' : '#308fe8'),
-                    position: 'absolute',
-                    left: 0,
-                    [`& .${circularProgressClasses.circle}`]: {
-                        strokeLinecap: 'round',
-                    },
-                }}
-                size={40}
-                thickness={4}
-                value={parseFloat(progress)}
-            />
-        </Box>
+        <div className="relative inline-flex items-center justify-center">
+            <svg className="w-10 h-10 transform -rotate-90">
+                <circle
+                    className="text-slate-200 dark:text-slate-700"
+                    strokeWidth="4"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r={radius}
+                    cx="20"
+                    cy="20"
+                />
+                <circle
+                    className="text-emerald-500 transition-all duration-1000 ease-in-out"
+                    strokeWidth="4"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r={radius}
+                    cx="20"
+                    cy="20"
+                />
+            </svg>
+        </div>
     );
 }
-
-FacebookCircularProgress.propTypes = {
-    progress: PropTypes.oneOfType([
-        PropTypes.string,
-        PropTypes.number,
-    ])
-};
 
 ProgressCircle.propTypes = {
     progress: PropTypes.oneOfType([
@@ -56,13 +41,3 @@ ProgressCircle.propTypes = {
         PropTypes.number,
     ])
 };
-
-export default function ProgressCircle({ progress }) {
-    return (
-        <Box sx={{ flexGrow: 1 }}>
-            <FacebookCircularProgress progress={progress} />
-        </Box>
-    );
-}
-
-

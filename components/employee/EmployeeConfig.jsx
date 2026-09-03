@@ -9,20 +9,12 @@
  */
 
 import { useNavigate } from "@/lib/routerAdapter";
-
-import { Box, Button, Typography, useTheme } from '@mui/material';
-import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
-
-import { tokens } from "../../theme";
+import { Pencil } from 'lucide-react';
 import { Utility } from "../utility";
 
 export const datagridColumns = (rolePriority = null) => {
-
     const navigateTo = useNavigate();
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const { capitalizeEveryWord, formatDate } = Utility();
-
 
     const handleActionEdit = (id) => {
         navigateTo(`/employee/update/${id}`, { state: { id: id } });
@@ -36,9 +28,7 @@ export const datagridColumns = (rolePriority = null) => {
             align: "center",
             flex: 1,
             minWidth: 120,
-            // this function combines the values of firstname and lastname into one string
-            valueGetter: (params) => `${capitalizeEveryWord(params.row.firstname) || ''} ${capitalizeEveryWord(params.row.lastname) || ''}`
-
+            valueGetter: (value, row) => `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname) || ''}`
         },
         {
             field: "email",
@@ -72,8 +62,7 @@ export const datagridColumns = (rolePriority = null) => {
             align: "center",
             flex: 1,
             minWidth: 100,
-            valueFormatter: (params) => `${formatDate(params.value)}`
-
+            valueFormatter: (value) => `${formatDate(value)}`
         },
         {
             field: "gender",
@@ -82,9 +71,7 @@ export const datagridColumns = (rolePriority = null) => {
             align: "center",
             flex: 1,
             minWidth: 100,
-            valueGetter: (params) => `${params.row.gender.charAt(0).toUpperCase() + params.row.gender.slice(1) || ''}`
-
-
+            valueGetter: (value, row) => `${row.gender.charAt(0).toUpperCase() + params.row.gender.slice(1) || ''}`
         },
         {
             field: "status",
@@ -94,53 +81,41 @@ export const datagridColumns = (rolePriority = null) => {
             flex: 1,
             minWidth: 120,
             renderCell: ({ row: { status } }) => {
+                const isActive = status === "active";
                 return (
-                    <Box
-                        width="60%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center"
-                        backgroundColor={
-                            status === "active"
-                                ? colors.greenAccent[600]
-                                : status === "inactive"
-                                    ? colors.redAccent[700]
-                                    : colors.redAccent[700]
-                        }
-                        borderRadius="4px"
-                    >
-                        <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
+                    <div className="flex justify-center items-center w-full h-full">
+                        <div
+                            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase shadow-sm ${
+                                isActive 
+                                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" 
+                                    : "bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30"
+                            }`}
+                        >
                             {capitalizeEveryWord(status) || ''}
-                        </Typography>
-                    </Box>
+                        </div>
+                    </div>
                 );
             }
         },
-        rolePriority !== 1 && {
+        ...(rolePriority !== 1 ? [{
             field: "action",
             headerName: "Action",
             headerAlign: "center",
             align: "center",
             flex: 1,
             minWidth: 75,
-            renderCell: ({ row: { id } }) => {
-                return (
-                    <Box width="30%"
-                        m="0 auto"
-                        p="5px"
-                        display="flex"
-                        justifyContent="center">
-                        <Button color="info" variant="contained"
-                            onClick={() => handleActionEdit(id)}
-                            sx={{ minWidth: "50px" }}
-                        >
-                            <DriveFileRenameOutlineOutlinedIcon />
-                        </Button>
-                    </Box>
-                );
-            }
-        }
+            renderCell: ({ row: { id } }) => (
+                <div className="flex justify-center items-center w-full h-full">
+                    <button
+                        onClick={() => handleActionEdit(id)}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        title="Edit"
+                    >
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                </div>
+            )
+        }] : [])
     ];
     return columns;
 };
