@@ -6,15 +6,16 @@ import React from "react";
 
 export function useNavigate() {
   const router = useRouter();
-  return (to: string | number, options?: { replace?: boolean }) => {
+  return (to: string | number, options?: { replace?: boolean; scroll?: boolean }) => {
     if (typeof to === "number") {
       if (to === -1) router.back();
       return;
     }
+    const scroll = options?.scroll ?? false;
     if (options?.replace) {
-      router.replace(to);
+      router.replace(to, { scroll });
     } else {
-      router.push(to);
+      router.push(to, { scroll });
     }
   };
 }
@@ -34,10 +35,10 @@ export function useParams() {
   return (params as Record<string, string>) || {};
 }
 
-export function Link({ to, href, children, ...props }: any) {
+export function Link({ to, href, children, scroll = false, ...props }: any) {
   const destination = href || to || "#";
   return (
-    <NextLink href={destination} {...props}>
+    <NextLink href={destination} scroll={scroll} {...props}>
       {children}
     </NextLink>
   );

@@ -4,10 +4,9 @@
  * This software is the confidential information of School CRM Inc., and is licensed as
  * restricted rights software. The use,reproduction, or disclosure of this software is subject to
  * restrictions set forth in your license agreement with School CRM.
-*/
+ */
 
 import { createContext, useState, useMemo } from "react";
-import { Hidden, createTheme } from "@mui/material";
 
 // color design tokens
 export const tokens = (mode) => ({
@@ -102,7 +101,6 @@ export const tokens = (mode) => ({
                 800: "#663d0b",
                 900: "#331f06"
             },
-
         } : {
             whiteAccent: {
                 100: "#000000",
@@ -196,129 +194,60 @@ export const tokens = (mode) => ({
         })
 });
 
-
-//mui Theme Settings
+// Theme Settings for compatibility
 export const themeSettings = (mode) => {
     const colors = tokens(mode);
 
     return {
         palette: {
             mode: mode,
-            ...(mode === "dark"
-                ? {
-                    primary: {
-                        main: colors.primary[500]
-                    },
-                    secondary: {
-                        main: colors.greenAccent[500]
-                    },
-                    neutral: {
-                        dark: colors.grey[700],
-                        main: colors.grey[500],
-                        light: colors.grey[100]
-                    },
-                    background: {
-                        default: colors.primary[500]
-                    }
-                } : {
-                    primary: {
-                        main: colors.primary[100]
-                    },
-                    secondary: {
-                        main: colors.greenAccent[500]
-                    },
-                    neutral: {
-                        dark: colors.grey[700],
-                        main: colors.grey[500],
-                        light: colors.grey[100]
-                    },
-                    background: {
-                        default: "#fcfcfc"
-                    }
-                }
-            )
-        },
-        components: {
-            MuiTextField: {
-                styleOverrides: {
-                    root: {
-                        '--TextField-brandBorderColor': mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        '--TextField-brandBorderHoverColor': mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        '--TextField-brandBorderFocusedColor': mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        '& label.Mui-focused': {
-                            color: mode === 'light' ? 'var(--TextField-brandBorderFocusedColor)' : 'white',
-                        },
-                        '& label.MuiFormLabel-root': {
-                            color: mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        },
-                        '& label.MuiInputLabel-root': {
-                            color: mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        },
-                        '& .MuiFilledInput-root':{
-                            backdropFilter:"blur(5px)",
-                            boxShadow: "1px 1px 10px rgba(0, 0, 0,0.2)",
-                            borderRadius:'10px'
-                        }
-                    },
-                },
+            primary: {
+                main: colors.primary[500]
             },
-            MuiFormControl: {
-                styleOverrides: {
-                    root: {
-                        '--InputLabel-brandBorderColor': mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        '--InputLabel-brandBorderHoverColor': mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        '--InputLabel-brandBorderFocusedColor': mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        '& label.Mui-focused': {
-                          color: mode === 'light' ? 'var(--InputLabel-brandBorderFocusedColor)' : 'white',
-                        },
-                        '& .MuiFormLabel-root': {
-                          color: mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        },
-                        '& .MuiInputLabel-root': {
-                          color: mode === 'light' ? 'rgb(134, 14, 14)' : 'white',
-                        },
-                       
-                        '& .MuiFilledInput-root':{
-                            backdropFilter:"blur(5px)",
-                            boxShadow: "1px 1px 10px rgba(0, 0, 0, 0.2)",
-                            borderRadius:'10px'
-                        }
-                    },
-                },
+            secondary: {
+                main: colors.greenAccent[500]
+            },
+            neutral: {
+                dark: colors.grey[700],
+                main: colors.grey[500],
+                light: colors.grey[100]
+            },
+            background: {
+                default: mode === "dark" ? colors.primary[500] : "#fcfcfc"
             }
         },
         typography: {
-            fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+            fontFamily: ["Inter", "sans-serif"].join(","),
             fontSize: 12,
             h1: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+                fontFamily: ["Inter", "sans-serif"].join(","),
                 fontSize: 40,
             },
             h2: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+                fontFamily: ["Inter", "sans-serif"].join(","),
                 fontSize: 32,
             },
             h3: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
-                fontSize: 18,
+                fontFamily: ["Inter", "sans-serif"].join(","),
+                fontSize: 24,
             },
             h4: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+                fontFamily: ["Inter", "sans-serif"].join(","),
                 fontSize: 20,
             },
             h5: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+                fontFamily: ["Inter", "sans-serif"].join(","),
                 fontSize: 16,
             },
             h6: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+                fontFamily: ["Inter", "sans-serif"].join(","),
                 fontSize: 14,
             },
         }
     };
 };
 
-//Context for Color Mode
+// Context for Color Mode
 export const ColorModeContext = createContext({
     toggleColorMode: () => { }
 });
@@ -329,11 +258,24 @@ export const useMode = () => {
     const colorMode = useMemo(
         () => ({
             toggleColorMode: () => {
-                setMode(prev => (prev === "light" ? "dark" : "light"));
+                setMode(prev => {
+                    const nextMode = prev === "light" ? "dark" : "light";
+                    if (typeof document !== "undefined") {
+                        if (nextMode === "dark") {
+                            document.documentElement.classList.add("dark");
+                        } else {
+                            document.documentElement.classList.remove("dark");
+                        }
+                    }
+                    return nextMode;
+                });
             }
         }), []);
 
-    const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
+    const theme = useMemo(() => ({
+        palette: { mode },
+        ...themeSettings(mode)
+    }), [mode]);
 
     return [theme, colorMode];
 };

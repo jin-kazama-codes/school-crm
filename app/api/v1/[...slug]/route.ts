@@ -94,7 +94,7 @@ async function handlePost(req: NextRequest, endpoint: string) {
   if (endpoint === "login") {
     try {
       const body = await req.json();
-      const { email, username, password, school_code } = body;
+      const { email, username, password } = body;
       const userIdent = email || username;
 
       const user = await prisma.user.findFirst({
@@ -112,12 +112,12 @@ async function handlePost(req: NextRequest, endpoint: string) {
         return NextResponse.json(Utility.formatResponse(200, "User does not exist"), { status: 200 });
       }
 
-      const isValid = await Utility.comparePassword(password, user.password);
+      const isValid = await Utility.comparePassword(password, user.password || "");
       if (!isValid) {
         return NextResponse.json(Utility.formatResponse(200, "Username and Password do not match"), { status: 200 });
       }
 
-      const token = Utility.generateJwtToken({ id: user.id });
+      const token = Utility.getSignedToken(user.id);
       return NextResponse.json(
         Utility.formatResponse(200, {
           token,
@@ -149,7 +149,7 @@ async function handlePost(req: NextRequest, endpoint: string) {
   if (endpoint === "encrypt-text") {
     try {
       const body = await req.json();
-      const encrypted = Utility.encrypt(JSON.stringify(body.data));
+      const encrypted = Utility.encryptText(JSON.stringify(body.data));
       return NextResponse.json(Utility.formatResponse(200, encrypted), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
@@ -159,8 +159,8 @@ async function handlePost(req: NextRequest, endpoint: string) {
   if (endpoint === "decrypt-text") {
     try {
       const body = await req.json();
-      const decrypted = Utility.decrypt(body.data);
-      return NextResponse.json(Utility.formatResponse(200, JSON.parse(decrypted)), { status: 200 });
+      const decrypted = Utility.decryptText(body.data?.encrypted_id, body.data?.vect);
+      return NextResponse.json(Utility.formatResponse(200, decrypted ? JSON.parse(decrypted) : null), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
     }

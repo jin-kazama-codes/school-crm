@@ -6,9 +6,9 @@
  * restrictions set forth in your license agreement with School CRM.
  */
 
-import { useState } from "react";
+import React, { useState } from "react";
 import PropTypes from 'prop-types';
-import { Search as SearchIcon, RotateCcw } from "lucide-react";
+import { Search as SearchIcon, X, ArrowRight } from "lucide-react";
 
 const Search = ({
     getSearchData,
@@ -19,14 +19,17 @@ const Search = ({
     api
 }) => {
     const [inputValue, setInputValue] = useState("");
-    const isTab = typeof window !== "undefined" && window.innerWidth <= 920;
 
     const handleChange = (event) => {
         setInputValue(event.target.value);
     };
 
     const handleSearch = () => {
-        getSearchData(0, 5, action, api, condition, inputValue);
+        if (!inputValue.trim()) {
+            handleReload();
+            return;
+        }
+        getSearchData(0, 5, action, api, condition, inputValue.trim());
         setSearchFlag({
             search: true,
             searching: true,
@@ -37,7 +40,7 @@ const Search = ({
     };
 
     const handleKeyDown = (event) => {
-        if (event.keyCode === 13) {
+        if (event.key === 'Enter') {
             handleSearch();
         }
     };
@@ -51,13 +54,15 @@ const Search = ({
             search: false,
             searching: false
         });
+        getSearchData(0, 5, action, api, condition, '');
     };
 
     return (
-        <div className={`flex items-center bg-slate-100 dark:bg-[#1a1a1a] rounded-xl border border-slate-200 dark:border-[#2a2a2a] overflow-hidden w-full max-w-xl transition-all focus-within:ring-2 focus-within:ring-emerald-500/50 ${isTab ? 'h-10' : 'h-12'}`}>
+        <div className="flex items-center bg-white dark:bg-[#141414] rounded-xl border border-slate-200 dark:border-[#222] overflow-hidden w-full max-w-sm transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 shadow-xs h-10 px-3 space-x-2">
+            <SearchIcon className="w-4 h-4 text-slate-400 shrink-0" />
             <input
-                className="flex-1 bg-transparent px-4 py-2 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                placeholder="Search..."
+                className="flex-1 bg-transparent text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
+                placeholder="Search records…"
                 id="input"
                 value={inputValue}
                 onChange={handleChange}
@@ -65,20 +70,23 @@ const Search = ({
                 autoComplete="off"
             />
             
+            {inputValue && (
+                <button
+                    type="button"
+                    onClick={handleReload}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer"
+                >
+                    <X className="w-3.5 h-3.5" />
+                </button>
+            )}
+
             <button
-                id="reload-btn"
                 type="button"
-                onClick={handleReload}
-                className="hidden items-center justify-center p-2 mx-1 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-slate-200 dark:hover:bg-white/10"
-            >
-                <RotateCcw className="w-5 h-5" />
-            </button>
-            
-            <button
                 onClick={handleSearch}
-                className="flex items-center justify-center p-3 text-slate-400 hover:text-emerald-500 transition-colors bg-slate-200/50 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shrink-0"
+                title="Execute search"
             >
-                <SearchIcon className="w-5 h-5" />
+                <ArrowRight className="w-3.5 h-3.5" />
             </button>
         </div>
     );

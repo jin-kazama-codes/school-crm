@@ -26,7 +26,6 @@ import { setAllSubjects } from "../../redux/actions/SubjectAction";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
-import listBg from "../assets/listBG.jpg";
 
 const pageSizeOptions = [5, 10, 20];
 
@@ -159,10 +158,7 @@ const ListingComponent = ({ rolePriority = null }) => {
   }, []);
 
   useEffect(() => {
-    const selectedMenu = getLocalStorage("menu");
-    if (selectedMenu?.selected) {
-        dispatch(setMenuItem(selectedMenu.selected));
-    }
+    dispatch(setMenuItem("Marksheet"));
   }, []);
 
   // to set default class & section id in dropdowns
@@ -185,15 +181,10 @@ const ListingComponent = ({ rolePriority = null }) => {
 
   return (
     <div 
-        className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300"
-        style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url(${listBg?.src || listBg})`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "cover"
-        }}
+        className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200"
+        
     >
-        <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md p-4 md:p-6 border-b border-white/20 dark:border-white/5">
+        <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-sm p-5">
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize shrink-0">
                     {selected}
@@ -271,8 +262,7 @@ const ListingComponent = ({ rolePriority = null }) => {
             </div>
         </div>
 
-        <div className="p-4 md:p-6">
-            <ServerPaginationGrid
+        <ServerPaginationGrid
                 action={setMarksheets}
                 api={API.MarksheetAPI}
                 getQuery={getPaginatedData}
@@ -287,7 +277,6 @@ const ListingComponent = ({ rolePriority = null }) => {
                 setSearchFlag={setSearchFlag}
                 condition={classConditionObj}
             />
-        </div>
     </div>
   );
 };

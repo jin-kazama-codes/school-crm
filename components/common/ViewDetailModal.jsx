@@ -4,9 +4,7 @@ import { X, Info } from 'lucide-react';
 
 import '../models/styles.css';
 import { Utility } from '../utility';
-import listBg from "../assets/listBG.jpg";
 
-const ENV = process.env;
 const { capitalizeEveryWord } = Utility();
 
 const ViewDetailModal = ({
@@ -43,49 +41,48 @@ const ViewDetailModal = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-150">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" 
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 
         onClick={handleClose}
         aria-hidden="true"
       />
 
       {/* Modal Dialog */}
-      <div 
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#121212] rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-[#2a2a2a]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url(${listBg?.src || listBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center"
-        }}
-      >
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#0f0f0f] rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-[#1a1a1a] custom-scrollbar">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-emerald-600/90 backdrop-blur-md border-b border-white/10 shadow-sm rounded-t-2xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-800 rounded-full flex items-center justify-center shadow-inner">
-              <Info className="w-5 h-5 text-emerald-100" />
+        <div className="sticky top-0 z-10 flex items-center justify-between p-5 bg-white/95 dark:bg-[#0f0f0f]/95 backdrop-blur-md border-b border-slate-100 dark:border-[#1a1a1a]">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Info className="w-5 h-5" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide">
-              {title}
-            </h2>
+            <div>
+              <h2 className="text-lg font-bold font-display text-slate-800 dark:text-white tracking-tight leading-tight">
+                {title}
+              </h2>
+              <p className="text-xs text-slate-400 dark:text-gray-500">
+                Detailed profile record
+              </p>
+            </div>
           </div>
           <button 
+            type="button"
             onClick={handleClose}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 text-white"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#1a1a1a] rounded-xl transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-8 mb-8 bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="p-6 space-y-6">
+          <div className="flex flex-col md:flex-row gap-6 bg-slate-50/70 dark:bg-[#141414] rounded-2xl p-5 border border-slate-100 dark:border-[#1a1a1a]">
             {/* Image */}
             {detail?.imageData && detail?.imageData[0]?.image_src && (
-              <div className="flex-shrink-0">
+              <div className="shrink-0 flex justify-center">
                 <img
-                  className="w-48 h-56 object-cover rounded-xl shadow-lg border-2 border-emerald-500/50"
+                  className="w-36 h-44 object-cover rounded-xl shadow-md border-2 border-emerald-500/20"
                   src={detail.imageData[0].image_src}
                   alt={name}
                 />
@@ -93,47 +90,60 @@ const ViewDetailModal = ({
             )}
 
             {/* Horizontal Data & Address */}
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-4 gap-y-3 items-center">
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 items-center text-xs">
               {Object.keys(horizontalData).map((key, index) => (
                 horizontalData[key] && (
                   <React.Fragment key={index}>
-                    <span className="text-emerald-300 font-semibold uppercase tracking-wider text-sm whitespace-nowrap">
+                    <span className="text-slate-400 dark:text-gray-400 font-bold uppercase tracking-wider text-[11px] whitespace-nowrap">
                       {key.replace(/_/g, ' ')}:
                     </span>
-                    <span className="text-slate-100 font-medium break-words">
+                    <span className="text-slate-800 dark:text-gray-100 font-semibold break-words">
                       {capitalizeEveryWord(horizontalData[key])}
                     </span>
                   </React.Fragment>
                 )
               ))}
 
-              <span className="text-emerald-300 font-semibold uppercase tracking-wider text-sm whitespace-nowrap self-start mt-1">
+              <span className="text-slate-400 dark:text-gray-400 font-bold uppercase tracking-wider text-[11px] whitespace-nowrap self-start mt-0.5">
                 Address:
               </span>
-              <span className="text-slate-100 font-medium break-words leading-relaxed">
-                {detail?.addressData?.street}, {detail?.addressData?.landmark},{" "}
-                {cityName}, {stateName}, {countryName} - {detail?.addressData?.zipcode}
+              <span className="text-slate-800 dark:text-gray-100 font-semibold break-words leading-relaxed">
+                {detail?.addressData?.street ? `${detail?.addressData?.street}, ` : ''}
+                {detail?.addressData?.landmark ? `${detail?.addressData?.landmark}, ` : ''}
+                {cityName ? `${cityName}, ` : ''}
+                {stateName ? `${stateName}, ` : ''}
+                {countryName ? `${countryName} ` : ''}
+                {detail?.addressData?.zipcode ? `- ${detail?.addressData?.zipcode}` : ''}
               </span>
             </div>
           </div>
 
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent my-6" />
-
           {/* Vertical Data Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 bg-white/5 rounded-xl p-6 border border-white/10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 bg-slate-50/70 dark:bg-[#141414] rounded-2xl p-5 border border-slate-100 dark:border-[#1a1a1a]">
             {Object.keys(verticalData).map((key, index) => (
               verticalData[key] && (
-                <div key={index} className="flex flex-col gap-1">
-                  <span className="text-emerald-300/80 font-semibold uppercase tracking-wider text-[11px]">
+                <div key={index} className="flex flex-col space-y-1">
+                  <span className="text-slate-400 dark:text-gray-400 font-bold uppercase tracking-wider text-[10px]">
                     {key.replace(/_/g, ' ')}
                   </span>
-                  <span className="text-slate-100 font-medium truncate">
+                  <span className="text-slate-800 dark:text-gray-100 font-bold text-xs truncate">
                     {capitalizeEveryWord(verticalData[key])}
                   </span>
                 </div>
               )
             ))}
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 bg-slate-50/50 dark:bg-[#141414] border-t border-slate-100 dark:border-[#1a1a1a] flex justify-end">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="px-5 py-2 text-xs font-bold text-slate-700 dark:text-gray-200 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222] rounded-xl hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

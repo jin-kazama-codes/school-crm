@@ -93,6 +93,12 @@ const Login = () => {
               school_capacity: response.data.school_capacity,
             }
             setLocalStorage("auth", authInfo);
+            if (response.data?.role) {
+              const numRole = Number(response.data.role);
+              if (!isNaN(numRole)) {
+                setLocalStorage("userRole", { name: response.data.designation || response.data.role, priority: numRole });
+              }
+            }
             if (response.data?.school_info) {
               setLocalStorage("schoolInfo", response.data.school_info);
             }

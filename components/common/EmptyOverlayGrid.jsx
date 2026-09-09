@@ -2,53 +2,25 @@
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
  * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
+ * restricted rights software. The use, reproduction, or disclosure of this software is subject to
  * restrictions set forth in your license agreement with School CRM.
  */
 
-export default function EmptyOverlayGrid() {
+import React from "react";
+import { FolderOpen } from "lucide-react";
+
+export default function EmptyOverlayGrid({ selected }) {
   return (
-    <div className="flex flex-col items-center justify-center mt-12 h-full text-slate-500 dark:text-slate-400">
-      <svg
-        width="130"
-        height="110"
-        viewBox="0 0 184 152"
-        aria-hidden
-        focusable="false"
-      >
-        <g fill="none" fillRule="evenodd">
-          <g transform="translate(24 31.67)">
-            <ellipse
-              className="fill-slate-100 dark:fill-[#262626]"
-              cx="67.797"
-              cy="106.89"
-              rx="67.797"
-              ry="12.668"
-            />
-            <path
-              className="fill-slate-300 dark:fill-[#434343]"
-              d="M122.034 69.674L98.109 40.229c-1.148-1.386-2.826-2.225-4.593-2.225h-51.44c-1.766 0-3.444.839-4.592 2.225L13.56 69.674v15.383h108.475V69.674z"
-            />
-            <path
-              className="fill-slate-200 dark:fill-[#333333]"
-              d="M33.83 0h67.933a4 4 0 0 1 4 4v93.344a4 4 0 0 1-4 4H33.83a4 4 0 0 1-4-4V4a4 4 0 0 1 4-4z"
-            />
-            <path
-              className="fill-slate-300 dark:fill-[#434343]"
-              d="M42.678 9.953h50.237a2 2 0 0 1 2 2V36.91a2 2 0 0 1-2 2H42.678a2 2 0 0 1-2-2V11.953a2 2 0 0 1 2-2zM42.94 49.767h49.713a2.262 2.262 0 1 1 0 4.524H42.94a2.262 2.262 0 0 1 0-4.524zM42.94 61.53h49.713a2.262 2.262 0 1 1 0 4.525H42.94a2.262 2.262 0 0 1 0-4.525zM121.813 105.032c-.775 3.071-3.497 5.36-6.735 5.36H20.515c-3.238 0-5.96-2.29-6.734-5.36a7.309 7.309 0 0 1-.222-1.79V69.675h26.318c2.907 0 5.25 2.448 5.25 5.42v.04c0 2.971 2.37 5.37 5.277 5.37h34.785c2.907 0 5.277-2.421 5.277-5.393V75.1c0-2.972 2.343-5.426 5.25-5.426h26.318v33.569c0 .617-.077 1.216-.221 1.789z"
-            />
-          </g>
-          <path
-            className="fill-slate-300 dark:fill-[#434343]"
-            d="M149.121 33.292l-6.83 2.65a1 1 0 0 1-1.317-1.23l1.937-6.207c-2.589-2.944-4.109-6.534-4.109-10.408C138.802 8.102 148.92 0 161.402 0 173.881 0 184 8.102 184 18.097c0 9.995-10.118 18.097-22.599 18.097-4.528 0-8.744-1.066-12.28-2.902z"
-          />
-          <g className="fill-slate-100 dark:fill-[#1c1c1c]" transform="translate(149.65 15.383)">
-            <ellipse cx="20.654" cy="3.167" rx="2.849" ry="2.815" />
-            <path d="M5.698 5.63H0L2.898.704zM9.259.704h4.985V5.63H9.259z" />
-          </g>
-        </g>
-      </svg>
-      <div className="mt-4 font-semibold">No Rows</div>
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="w-14 h-14 bg-slate-50 dark:bg-[#141414] border border-slate-100 dark:border-[#222] rounded-2xl flex items-center justify-center text-slate-400 dark:text-gray-500 mb-3 shadow-xs">
+        <FolderOpen className="w-7 h-7 stroke-[1.5]" />
+      </div>
+      <h3 className="text-sm font-bold font-display text-slate-700 dark:text-gray-200">
+        No {selected ? `${selected} Records` : "Records Found"}
+      </h3>
+      <p className="text-xs text-slate-400 dark:text-gray-500 mt-1 max-w-sm">
+        There are currently no rows available in this view. New records will appear here once created.
+      </p>
     </div>
   );
 }

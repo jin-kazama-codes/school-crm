@@ -196,6 +196,19 @@ const Utility = {
   },
 
   /**
+   * Function to capitalize the first letter of each word in a string
+   * @param str - The string to be capitalized
+   * @returns
+   */
+  capitalizeEachWord: (str: string | undefined) => {
+    if (!str) return '';
+    return str
+      .split(' ')
+      .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '')
+      .join(' ');
+  },
+
+  /**
    * Get Prisma model name from table name string
    * Used by generic endpoints like /get-by-pk/:table/:id
    */

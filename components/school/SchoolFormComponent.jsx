@@ -11,12 +11,12 @@ import PropTypes from "prop-types";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useFormik } from "formik";
-import { Autocomplete, TextField } from "@mui/material";
 import { Plus, Trash2 } from "lucide-react";
 
 import config from "../config";
 import schoolValidation from "./Validation";
 import { Utility } from "../utility";
+import MultiSelect from "../common/MultiSelect";
 
 const initialValues = {
     name: "",
@@ -345,61 +345,27 @@ const SchoolFormComponent = ({
 
                     <div className="lg:col-span-2 relative">
                         <label className={labelClasses}>Amenities</label>
-                        <Autocomplete
-                            multiple
+                        <MultiSelect
                             options={amenities || []}
                             getOptionLabel={option => option.name}
-                            disableCloseOnSelect
                             value={formik.values.amenities}
                             onChange={(event, value) => formik.setFieldValue("amenities", value)}
-                            renderInput={params => (
-                                <TextField
-                                    {...params}
-                                    variant="outlined"
-                                    placeholder="Select Amenities"
-                                    error={!!formik.touched.amenities && !!formik.errors.amenities}
-                                    helperText={formik.touched.amenities && formik.errors.amenities}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            borderRadius: '0.75rem',
-                                            backgroundColor: 'rgb(248 250 252)', // slate-50
-                                            '& fieldset': { borderColor: 'rgb(226 232 240)' },
-                                            '&:hover fieldset': { borderColor: 'rgb(226 232 240)' },
-                                            '&.Mui-focused fieldset': { borderColor: '#3b82f6', borderWidth: '2px' }
-                                        }
-                                    }}
-                                />
-                            )}
+                            placeholder="Select Amenities"
+                            error={Boolean(formik.touched.amenities && formik.errors.amenities)}
+                            helperText={formik.touched.amenities && formik.errors.amenities ? formik.errors.amenities : ""}
                         />
                     </div>
 
                     <div className="lg:col-span-2 relative">
                         <label className={labelClasses}>Payment Methods*</label>
-                        <Autocomplete
-                            multiple
+                        <MultiSelect
                             options={paymentMethods || []}
                             getOptionLabel={option => option.name}
-                            disableCloseOnSelect
                             value={formik.values.payment_methods}
                             onChange={(event, value) => formik.setFieldValue("payment_methods", value)}
-                            renderInput={params => (
-                                <TextField
-                                    {...params}
-                                    variant="outlined"
-                                    placeholder="Select Payment Methods"
-                                    error={!!formik.touched.payment_methods && !!formik.errors.payment_methods}
-                                    helperText={formik.touched.payment_methods && formik.errors.payment_methods}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            borderRadius: '0.75rem',
-                                            backgroundColor: 'rgb(248 250 252)', // slate-50
-                                            '& fieldset': { borderColor: 'rgb(226 232 240)' },
-                                            '&:hover fieldset': { borderColor: 'rgb(226 232 240)' },
-                                            '&.Mui-focused fieldset': { borderColor: '#3b82f6', borderWidth: '2px' }
-                                        }
-                                    }}
-                                />
-                            )}
+                            placeholder="Select Payment Methods"
+                            error={Boolean(formik.touched.payment_methods && formik.errors.payment_methods)}
+                            helperText={formik.touched.payment_methods && formik.errors.payment_methods ? formik.errors.payment_methods : ""}
                         />
                     </div>
 
@@ -698,33 +664,16 @@ const SchoolFormComponent = ({
 
                                     <div className="lg:col-span-3 relative">
                                         <label className={labelClasses}>Sections*</label>
-                                        <Autocomplete
-                                            multiple
+                                        <MultiSelect
                                             options={allSections || []}
                                             getOptionLabel={option => option.section_name}
-                                            disableCloseOnSelect
                                             value={formik.values.sections[index] || []}
                                             onChange={(event, value) => {
                                                 const sectArr = [...formik.values.sections];
                                                 sectArr[index] = value;
                                                 formik.setFieldValue("sections", sectArr);
                                             }}
-                                            renderInput={params => (
-                                                <TextField
-                                                    {...params}
-                                                    variant="outlined"
-                                                    placeholder="Select Sections"
-                                                    sx={{
-                                                        '& .MuiOutlinedInput-root': {
-                                                            borderRadius: '0.75rem',
-                                                            backgroundColor: 'rgb(255 255 255)', 
-                                                            '& fieldset': { borderColor: 'rgb(226 232 240)' },
-                                                            '&:hover fieldset': { borderColor: 'rgb(226 232 240)' },
-                                                            '&.Mui-focused fieldset': { borderColor: '#3b82f6', borderWidth: '2px' }
-                                                        }
-                                                    }}
-                                                />
-                                            )}
+                                            placeholder="Select Sections"
                                         />
                                     </div>
 
@@ -733,11 +682,9 @@ const SchoolFormComponent = ({
                                             {formik?.values?.sections[index]?.map((section, sectionIndex) => (
                                                 <div key={key + sectionIndex} className="relative">
                                                     <label className={labelClasses}>Subjects For Section {section.section_name}</label>
-                                                    <Autocomplete
-                                                        multiple
+                                                    <MultiSelect
                                                         options={subjectsInRedux || []}
                                                         getOptionLabel={option => option.name}
-                                                        disableCloseOnSelect
                                                         value={formik.values.subjects[index] ? formik.values.subjects[index][sectionIndex] || [] : []}
                                                         onChange={(event, value) => {
                                                             const subArr = [...formik.values.subjects];
@@ -747,22 +694,7 @@ const SchoolFormComponent = ({
                                                             subArr[index][sectionIndex] = value;
                                                             formik.setFieldValue('subjects', subArr);
                                                         }}
-                                                        renderInput={params => (
-                                                            <TextField
-                                                                {...params}
-                                                                variant="outlined"
-                                                                placeholder="Select Subjects"
-                                                                sx={{
-                                                                    '& .MuiOutlinedInput-root': {
-                                                                        borderRadius: '0.75rem',
-                                                                        backgroundColor: 'rgb(255 255 255)',
-                                                                        '& fieldset': { borderColor: 'rgb(226 232 240)' },
-                                                                        '&:hover fieldset': { borderColor: 'rgb(226 232 240)' },
-                                                                        '&.Mui-focused fieldset': { borderColor: '#3b82f6', borderWidth: '2px' }
-                                                                    }
-                                                                }}
-                                                            />
-                                                        )}
+                                                        placeholder="Select Subjects"
                                                     />
                                                 </div>
                                             ))}
@@ -909,11 +841,9 @@ const SchoolFormComponent = ({
 
                             <div className="lg:col-span-3 relative">
                                 <label className={labelClasses}>Sections*</label>
-                                <Autocomplete
-                                    multiple
+                                <MultiSelect
                                     options={allSections || []}
                                     getOptionLabel={option => option.section_name}
-                                    disableCloseOnSelect
                                     value={[]}
                                     onChange={(event, value) => {
                                         const sectArr = [...formik.values.sections];
@@ -925,22 +855,7 @@ const SchoolFormComponent = ({
                                             toastAndNavigate(dispatch, true, "info", "Please Select Class First");
                                         }
                                     }}
-                                    renderInput={params => (
-                                        <TextField
-                                            {...params}
-                                            variant="outlined"
-                                            placeholder="Select Sections"
-                                            sx={{
-                                                '& .MuiOutlinedInput-root': {
-                                                    borderRadius: '0.75rem',
-                                                    backgroundColor: 'rgb(255 255 255)', 
-                                                    '& fieldset': { borderColor: 'rgb(226 232 240)' },
-                                                    '&:hover fieldset': { borderColor: 'rgb(226 232 240)' },
-                                                    '&.Mui-focused fieldset': { borderColor: '#3b82f6', borderWidth: '2px' }
-                                                }
-                                            }}
-                                        />
-                                    )}
+                                    placeholder="Select Sections"
                                 />
                             </div>
                         </div>

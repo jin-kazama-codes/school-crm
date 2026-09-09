@@ -2,19 +2,12 @@
 "use client";
 
 /**
- * ClientApp — direct port of school-admin/src/App.jsx
- * 
- * Changes from original:
- * 1. react-router-dom -> next/navigation
- * 2. process.env.NEXT_PUBLIC_LOGOUT_TIMER -> process.env.NEXT_PUBLIC_LOGOUT_TIMER
- * 3. Wrapped all component imports with next/dynamic (ssr: false)
+ * ClientApp — SnailHRA-temp Layout Architecture
  */
 
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-
-
 
 import Login from "./login/Login";
 import Topbar from "@/components/common/Topbar";
@@ -79,21 +72,63 @@ const IdleTimerWrapper = dynamic(
   { ssr: false }
 );
 
-// Simple pathname-based router (replaces react-router-dom)
-function renderRouteContent(pathname: string, userRole: { name: string; priority: number | null }, schoolInfo: unknown) {
-  const parts = pathname.split("/").filter(Boolean);
-  const base = parts[0];
-  const sub = parts[1];
-  const id = parts[2];
+// Helper to resolve initial role synchronously from local storage
+const getInitialUserRole = (): { name: string; priority: number | null } => {
+  if (typeof window === "undefined") return { name: "superadmin", priority: 1 };
+  try {
+    const cachedRole = localStorage.getItem("userRole");
+    if (cachedRole) {
+      const parsed = JSON.parse(cachedRole);
+      if (parsed && typeof parsed.priority === "number") return parsed;
+    }
+    const auth = localStorage.getItem("auth");
+    if (auth) {
+      const parsedAuth = JSON.parse(auth);
+      if (parsedAuth?.rolePriority !== undefined && parsedAuth?.rolePriority !== null) {
+        return { name: parsedAuth.role || "superadmin", priority: Number(parsedAuth.rolePriority) };
+      }
+      if (parsedAuth?.role === "superadmin" || parsedAuth?.role === 1 || parsedAuth?.role === "1") {
+        return { name: "superadmin", priority: 1 };
+      }
+      if (parsedAuth?.role) {
+        const numRole = Number(parsedAuth.role);
+        if (!isNaN(numRole) && numRole >= 1 && numRole <= 5) {
+          return { name: parsedAuth.designation || parsedAuth.role, priority: numRole };
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Error reading initial userRole", e);
+  }
+  return { name: "superadmin", priority: 1 };
+};
 
-  if (pathname === "/" || pathname === "") {
-    if (userRole.priority !== null && userRole.priority <= 3) {
-      return <Dashboard rolePriority={userRole.priority} />;
+// Pathname-based router
+function renderRouteContent(pathname: string, userRole: { name: string; priority: number | null }, schoolInfo: unknown) {
+  // If user role priority is unresolved, show a clean skeleton rather than 404
+  if (userRole.priority === null || userRole.priority === undefined) {
+    return (
+      <div className="flex-1 min-h-[60vh] flex flex-col items-center justify-center gap-3 p-8">
+        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs text-slate-400 font-medium animate-pulse">Loading workspace...</span>
+      </div>
+    );
+  }
+
+  const priority = userRole.priority;
+  const cleanPath = (pathname || "/").split("?")[0];
+  const parts = cleanPath.split("/").filter(Boolean);
+  const base = parts[0] || "";
+  const sub = parts[1] || "";
+
+  if (cleanPath === "/" || cleanPath === "" || base === "dashboard") {
+    if (priority <= 3) {
+      return <Dashboard rolePriority={priority} />;
     }
   }
 
-  // Priority 1 only routes
-  if (userRole.priority === 1) {
+  // Priority 1 only routes (Superadmin / System Configs)
+  if (priority === 1) {
     if (base === "amenity" && sub === "listing") return <AmenityListingComponent />;
     if (base === "role" && sub === "listing") return <UserRoleListingComponent />;
     if (base === "school" && sub === "create") return <SchoolFormComponent />;
@@ -105,66 +140,61 @@ function renderRouteContent(pathname: string, userRole: { name: string; priority
     if (base === "subject" && sub === "listing") return <SubjectListingComponent />;
   }
 
-  // Priority <= 3 routes
-  if (userRole.priority !== null && userRole.priority <= 3) {
-    if (base === "bus" && sub === "listing") return <BusListingComponent rolePriority={userRole.priority} />;
+  // Priority <= 3 routes (Admins, Principals, Managers)
+  if (priority <= 3) {
+    if (base === "bus" && sub === "listing") return <BusListingComponent rolePriority={priority} />;
     if (base === "bus" && sub === "create") return <BusFormComponent />;
     if (base === "bus" && sub === "update") return <BusFormComponent />;
     if (base === "student" && sub === "create") return <StudentFormComponent />;
     if (base === "student" && sub === "update") return <StudentFormComponent />;
-    if (base === "student" && sub === "listing") return <StudentListingComponent rolePriority={userRole.priority} schoolInfo={schoolInfo} />;
-    if (base === "marksheet" && sub === "create") return <MarksheetFormComponent />;
-    if (base === "marksheet" && sub === "update") return <MarksheetFormComponent />;
-    if (base === "marksheet" && sub === "listing") return <MarksheetListingComponent rolePriority={userRole.priority} />;
     if (base === "teacher" && sub === "create") return <TeacherFormComponent />;
     if (base === "teacher" && sub === "update") return <TeacherFormComponent />;
-    if (base === "teacher" && sub === "listing") return <TeacherListingComponent rolePriority={userRole.priority} />;
-    if (base === "user" && sub === "create") return <UserFormComponent rolePriority={userRole.priority} />;
-    if (base === "user" && sub === "update") return <UserFormComponent rolePriority={userRole.priority} />;
+    if (base === "teacher" && sub === "listing") return <TeacherListingComponent rolePriority={priority} />;
+    if (base === "user" && sub === "create") return <UserFormComponent rolePriority={priority} />;
+    if (base === "user" && sub === "update") return <UserFormComponent rolePriority={priority} />;
     if (base === "user" && sub === "listing") return <UserListingComponent />;
     if (base === "employee" && sub === "create") return <EmployeeFormComponent />;
     if (base === "employee" && sub === "update") return <EmployeeFormComponent />;
-    if (base === "employee" && sub === "listing") return <EmployeeListingComponent rolePriority={userRole.priority} />;
-    if (base === "generate-id-card" && sub === "listing") return <GenerateIdCardComponent rolePriority={userRole.priority} />;
-    if (base === "holiday" && sub === "create") return <HolidayFormComponent />;
-    if (base === "holiday" && sub === "update") return <HolidayFormComponent />;
-    if (base === "holiday" && sub === "listing") return <HolidayListingComponent rolePriority={userRole.priority} />;
-    if (base === "payment" && sub === "create") return <PaymentFormComponent rolePriority={userRole.priority} openDialog={true} />;
-    if (base === "payment" && sub === "update") return <PaymentFormComponent rolePriority={userRole.priority} />;
-    if (base === "payment" && sub === "listing") return <PaymentListingComponent rolePriority={userRole.priority} />;
-    if (base === "school-duration" && sub === "create") return <SchoolDurationFormComponent />;
-    if (base === "school-duration" && sub === "update") return <SchoolDurationFormComponent />;
-    if (base === "school-duration" && sub === "listing") return <SchoolDurationListingComponent rolePriority={userRole.priority} />;
-    if (base === "school-house" && sub === "create") return <SchoolHouseFormComponent />;
-    if (base === "school-house" && sub === "update") return <SchoolHouseFormComponent />;
-    if (base === "school-house" && sub === "listing") return <SchoolHouseListingComponent rolePriority={userRole.priority} />;
-    if (base === "attendance" && sub === "listing") return <AttendanceComponent rolePriority={userRole.priority} />;
-    if (base === "time-table" && sub === "create") return <TimeTableFormComponent />;
-    if (base === "time-table" && sub === "update") return <TimeTableFormComponent />;
-    if (base === "time-table" && sub === "listing") return <TimeTableListingComponent rolePriority={userRole.priority} />;
+    if (base === "employee" && sub === "listing") return <EmployeeListingComponent rolePriority={priority} />;
+    if (base === "generate-id-card" && sub === "listing") return <GenerateIdCardComponent rolePriority={priority} />;
+    if (base === "payment" && sub === "create") return <PaymentFormComponent rolePriority={priority} openDialog={true} />;
+    if (base === "payment" && sub === "update") return <PaymentFormComponent rolePriority={priority} />;
+    if (base === "payment" && sub === "listing") return <PaymentListingComponent rolePriority={priority} />;
     if (base === "noticeboard" && sub === "create") return <NoticeBoardFormComponent />;
     if (base === "noticeboard" && sub === "update") return <NoticeBoardFormComponent />;
-    if (base === "noticeboard" && sub === "listing") return <NoticeBoardListing rolePriority={userRole.priority} />;
+    if (base === "noticeboard" && sub === "listing") return <NoticeBoardListing rolePriority={priority} />;
   }
 
-  // Priority 4 routes
-  if (userRole.priority === 4) {
-    if (base === "student" && sub === "listing") return <StudentListingComponent rolePriority={userRole.priority} />;
-    if (base === "holiday" && sub === "listing") return <HolidayListingComponent rolePriority={userRole.priority} />;
-    if (base === "marksheet" && sub === "listing") return <MarksheetListingComponent rolePriority={userRole.priority} />;
+  // Priority <= 4 routes (Teachers, Staff)
+  if (priority <= 4) {
+    if (base === "marksheet" && sub === "create") return <MarksheetFormComponent />;
+    if (base === "marksheet" && sub === "update") return <MarksheetFormComponent />;
+    if (base === "marksheet" && sub === "listing") return <MarksheetListingComponent rolePriority={priority} />;
+    if (base === "school-duration" && sub === "create") return <SchoolDurationFormComponent />;
+    if (base === "school-duration" && sub === "update") return <SchoolDurationFormComponent />;
+    if (base === "school-duration" && sub === "listing") return <SchoolDurationListingComponent rolePriority={priority} />;
+    if (base === "school-house" && sub === "create") return <SchoolHouseFormComponent />;
+    if (base === "school-house" && sub === "update") return <SchoolHouseFormComponent />;
+    if (base === "school-house" && sub === "listing") return <SchoolHouseListingComponent rolePriority={priority} />;
+    if (base === "attendance" && sub === "listing") return <AttendanceComponent rolePriority={priority} />;
+    if (base === "time-table" && sub === "create") return <TimeTableFormComponent />;
+    if (base === "time-table" && sub === "update") return <TimeTableFormComponent />;
+    if (base === "time-table" && sub === "listing") return <TimeTableListingComponent rolePriority={priority} />;
   }
 
-  // Priority 5 routes
-  if (userRole.priority === 5) {
-    if (base === "student" && sub === "listing") return <StudentListingComponent rolePriority={userRole.priority} />;
-    if (base === "holiday" && sub === "listing") return <HolidayListingComponent rolePriority={userRole.priority} />;
+  // Priority <= 5 routes (Students, Parents)
+  if (priority <= 5) {
+    if (base === "student" && sub === "listing") return <StudentListingComponent rolePriority={priority} schoolInfo={schoolInfo} />;
+    if (base === "holiday" && sub === "create") return <HolidayFormComponent />;
+    if (base === "holiday" && sub === "update") return <HolidayFormComponent />;
+    if (base === "holiday" && sub === "listing") return <HolidayListingComponent rolePriority={priority} />;
   }
 
   return <NotFound />;
 }
 
 export default function ClientApp() {
-  const [userRole, setUserRole] = useState<{ name: string; priority: number | null }>({ name: "", priority: null });
+  const [userRole, setUserRole] = useState<{ name: string; priority: number | null }>(getInitialUserRole);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [theme, colorMode] = useMode();
   const router = useRouter();
@@ -181,12 +211,14 @@ export default function ClientApp() {
 
   useEffect(() => {
     getRoleAndPriorityById().then((result: any) => {
-      if (result) {
+      if (result && typeof result.priority === "number") {
         setUserRole({ name: result.name, priority: result.priority });
+        try {
+          localStorage.setItem("userRole", JSON.stringify({ name: result.name, priority: result.priority }));
+        } catch (e) {}
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getLocalStorage("auth")?.role]);
+  }, []);
 
   useEffect(() => {
     verifyToken().then((result: any) => {
@@ -201,7 +233,6 @@ export default function ClientApp() {
         router.replace("/login");
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isLoggedIn = getLocalStorage("auth")?.token;
@@ -225,42 +256,44 @@ export default function ClientApp() {
 
   return (
     <ColorModeContext.Provider value={colorMode}>
-        <IdleTimerWrapper
-          onIdle={onIdle}
-          timeout={parseInt(process.env.NEXT_PUBLIC_LOGOUT_TIMER || "1800000")}
-        />
-        <div className="app">
-          {isLoggedIn && (
-            <Suspense
-              fallback={
-                <div>
-                  <Image src={formBg?.src || formBg} alt="" style={{ backgroundSize: "cover" }} />
-                </div>
-              }
-            >
-              <div className="sidebar-container">
-                <Sidebar
-                  className="sidebar"
-                  roleName={userRole.name}
-                  rolePriority={userRole.priority}
-                  isCollapsed={isCollapsed}
-                  setIsCollapsed={setIsCollapsed}
-                  schoolInfo={schoolInfo}
-                />
-              </div>
-              <main className="content">
-                <Topbar
-                  roleName={userRole.name}
-                  rolePriority={userRole.priority}
-                  isCollapsed={isCollapsed}
-                  setIsCollapsed={setIsCollapsed}
-                  schoolInfo={schoolInfo}
-                />
+      <IdleTimerWrapper
+        onIdle={onIdle}
+        timeout={parseInt(process.env.NEXT_PUBLIC_LOGOUT_TIMER || "1800000")}
+      />
+      {isLoggedIn && (
+        <div className="min-h-screen flex flex-col font-sans bg-[#f8fafc] dark:bg-[#0a0a0a] text-slate-700 dark:text-gray-200 antialiased">
+          {/* Top Full-Width Header Bar */}
+          <Topbar
+            roleName={userRole.name}
+            rolePriority={userRole.priority}
+            isCollapsed={isCollapsed}
+            setIsCollapsed={setIsCollapsed}
+            schoolInfo={schoolInfo}
+          />
+
+          {/* Main Layout (Sidebar + Content) */}
+          <div className="flex-1 flex flex-row min-h-[calc(100vh-57px)] w-full">
+            <Sidebar
+              roleName={userRole.name}
+              rolePriority={userRole.priority}
+              isCollapsed={isCollapsed}
+              setIsCollapsed={setIsCollapsed}
+              schoolInfo={schoolInfo}
+            />
+            <main className="flex-1 min-w-0 bg-[#f8fafc] dark:bg-[#0a0a0a] overflow-y-auto custom-scrollbar">
+              <Suspense
+                fallback={
+                  <div className="p-8 text-center text-xs text-slate-400">
+                    Loading workspace...
+                  </div>
+                }
+              >
                 {renderRouteContent(pathname || "/", userRole, schoolInfo)}
-              </main>
-            </Suspense>
-          )}
+              </Suspense>
+            </main>
+          </div>
         </div>
+      )}
     </ColorModeContext.Provider>
   );
 }

@@ -53,18 +53,20 @@ export const Utility = () => {
         }
     };
 
-    /** Capitalizes the first character of each word in a given string.
-     * @param {string} str - The input string to capitalize.
-     * @returns {string} - The string with the first character of each word capitalized.
+    /**
+     * Function to capitalize the first letter of each word in a string
+     * @param str - The string to be capitalized
+     * @returns
      */
-    const capitalizeEveryWord = (str) => {
-        if (str.length > 0) {
-            // Use a regular expression to match the first character of each word and capitalize it
-            return str.replace(/\b\w/g, function (char) {
-                return char.toUpperCase();
-            });
-        }
+    const capitalizeEachWord = (str) => {
+        if (!str) return '';
+        return str
+            .split(' ')
+            .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '')
+            .join(' ');
     };
+
+    const capitalizeEveryWord = capitalizeEachWord;
 
     /** Determines the divider based on the duration type.
      * @param {string} duration - The type of duration (monthly, quarterly, half-yearly).
@@ -684,6 +686,7 @@ export const Utility = () => {
         addClassKeyword,
         appendSuffix,
         capitalizeEveryWord,
+        capitalizeEachWord,
         createDivider,
         createDropdown,
         createSchoolFee,
