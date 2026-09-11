@@ -423,6 +423,16 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
             isCollapsed={isCollapsed}
             setIsCollapsed={setIsCollapsed}
           />
+          <SidebarItem
+            title="Homework"
+            to="/homework/listing"
+            icon={<BookOpen className="w-4 h-4" />}
+            selected={selected}
+            rolePriority={rolePriority}
+            menuVisibility={4}
+            isCollapsed={isCollapsed}
+            setIsCollapsed={setIsCollapsed}
+          />
 
           {rolePriority < 2 && (
             <div className="pt-2">

@@ -71,7 +71,10 @@ export const datagridColumns = (rolePriority = null) => {
             align: "center",
             flex: 1,
             minWidth: 100,
-            valueGetter: (value, row) => `${row.gender.charAt(0).toUpperCase() + params.row.gender.slice(1) || ''}`
+            valueGetter: (value, row) => {
+                const g = row?.gender || (typeof value === 'string' ? value : '');
+                return g ? g.charAt(0).toUpperCase() + g.slice(1) : '';
+            }
         },
         {
             field: "status",

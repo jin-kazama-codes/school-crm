@@ -14,6 +14,7 @@ import { menuItemReducer } from "./MenuItemReducer";
 import { setEmployeesReducer } from "./EmployeeReducer";
 import { setGenerateIdCardReducer } from "./GenerateIdCardReducer";
 import { setHolidaysReducer } from "./HolidayReducer";
+import { setHomeworksReducer } from "./HomeworkReducer";
 import { setMarksheetsReducer } from "./MarksheetReducer";
 import { setPaymentsReducer } from "./PaymentReducer";
 import { setAllPaymentMethodsReducer } from "./PaymentMethodReducer";
@@ -79,6 +80,7 @@ const reducers = combineReducers({
   listingUserRoles: setListingUserRolesReducer,
   allUserRoles: setAllUserRolesReducer,
   allHolidays: setHolidaysReducer,
+  allHomeworks: setHomeworksReducer,
   allNotices: setNoticeBoardReducer,
   allPayments: setPaymentsReducer,
   listingPaymentMethods: setListingPaymentMethodsReducer,

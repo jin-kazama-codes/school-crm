@@ -18,11 +18,46 @@ function getSchoolFilter(request: NextRequest): Record<string, unknown> {
   return { school_id: parseInt(String(cond.school_id)) };
 }
 
+const MODELS_WITH_UPDATED_AT = new Set([
+  "user_role", "school", "user", "student", "teacher", "employee",
+  "address", "image", "marksheet", "payment", "payment_method",
+  "amenity", "bus", "school_class", "section", "subject",
+  "holiday", "homework", "noticeboard"
+]);
+
+const MODELS_WITH_CREATED_AT = new Set([
+  "attendance", "school_house"
+]);
+
+const MODELS_WITH_UPDATED_BY = new Set([
+  "user_role", "school", "user", "student", "teacher", "employee",
+  "address", "image", "marksheet", "payment", "payment_method",
+  "amenity", "bus", "school_class", "section", "subject",
+  "holiday", "homework", "noticeboard"
+]);
+
+const MODELS_WITH_CREATED_BY = new Set([
+  "user_role", "school", "user", "student", "teacher", "employee",
+  "address", "image", "marksheet", "payment", "payment_method",
+  "amenity", "bus", "school_class", "section", "subject",
+  "holiday", "homework", "noticeboard", "school_house"
+]);
+
+function getDefaultOrderBy(modelName: string): Record<string, string> {
+  if (MODELS_WITH_UPDATED_AT.has(modelName)) {
+    return { updated_at: "desc" };
+  }
+  if (MODELS_WITH_CREATED_AT.has(modelName)) {
+    return { created_at: "desc" };
+  }
+  return { id: "desc" };
+}
+
 export async function genericList(
   request: NextRequest,
   modelName: string,
   searchFields: string[] = [],
-  orderBy: Record<string, string> = { updated_at: "desc" }
+  orderBy?: Record<string, string>
 ) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") || "0");
@@ -39,12 +74,14 @@ export async function genericList(
     }));
   }
 
+  const finalOrderBy = orderBy || getDefaultOrderBy(modelName);
+
   try {
     const model = getModel(modelName);
     const [rows, count] = await Promise.all([
       model.findMany({
         where: whereCondition,
-        orderBy,
+        orderBy: finalOrderBy,
         take: limit,
         skip: offset,
       }),
@@ -70,8 +107,14 @@ export async function genericCreate(
   try {
     const payload = await request.json();
     const model = getModel(modelName);
+    
+    const dataToCreate: Record<string, unknown> = { ...payload, ...schoolFilter };
+    if (MODELS_WITH_CREATED_BY.has(modelName)) {
+      dataToCreate.created_by = userId;
+    }
+
     const record = await model.create({
-      data: { ...payload, created_by: userId, ...schoolFilter },
+      data: dataToCreate,
     });
     if (returnId) {
       return NextResponse.json(Utility.formatResponse(200, { id: record.id }), { status: 200 });
@@ -87,14 +130,19 @@ export async function genericUpdate(
   modelName: string,
   userId: number
 ) {
-  const schoolFilter = getSchoolFilter(request);
   try {
     const payload = await request.json();
     const { id, ...updateData } = payload;
     const model = getModel(modelName);
+
+    const dataToUpdate: Record<string, unknown> = { ...updateData };
+    if (MODELS_WITH_UPDATED_BY.has(modelName)) {
+      dataToUpdate.updated_by = userId;
+    }
+
     await model.update({
-      where: { id },
-      data: { ...updateData, updated_by: userId },
+      where: { id: parseInt(String(id)) },
+      data: dataToUpdate,
     });
     return NextResponse.json(Utility.formatResponse(200, "Updated Successfully"), { status: 200 });
   } catch (err) {

@@ -389,14 +389,15 @@ export const Utility = () => {
      */
     const getInitials = () => {
         const authInfo = getLocalStorage("auth");
-        if (authInfo?.username) {
-            const [firstName, lastName] = authInfo.username.split(" ");
-            const firstNameInitial = firstName?.[0]?.toUpperCase() || '';
-            const lastNameInitial = lastName?.[0]?.toUpperCase() || '';
+        const rawName = String(authInfo?.username || '').trim();
+        if (rawName) {
+            const parts = rawName.split(" ");
+            const firstNameInitial = parts[0]?.[0]?.toUpperCase() || '';
+            const lastNameInitial = parts[1]?.[0]?.toUpperCase() || '';
 
-            return `${firstNameInitial} ${lastNameInitial}`;
+            return `${firstNameInitial} ${lastNameInitial}`.trim() || 'U';
         }
-        return;
+        return 'U';
     };
 
     /** Gets formatted username and role based on the provided role name.
@@ -405,13 +406,26 @@ export const Utility = () => {
      */
     const getNameAndType = (roleName) => {
         const authInfo = getLocalStorage("auth");
-        const fullName = (authInfo?.username || '').split(" ");
-        const firstName = fullName[0]?.charAt(0).toUpperCase() + fullName[0]?.slice(1) || '';
-        const lastName = fullName[1]?.charAt(0).toUpperCase() + fullName[1]?.slice(1) || '';
-        const formattedRole = (roleName || '').charAt(0).toUpperCase() + (roleName || '').slice(1);
+        const rawUsername = String(authInfo?.username || '').trim();
+        const fullName = rawUsername ? rawUsername.split(" ") : [];
+        const firstName = fullName[0] ? fullName[0].charAt(0).toUpperCase() + fullName[0].slice(1) : '';
+        const lastName = fullName[1] ? fullName[1].charAt(0).toUpperCase() + fullName[1].slice(1) : '';
+
+        let roleStr = '';
+        if (typeof roleName === 'string' && isNaN(Number(roleName))) {
+            roleStr = roleName;
+        } else if (authInfo?.designation) {
+            roleStr = String(authInfo.designation);
+        } else if (roleName !== undefined && roleName !== null && roleName !== '') {
+            const roleNum = Number(roleName);
+            const roleMap = { 1: "Superadmin", 2: "Admin", 3: "Manager", 4: "Teacher", 5: "Student" };
+            roleStr = roleMap[roleNum] || String(roleName);
+        }
+
+        const formattedRole = roleStr ? roleStr.charAt(0).toUpperCase() + roleStr.slice(1) : '';
 
         return {
-            username: `${firstName} ${lastName}`.trim(),
+            username: `${firstName} ${lastName}`.trim() || rawUsername || 'User',
             role: formattedRole,
         };
     };

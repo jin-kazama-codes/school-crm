@@ -58,6 +58,8 @@ const UserRoleListingComponent = dynamic(() => import("@/components/userRole/Lis
 const ResetPasswordComponent = dynamic(() => import("@/components/resetPassword/ResetPw"), { ssr: false });
 const AttendanceComponent = dynamic(() => import("@/components/attendance/ListingComponent"), { ssr: false });
 const GenerateIdCardComponent = dynamic(() => import("@/components/generateIdCard/ListingComponent"), { ssr: false });
+const HomeworkFormComponent = dynamic(() => import("@/components/homework/FormComponent"), { ssr: false });
+const HomeworkListingComponent = dynamic(() => import("@/components/homework/ListingComponent"), { ssr: false });
 
 // Import idle timer dynamically (browser only)
 const IdleTimerWrapper = dynamic(
@@ -167,6 +169,9 @@ function renderRouteContent(pathname: string, userRole: { name: string; priority
 
   // Priority <= 4 routes (Teachers, Staff)
   if (priority <= 4) {
+    if (base === "homework" && sub === "create") return <HomeworkFormComponent />;
+    if (base === "homework" && sub === "update") return <HomeworkFormComponent />;
+    if (base === "homework" && sub === "listing") return <HomeworkListingComponent rolePriority={priority} />;
     if (base === "marksheet" && sub === "create") return <MarksheetFormComponent />;
     if (base === "marksheet" && sub === "update") return <MarksheetFormComponent />;
     if (base === "marksheet" && sub === "listing") return <MarksheetListingComponent rolePriority={priority} />;
@@ -184,6 +189,7 @@ function renderRouteContent(pathname: string, userRole: { name: string; priority
 
   // Priority <= 5 routes (Students, Parents)
   if (priority <= 5) {
+    if (base === "homework" && sub === "listing") return <HomeworkListingComponent rolePriority={priority} />;
     if (base === "student" && sub === "listing") return <StudentListingComponent rolePriority={priority} schoolInfo={schoolInfo} />;
     if (base === "holiday" && sub === "create") return <HolidayFormComponent />;
     if (base === "holiday" && sub === "update") return <HolidayFormComponent />;

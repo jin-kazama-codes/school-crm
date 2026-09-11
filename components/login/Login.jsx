@@ -38,7 +38,7 @@ const Login = () => {
 
   const dispatch = useDispatch()
   const formikRef = useRef(null)
-  
+
   const isMobile = typeof window !== "undefined" && window.innerWidth <= 480;
   const isTab = typeof window !== "undefined" && window.innerWidth <= 920;
 
@@ -84,7 +84,7 @@ const Login = () => {
           } else {
             const authInfo = {
               id: response.data.id,
-              school_code: formData.school_code, 
+              school_code: formData.school_code,
               token: response.data.token,
               role: response.data.role,
               designation: response.data.designation,
@@ -119,7 +119,7 @@ const Login = () => {
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center">
       {/* Background with overlay */}
-      <div 
+      <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
         style={{ backgroundImage: `url(${bgImg?.src || bgImg})` }}
       />
@@ -172,11 +172,10 @@ const Login = () => {
                       onBlur={handleBlur}
                       onChange={handleChange}
                       value={values.school_code}
-                      className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${
-                        touched.school_code && errors.school_code 
-                          ? "border-red-500 focus:ring-red-500/20" 
-                          : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
-                      }`}
+                      className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${touched.school_code && errors.school_code
+                        ? "border-red-500 focus:ring-red-500/20"
+                        : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
+                        }`}
                     />
                     {touched.school_code && errors.school_code && (
                       <p className="text-xs text-red-500 ml-1">{errors.school_code}</p>
@@ -194,11 +193,10 @@ const Login = () => {
                       onBlur={handleBlur}
                       onChange={handleChange}
                       value={values.email}
-                      className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${
-                        touched.email && errors.email 
-                          ? "border-red-500 focus:ring-red-500/20" 
-                          : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
-                      }`}
+                      className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${touched.email && errors.email
+                        ? "border-red-500 focus:ring-red-500/20"
+                        : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
+                        }`}
                     />
                     {touched.email && errors.email && (
                       <p className="text-xs text-red-500 ml-1">{errors.email}</p>
@@ -217,11 +215,10 @@ const Login = () => {
                         onBlur={handleBlur}
                         onChange={handleChange}
                         value={values.password}
-                        className={`w-full px-4 py-3 pr-12 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${
-                          touched.password && errors.password 
-                            ? "border-red-500 focus:ring-red-500/20" 
-                            : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
-                        }`}
+                        className={`w-full px-4 py-3 pr-12 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${touched.password && errors.password
+                          ? "border-red-500 focus:ring-red-500/20"
+                          : "border-slate-200 dark:border-[#2a2a2a] focus:border-emerald-500 focus:ring-emerald-500/20"
+                          }`}
                       />
                       <button
                         type="button"
@@ -237,9 +234,9 @@ const Login = () => {
                   </div>
 
                   <div className="flex justify-end pt-1">
-                    <button 
+                    <button
                       type="button"
-                      onClick={flipCard} 
+                      onClick={flipCard}
                       className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 transition-colors"
                     >
                       Forgot Password?
@@ -249,7 +246,7 @@ const Login = () => {
                   <button
                     disabled={!dirty || loading}
                     type="submit"
-                    className="w-full py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md shadow-emerald-600/20"
+                    className="w-full py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
                   >
                     {loading ? <SignInLoader /> : "Sign In"}
                   </button>
@@ -260,13 +257,13 @@ const Login = () => {
 
           {/* Back: Forgot Password */}
           <div className="w-full h-full">
-            <ForgetPassword 
-              Api={API.UserAPI} 
-              isFliped={isFliped} 
-              setIsFliped={setIsFliped} 
-              dispatch={dispatch} 
+            <ForgetPassword
+              Api={API.UserAPI}
+              isFliped={isFliped}
+              setIsFliped={setIsFliped}
+              dispatch={dispatch}
               toastAndNavigate={toastAndNavigate}
-              isMobile={isMobile} 
+              isMobile={isMobile}
               isTab={isTab}
             />
           </div>

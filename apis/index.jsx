@@ -16,6 +16,7 @@ import { CountryAPI } from "./CountryAPI";
 import { DashboardAPI } from "./DashboardAPI";
 import { EmployeeAPI } from "./EmployeeAPI";
 import { GenerateIdCardAPI  } from "./GenerateIdCard";
+import { HomeworkAPI } from "./HomeworkAPI";
 import { HolidayAPI } from "./HolidayAPI";
 import { ImageAPI } from "./ImageAPI";
 import { MarksheetAPI } from "./MarksheetAPI";
@@ -45,6 +46,7 @@ export default {
     DashboardAPI,
     EmployeeAPI,
     GenerateIdCardAPI,
+    HomeworkAPI,
     HolidayAPI,
     ImageAPI,
     MarksheetAPI,
