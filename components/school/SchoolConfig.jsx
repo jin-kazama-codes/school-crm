@@ -111,7 +111,7 @@ export const datagridColumns = (setOpen = null) => {
                     <div className="flex justify-center items-center gap-2 w-full h-full">
                         <button
                             onClick={() => handleActionEdit(id)}
-                            className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                            className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors cursor-pointer"
                             title="Edit"
                         >
                             <FileEdit className="w-4 h-4" />
@@ -119,7 +119,7 @@ export const datagridColumns = (setOpen = null) => {
 
                         <button
                             onClick={() => handleActionShow(id)}
-                            className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 rounded-lg transition-colors"
+                            className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 rounded-lg transition-colors cursor-pointer"
                             title="View Details"
                         >
                             <Eye className="w-4 h-4" />

@@ -79,7 +79,7 @@ export const datagridColumns = (handleDialogOpen) => {
                     <div className="flex justify-center items-center w-full h-full">
                         <button
                             onClick={() => handleActionEdit(id)}
-                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
                             title="Edit"
                         >
                             <FileEdit className="w-5 h-5" />

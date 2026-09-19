@@ -629,12 +629,14 @@ const ServerPaginationGrid = ({
                                         {visibleColumns.map((col) => {
                                             const cellVal = getCellDisplayValue(col, row);
                                             const alignClass = col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left';
+                                            const isActionCol = col.field === 'action' || col.field === 'actions' || String(col.headerName || '').toLowerCase() === 'action';
+                                            const actionClass = isActionCol ? 'cursor-pointer [&_button]:cursor-pointer [&_svg]:cursor-pointer [&_a]:cursor-pointer [&_*]:cursor-pointer' : '';
                                             const customCellClass = typeof col.cellClassName === 'function' ? col.cellClassName({ row, value: cellVal, field: col.field }) : (col.cellClassName || '');
 
                                             return (
                                                 <td
                                                     key={col.field}
-                                                    className={`px-4 py-3.5 ${alignClass} ${customCellClass}`}
+                                                    className={`px-4 py-3.5 ${alignClass} ${actionClass} ${customCellClass}`}
                                                 >
                                                     {col.renderCell ? (
                                                         col.renderCell({

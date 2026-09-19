@@ -140,7 +140,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
                         {rolePriority !== 1 && (
                             <button
                                 onClick={() => handleActionEdit(id)}
-                                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
                                 title="Edit"
                             >
                                 <Pencil className="w-4 h-4" />
@@ -148,7 +148,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
                         )}
                         <button
                             onClick={() => handleActionShow(id)}
-                            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50"
+                            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50 cursor-pointer"
                             title="Preview"
                         >
                             <Eye className="w-4 h-4" />

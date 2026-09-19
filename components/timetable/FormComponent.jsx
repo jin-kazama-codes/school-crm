@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
+import { RotateCcw, X as XIcon, Save } from "lucide-react";
 
 import API from "../../apis";
 import Loader from "../common/Loader";
@@ -213,16 +214,18 @@ const FormComponent = () => {
                                         setReset(true);
                                     }
                                 }}
-                                className="px-6 py-2.5 rounded-xl font-semibold text-white bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-yellow-500/20"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                             >
+                                <RotateCcw className="w-5 h-5" />
                                 Reset
                             </button>
                         )}
                         
                         <button 
                             onClick={() => navigateTo(`/time-table/listing`)}
-                            className="px-6 py-2.5 rounded-xl font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md shadow-red-500/20"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
                         >
+                            <XIcon className="w-5 h-5" />
                             Cancel
                         </button>
                         
@@ -230,13 +233,14 @@ const FormComponent = () => {
                             type="submit" 
                             onClick={() => handleSubmit()} 
                             disabled={!dirty}
-                            className={`px-6 py-2.5 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md ${
+                            className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
                                 title === "Update" 
-                                ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/20" 
-                                : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                                ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
+                                : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
                             }`}
                         >
-                            Submit
+                            <Save className="w-5 h-5" />
+                            {title === "Update" ? "Update Timetable" : "Submit"}
                         </button>
                     </div>
                 </div>

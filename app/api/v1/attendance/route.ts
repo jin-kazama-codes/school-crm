@@ -72,7 +72,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
     // Run count + data queries in parallel for efficiency
     const [count, rows] = await Promise.all([
       prisma.attendance.count({ where }),
-      prisma.attendance.findMany({
+      (prisma.attendance as any).findMany({
         where,
         take:    limit,
         skip:    offset,

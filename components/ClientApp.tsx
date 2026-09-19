@@ -131,69 +131,69 @@ function renderRouteContent(pathname: string, userRole: { name: string; priority
 
   // Priority 1 only routes (Superadmin / System Configs)
   if (priority === 1) {
-    if (base === "amenity" && sub === "listing") return <AmenityListingComponent />;
-    if (base === "role" && sub === "listing") return <UserRoleListingComponent />;
+    if (base === "amenity" && (sub === "listing" || sub === "")) return <AmenityListingComponent />;
+    if (base === "role" && (sub === "listing" || sub === "")) return <UserRoleListingComponent />;
     if (base === "school" && sub === "create") return <SchoolFormComponent />;
     if (base === "school" && sub === "update") return <SchoolFormComponent />;
-    if (base === "school" && sub === "listing") return <SchoolListingComponent />;
-    if (base === "class" && sub === "listing") return <ClassListingComponent />;
-    if (base === "payment-method" && sub === "listing") return <PaymentMethodListingComponent />;
-    if (base === "section" && sub === "listing") return <SectionListingComponent />;
-    if (base === "subject" && sub === "listing") return <SubjectListingComponent />;
+    if (base === "school" && (sub === "listing" || sub === "")) return <SchoolListingComponent />;
+    if (base === "class" && (sub === "listing" || sub === "")) return <ClassListingComponent />;
+    if (base === "payment-method" && (sub === "listing" || sub === "")) return <PaymentMethodListingComponent />;
+    if (base === "section" && (sub === "listing" || sub === "")) return <SectionListingComponent />;
+    if (base === "subject" && (sub === "listing" || sub === "")) return <SubjectListingComponent />;
   }
 
   // Priority <= 3 routes (Admins, Principals, Managers)
   if (priority <= 3) {
-    if (base === "bus" && sub === "listing") return <BusListingComponent rolePriority={priority} />;
+    if (base === "bus" && (sub === "listing" || sub === "")) return <BusListingComponent rolePriority={priority} />;
     if (base === "bus" && sub === "create") return <BusFormComponent />;
     if (base === "bus" && sub === "update") return <BusFormComponent />;
     if (base === "student" && sub === "create") return <StudentFormComponent />;
     if (base === "student" && sub === "update") return <StudentFormComponent />;
     if (base === "teacher" && sub === "create") return <TeacherFormComponent />;
     if (base === "teacher" && sub === "update") return <TeacherFormComponent />;
-    if (base === "teacher" && sub === "listing") return <TeacherListingComponent rolePriority={priority} />;
+    if (base === "teacher" && (sub === "listing" || sub === "")) return <TeacherListingComponent rolePriority={priority} />;
     if (base === "user" && sub === "create") return <UserFormComponent rolePriority={priority} />;
     if (base === "user" && sub === "update") return <UserFormComponent rolePriority={priority} />;
-    if (base === "user" && sub === "listing") return <UserListingComponent />;
+    if (base === "user" && (sub === "listing" || sub === "")) return <UserListingComponent />;
     if (base === "employee" && sub === "create") return <EmployeeFormComponent />;
     if (base === "employee" && sub === "update") return <EmployeeFormComponent />;
-    if (base === "employee" && sub === "listing") return <EmployeeListingComponent rolePriority={priority} />;
-    if (base === "generate-id-card" && sub === "listing") return <GenerateIdCardComponent rolePriority={priority} />;
+    if (base === "employee" && (sub === "listing" || sub === "")) return <EmployeeListingComponent rolePriority={priority} />;
+    if (base === "generate-id-card" && (sub === "listing" || sub === "")) return <GenerateIdCardComponent rolePriority={priority} />;
     if (base === "payment" && sub === "create") return <PaymentFormComponent rolePriority={priority} openDialog={true} />;
     if (base === "payment" && sub === "update") return <PaymentFormComponent rolePriority={priority} />;
-    if (base === "payment" && sub === "listing") return <PaymentListingComponent rolePriority={priority} />;
+    if (base === "payment" && (sub === "listing" || sub === "")) return <PaymentListingComponent rolePriority={priority} />;
     if (base === "noticeboard" && sub === "create") return <NoticeBoardFormComponent />;
     if (base === "noticeboard" && sub === "update") return <NoticeBoardFormComponent />;
-    if (base === "noticeboard" && sub === "listing") return <NoticeBoardListing rolePriority={priority} />;
+    if (base === "noticeboard" && (sub === "listing" || sub === "")) return <NoticeBoardListing rolePriority={priority} />;
   }
 
   // Priority <= 4 routes (Teachers, Staff)
   if (priority <= 4) {
     if (base === "homework" && sub === "create") return <HomeworkFormComponent />;
     if (base === "homework" && sub === "update") return <HomeworkFormComponent />;
-    if (base === "homework" && sub === "listing") return <HomeworkListingComponent rolePriority={priority} />;
+    if (base === "homework" && (sub === "listing" || sub === "")) return <HomeworkListingComponent rolePriority={priority} />;
     if (base === "marksheet" && sub === "create") return <MarksheetFormComponent />;
     if (base === "marksheet" && sub === "update") return <MarksheetFormComponent />;
-    if (base === "marksheet" && sub === "listing") return <MarksheetListingComponent rolePriority={priority} />;
+    if (base === "marksheet" && (sub === "listing" || sub === "")) return <MarksheetListingComponent rolePriority={priority} />;
     if (base === "school-duration" && sub === "create") return <SchoolDurationFormComponent />;
     if (base === "school-duration" && sub === "update") return <SchoolDurationFormComponent />;
-    if (base === "school-duration" && sub === "listing") return <SchoolDurationListingComponent rolePriority={priority} />;
+    if (base === "school-duration" && (sub === "listing" || sub === "")) return <SchoolDurationListingComponent rolePriority={priority} />;
     if (base === "school-house" && sub === "create") return <SchoolHouseFormComponent />;
     if (base === "school-house" && sub === "update") return <SchoolHouseFormComponent />;
-    if (base === "school-house" && sub === "listing") return <SchoolHouseListingComponent rolePriority={priority} />;
-    if (base === "attendance" && sub === "listing") return <AttendanceComponent rolePriority={priority} />;
+    if (base === "school-house" && (sub === "listing" || sub === "")) return <SchoolHouseListingComponent rolePriority={priority} />;
+    if (base === "attendance" && (sub === "listing" || sub === "")) return <AttendanceComponent rolePriority={priority} />;
     if (base === "time-table" && sub === "create") return <TimeTableFormComponent />;
     if (base === "time-table" && sub === "update") return <TimeTableFormComponent />;
-    if (base === "time-table" && sub === "listing") return <TimeTableListingComponent rolePriority={priority} />;
+    if (base === "time-table" && (sub === "listing" || sub === "")) return <TimeTableListingComponent rolePriority={priority} />;
   }
 
   // Priority <= 5 routes (Students, Parents)
   if (priority <= 5) {
-    if (base === "homework" && sub === "listing") return <HomeworkListingComponent rolePriority={priority} />;
-    if (base === "student" && sub === "listing") return <StudentListingComponent rolePriority={priority} schoolInfo={schoolInfo} />;
+    if (base === "homework" && (sub === "listing" || sub === "")) return <HomeworkListingComponent rolePriority={priority} />;
+    if (base === "student" && (sub === "listing" || sub === "")) return <StudentListingComponent rolePriority={priority} schoolInfo={schoolInfo} />;
     if (base === "holiday" && sub === "create") return <HolidayFormComponent />;
     if (base === "holiday" && sub === "update") return <HolidayFormComponent />;
-    if (base === "holiday" && sub === "listing") return <HolidayListingComponent rolePriority={priority} />;
+    if (base === "holiday" && (sub === "listing" || sub === "")) return <HolidayListingComponent rolePriority={priority} />;
   }
 
   return <NotFound />;
@@ -211,7 +211,9 @@ export default function ClientApp() {
   const currentSection = pathname?.split("/")?.[1] || "";
 
   const onIdle = () => {
+    const fullSavedPath = pathname && pathname !== "/login" ? pathname : "/";
     localStorage.clear();
+    setLocalStorage("navigatedPath", fullSavedPath);
     window.location.reload();
   };
 
@@ -234,8 +236,9 @@ export default function ClientApp() {
         setLocalStorage("auth", { token });
         router.replace(`/reset-password/${token}`);
       } else if (!result && currentSection !== "login") {
+        const fullSavedPath = pathname && pathname !== "/login" ? pathname : "/";
         localStorage.clear();
-        setLocalStorage("navigatedPath", currentSection);
+        setLocalStorage("navigatedPath", fullSavedPath);
         router.replace("/login");
       }
     });

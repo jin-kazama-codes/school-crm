@@ -102,8 +102,17 @@ const Login = () => {
             if (response.data?.school_info) {
               setLocalStorage("schoolInfo", response.data.school_info);
             }
-            const targetPath = getLocalStorage("navigatedPath") || "/";
+            let targetPath = getLocalStorage("navigatedPath") || "/";
             remLocalStorage("navigatedPath");
+            if (typeof targetPath === "string" && targetPath.trim() !== "" && targetPath !== "/login" && targetPath !== "login") {
+              if (!targetPath.startsWith("/")) targetPath = `/${targetPath}`;
+              const parts = targetPath.split("/").filter(Boolean);
+              if (parts.length === 1 && !["dashboard", "login", "reset-password"].includes(parts[0])) {
+                targetPath = `/${parts[0]}/listing`;
+              }
+            } else {
+              targetPath = "/";
+            }
             window.location.href = targetPath;
           }
         })

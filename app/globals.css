@@ -36,6 +36,13 @@ a {
   text-decoration: none;
 }
 
+button,
+[role="button"],
+.cursor-pointer,
+.cursor-pointer * {
+  cursor: pointer;
+}
+
 @layer utilities {
   /* Neon emerald shadow glow for dark mode */
   .neon-glow {

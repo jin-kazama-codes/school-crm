@@ -174,7 +174,7 @@ const FormComponent = () => {
                 </div>
             </div>
 
-            <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto pb-32">
+            <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto">
                 <SchoolDurationFormComponent
                     onChange={(data) => {
                         handleFormChange(data, 'schoolDuration');
@@ -186,47 +186,45 @@ const FormComponent = () => {
                     userId={id}
                     updatedValues={updatedValues?.schoolDurationData}
                 />
-            </div>
 
-            <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shadow-[-0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[-0_-10px_40px_rgba(0,0,0,0.2)] z-20">
-                <div className="max-w-7xl mx-auto flex items-center justify-end gap-4">
+                <div className="flex flex-wrap items-center justify-end gap-4 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl p-4 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
                     {title !== "Update" && (
-                        <button
-                            type="button"
+                        <button 
+                            type="button" 
                             disabled={!dirty || submitted}
                             onClick={() => {
                                 if (window.confirm("Do You Really Want To Reset?")) {
                                     setReset(true);
                                 }
                             }}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md shadow-amber-500/20"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                         >
                             <RotateCcw className="w-5 h-5" />
                             Reset
                         </button>
                     )}
                     
-                    <button
+                    <button 
                         type="button"
                         onClick={() => navigateTo(`/school-duration/listing`)}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all active:scale-95"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
                     >
                         <X className="w-5 h-5" />
                         Cancel
                     </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handleSubmit()}
-                        disabled={!dirty}
-                        className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg ${
-                            title === "Update"
-                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40"
+                    
+                    <button 
+                        type="button" 
+                        onClick={() => handleSubmit()} 
+                        disabled={!dirty || submitted}
+                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
+                            title === "Update" 
+                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
                             : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
                         }`}
                     >
                         <Save className="w-5 h-5" />
-                        Submit
+                        {title === "Update" ? "Update Duration" : "Submit"}
                     </button>
                 </div>
             </div>

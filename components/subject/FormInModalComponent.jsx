@@ -12,7 +12,7 @@ import { useLocation, useNavigate } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { Formik } from "formik";
-import { X, BookCheck } from "lucide-react";
+import { X, BookCheck, RotateCcw, Save } from "lucide-react";
 
 import API from "../../apis";
 import config from "../config";
@@ -277,27 +277,30 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
                                     resetForm();
                                 }
                             }}
-                            className="px-6 py-2.5 rounded-xl font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-amber-500/20"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                             >
+                            <RotateCcw className="w-5 h-5" />
                             Reset
                             </button>
                         )}
                         <button
                             type="button"
                             onClick={handleDialogClose}
-                            className="px-6 py-2.5 rounded-xl font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
                         >
+                            <X className="w-5 h-5" />
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={!dirty || isSubmitting}
-                            className={`px-8 py-2.5 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg ${
+                            className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
                                 title === "Update" 
                                 ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
                                 : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
                             }`}
                         >
+                            <Save className="w-5 h-5" />
                             Submit
                         </button>
                     </div>

@@ -240,14 +240,14 @@ const ImportComponent = ({ openDialog, setOpenDialog }) => {
                                         <button 
                                             type="button" 
                                             onClick={() => setOpenDialog(false)}
-                                            className="flex-1 sm:flex-none px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-xl transition-all text-sm"
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95 text-sm"
                                         >
                                             Cancel
                                         </button>
                                         <button 
                                             type="submit"
                                             disabled={!importedFile}
-                                            className="flex-1 sm:flex-none px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold shadow-md shadow-green-600/30 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                                         >
                                             Import
                                         </button>
