@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# seed scripts (local demo data only)
+prisma/seed.mjs
+prisma/patch_seed.mjs

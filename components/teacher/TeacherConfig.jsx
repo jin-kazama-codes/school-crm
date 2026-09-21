@@ -63,7 +63,7 @@ export const datagridColumns = (rolePriority = null) => {
             flex: 1,
             minWidth: 100,
             renderCell: ({ row }) => {
-                if (row.is_class_teacher.data[0] === 1 && row.classnames && row.class_section_name) {
+                if ((row.is_class_teacher === true || row.is_class_teacher?.data?.[0] === 1) && row.classnames && row.class_section_name) {
                     const classnamesArray = row.classnames.split(',');
                     return (
                         <div className="flex flex-wrap gap-1 items-center justify-center h-full">

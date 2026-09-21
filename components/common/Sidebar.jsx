@@ -131,10 +131,12 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
     if(schoolId !== null){
        API.ImageAPI.getImage("school", schoolId )
        .then(res =>{
-          setSchoolImg(res.data[0]?.image_src);
+          setSchoolImg(res?.data?.[0]?.image_src);
        })
+       .catch(() => {});
     }
   },[schoolId]);
+
 
   const handleLogout = () => {
     localStorage.clear();
