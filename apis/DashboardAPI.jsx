@@ -22,7 +22,7 @@ export const DashboardAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getCountries.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.getDashboardCount ? cancelApiObject.getDashboardCount.handleRequestCancellation().signal : undefined
         });
         return response;
     },
@@ -35,7 +35,7 @@ export const DashboardAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getStudentGraphData.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.getStudentGraphData ? cancelApiObject.getStudentGraphData.handleRequestCancellation().signal : undefined
         });
         return response;
     }

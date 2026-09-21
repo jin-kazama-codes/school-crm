@@ -24,7 +24,7 @@ export const SchoolHouseAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const SchoolHouseAPI = {
             },
             method: "POST",
             data: schoolHouse,
-            signal: cancel ? cancelApiObject[this.createSchoolHouse.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.createSchoolHouse ? cancelApiObject.createSchoolHouse.handleRequestCancellation().signal : undefined
         });
     },
 
@@ -53,7 +53,7 @@ export const SchoolHouseAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateSchoolHouse.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.updateSchoolHouse ? cancelApiObject.updateSchoolHouse.handleRequestCancellation().signal : undefined
         });
     }
 };

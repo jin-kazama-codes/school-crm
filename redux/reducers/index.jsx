@@ -47,6 +47,7 @@ import { setUsersReducer } from "./UserReducer";
 import { setAllUserRolesReducer } from "./UserRoleReducer";
 import { setListingUserRolesReducer } from "./UserRoleReducer";
 import { setNoticeBoardReducer } from "./NoticeBoardReducer";
+import { setAttendancesReducer } from "./AttendanceReducer";
 
 const reducers = combineReducers({
   auth: authReducer,
@@ -82,6 +83,7 @@ const reducers = combineReducers({
   allHolidays: setHolidaysReducer,
   allHomeworks: setHomeworksReducer,
   allNotices: setNoticeBoardReducer,
+  allAttendances: setAttendancesReducer,
   allPayments: setPaymentsReducer,
   listingPaymentMethods: setListingPaymentMethodsReducer,
   allPaymentMethods: setAllPaymentMethodsReducer,

@@ -47,7 +47,11 @@ const FormComponent = () => {
     }, []);
 
     const updateHomework = useCallback(formData => {
-        const dataFields = [{ ...formData.homeworkData.values }];
+        const values = { ...formData.homeworkData.values };
+        if (values.class_id) values.class_id = parseInt(String(values.class_id), 10);
+        if (values.section_id) values.section_id = parseInt(String(values.section_id), 10);
+        if (values.subject_id) values.subject_id = parseInt(String(values.subject_id), 10);
+        const dataFields = [values];
         const paths = ["/homework"];
         setLoading(true);
 
@@ -86,7 +90,11 @@ const FormComponent = () => {
 
     const createHomework = useCallback(formData => {
         setLoading(true);
-        API.HomeworkAPI.createHomework({ ...formData.homeworkData.values })
+        const values = { ...formData.homeworkData.values };
+        if (values.class_id) values.class_id = parseInt(String(values.class_id), 10);
+        if (values.section_id) values.section_id = parseInt(String(values.section_id), 10);
+        if (values.subject_id) values.subject_id = parseInt(String(values.subject_id), 10);
+        API.HomeworkAPI.createHomework(values)
             .then(() => {
                 setLoading(false);
                 toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, "/homework/listing");

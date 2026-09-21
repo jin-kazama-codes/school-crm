@@ -17,7 +17,7 @@ export const CommonAPI = {
         const { getLocalStorage } = Utility();
         const commonConfig = {
             method: method,
-            signal: cancel ? cancelApiObject[this.commonConfig.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.commonConfig ? cancelApiObject.commonConfig.handleRequestCancellation().signal : undefined,
         }
         if (header) {
             commonConfig.headers = {

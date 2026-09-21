@@ -32,7 +32,7 @@ export const StudentAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined
     });
     return response;
   },
@@ -47,7 +47,7 @@ export const StudentAPI = {
       },
       method: "POST",
       data: student,
-      signal: cancel ? cancelApiObject[this.createStudent.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.createStudent ? cancelApiObject.createStudent.handleRequestCancellation().signal : undefined
     });
   },
 
@@ -61,7 +61,7 @@ export const StudentAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateStudent.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.updateStudent ? cancelApiObject.updateStudent.handleRequestCancellation().signal : undefined
     });
   },
 
@@ -74,7 +74,7 @@ export const StudentAPI = {
         "x-access-token": getLocalStorage("auth").token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getClassOfStudent.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.getClassOfStudent ? cancelApiObject.getClassOfStudent.handleRequestCancellation().signal : undefined
     });
     return response;
   }

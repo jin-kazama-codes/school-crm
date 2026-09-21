@@ -78,7 +78,7 @@ const ListingComponent = ({ rolePriority = null }) => {
                         />
                     </div>
 
-                    {rolePriority > 1 && (
+                    {(rolePriority === null || rolePriority <= 3) && (
                         <button
                             onClick={() => navigateTo(`/noticeboard/create`)}
                             className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:-translate-y-0.5 whitespace-nowrap"

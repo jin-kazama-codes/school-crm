@@ -29,7 +29,7 @@ export const MarksheetAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -44,7 +44,7 @@ export const MarksheetAPI = {
             },
             method: "POST",
             data: marksheet,
-            signal: cancel ? cancelApiObject[this.createMarksheet.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.createMarksheet ? cancelApiObject.createMarksheet.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -58,7 +58,7 @@ export const MarksheetAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateMarksheet.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.updateMarksheet ? cancelApiObject.updateMarksheet.handleRequestCancellation().signal : undefined,
         });
     },
     /** Insert data into marksheet_data mapping table in the database
@@ -71,7 +71,7 @@ export const MarksheetAPI = {
             },
             method: "POST",
             data: data,
-            signal: cancel ? cancelApiObject[this.insertIntoMappingTable.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.insertIntoMappingTable ? cancelApiObject.insertIntoMappingTable.handleRequestCancellation().signal : undefined,
         });
     },
     /** delete values from marksheet_data mapping table on every update
@@ -84,7 +84,7 @@ export const MarksheetAPI = {
             },
             method: "DELETE",
             data: fields,
-            signal: cancel ? cancelApiObject[this.deleteFromMappingTable.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.deleteFromMappingTable ? cancelApiObject.deleteFromMappingTable.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -96,7 +96,7 @@ export const MarksheetAPI = {
                 "x-access-token": getLocalStorage("auth").token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getMarksheetData.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getMarksheetData ? cancelApiObject.getMarksheetData.handleRequestCancellation().signal : undefined,
         });
         return response;
     }

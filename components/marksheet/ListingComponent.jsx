@@ -1,17 +1,8 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use, reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
- */
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "@/lib/routerAdapter";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, BookOpen, Layers, ChevronDown } from "lucide-react";
 
 import API from "../../apis";
 import Search from "../common/Search";
@@ -26,11 +17,13 @@ import { setAllSubjects } from "../../redux/actions/SubjectAction";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
-
 const pageSizeOptions = [10, 20, 50];
 
 const ListingComponent = ({ rolePriority = null }) => {
-  const [classSectionObj, setClassSectionObj] = useState(null);
+  const [classSectionObj, setClassSectionObj] = useState({
+    class_id: "",
+    section_id: "",
+  });
   const [classData, setClassData] = useState([]);
   const schoolClasses = useSelector((state) => state.schoolClasses);
   const allClasses = useSelector((state) => state.allClasses);
@@ -38,7 +31,7 @@ const ListingComponent = ({ rolePriority = null }) => {
   const allSections = useSelector((state) => state.allSections);
   const allSubjects = useSelector((state) => state.allSubjects);
   const selected = useSelector((state) => state.menuItems.selected);
-  const { listData, loading } = useSelector((state) => state.allMarksheets);
+  const { listData = { count: 0, rows: [] }, loading } = useSelector((state) => state.allMarksheets);
 
   const navigateTo = useNavigate();
   const dispatch = useDispatch();
@@ -60,32 +53,77 @@ const ListingComponent = ({ rolePriority = null }) => {
     fetchAndSetAll,
     fetchAndSetSchoolData,
     findMultipleById,
+    appendSuffix,
+    capitalizeEveryWord,
   } = Utility();
 
-  let classConditionObj = classSectionObj?.class_id
-    ? {
-      classId: classSectionObj.class_id,
-    }
-    : null;
+  // Deduplicated class list supporting both { class_id, class_name } and { id, name }
+  const classList = useMemo(() => {
+    const raw = (schoolClasses?.listData?.length ? schoolClasses.listData : allClasses?.listData) || [];
+    const seen = new Set();
+    const list = [];
+    raw.forEach((item) => {
+      const id = item?.class_id ?? item?.id;
+      const rawName = item?.class_name ?? item?.name ?? "";
+      if (id !== undefined && id !== null && !seen.has(String(id))) {
+        seen.add(String(id));
+        const formattedName = !isNaN(Number(rawName)) && rawName !== "" ? `Class ${appendSuffix(rawName)}` : (rawName.toLowerCase().startsWith("class") ? capitalizeEveryWord(rawName) : `Class ${capitalizeEveryWord(rawName)}`);
+        list.push({ id: Number(id), name: formattedName || `Class ${id}` });
+      }
+    });
+    return list;
+  }, [schoolClasses?.listData, allClasses?.listData]);
 
-  classConditionObj = classSectionObj?.section_id
-    ? {
-      ...classConditionObj,
-      sectionId: classSectionObj.section_id,
+  // Section list supporting both { section_id, section_name } and { id, name }
+  const sectionList = useMemo(() => {
+    if (classSectionObj?.class_id && classData?.length) {
+      const classSections = classData.filter((obj) => obj.class_id === classSectionObj.class_id);
+      if (classSections.length > 0) {
+        const seen = new Set();
+        const list = [];
+        classSections.forEach((item) => {
+          const id = item?.section_id ?? item?.id;
+          const rawName = item?.section_name ?? item?.name ?? "";
+          if (id !== undefined && id !== null && !seen.has(String(id))) {
+            seen.add(String(id));
+            const formattedName = rawName ? (rawName.toLowerCase().startsWith("sec") ? capitalizeEveryWord(rawName) : `Section ${capitalizeEveryWord(rawName)}`) : `Section ${id}`;
+            list.push({ id: Number(id), name: formattedName });
+          }
+        });
+        if (list.length > 0) return list;
+      }
     }
-    : null;
+    const raw = (schoolSections?.listData?.length ? schoolSections.listData : allSections?.listData) || [];
+    const seen = new Set();
+    const list = [];
+    raw.forEach((item) => {
+      const id = item?.section_id ?? item?.id;
+      const rawName = item?.section_name ?? item?.name ?? "";
+      if (id !== undefined && id !== null && !seen.has(String(id))) {
+        seen.add(String(id));
+        const formattedName = rawName ? (rawName.toLowerCase().startsWith("sec") ? capitalizeEveryWord(rawName) : `Section ${capitalizeEveryWord(rawName)}`) : `Section ${id}`;
+        list.push({ id: Number(id), name: formattedName });
+      }
+    });
+    return list;
+  }, [classSectionObj?.class_id, classData, schoolSections?.listData, allSections?.listData]);
+
+  const classConditionObj = useMemo(() => {
+    const obj = {};
+    if (classSectionObj?.class_id) obj.classId = classSectionObj.class_id;
+    if (classSectionObj?.section_id) obj.sectionId = classSectionObj.section_id;
+    return Object.keys(obj).length > 0 ? obj : null;
+  }, [classSectionObj?.class_id, classSectionObj?.section_id]);
 
   useEffect(() => {
-    if (classSectionObj?.class_id && classSectionObj?.section_id) {
-      getPaginatedData(
-        0,
-        8,
-        setMarksheets,
-        API.MarksheetAPI,
-        classConditionObj
-      );
-    }
-  }, [classConditionObj?.classId, classConditionObj?.sectionId]);
+    getPaginatedData(
+      0,
+      10,
+      setMarksheets,
+      API.MarksheetAPI,
+      classConditionObj
+    );
+  }, [classConditionObj]);
 
   useEffect(() => {
     if (!allSubjects?.listData?.length) {
@@ -95,6 +133,7 @@ const ListingComponent = ({ rolePriority = null }) => {
 
   useEffect(() => {
     const getAndSetSections = () => {
+      if (!classSectionObj?.class_id) return;
       const classSections =
         classData?.filter(
           (obj) => obj.class_id === classSectionObj?.class_id
@@ -102,13 +141,16 @@ const ListingComponent = ({ rolePriority = null }) => {
       const selectedSections = classSections.map(
         ({ section_id, section_name }) => ({ section_id, section_name })
       );
-      dispatch(setSchoolSections(selectedSections));
+      if (selectedSections.length > 0) {
+        dispatch(setSchoolSections(selectedSections));
+      }
     };
     getAndSetSections();
   }, [classSectionObj?.class_id, classData?.length]);
 
   useEffect(() => {
     const getAndSetSubjects = () => {
+      if (!classSectionObj?.class_id || !classSectionObj?.section_id) return;
       const sectionSubjects = classData?.filter(
         (obj) =>
           obj.class_id === classSectionObj?.class_id &&
@@ -161,28 +203,9 @@ const ListingComponent = ({ rolePriority = null }) => {
     dispatch(setMenuItem("Marksheet"));
   }, []);
 
-  // to set default class & section id in dropdowns
-  useEffect(() => {
-    if (
-      listData?.rows?.length &&
-      !classSectionObj?.class_id &&
-      !classSectionObj?.section_id
-    ) {
-      setClassSectionObj({
-        ...classSectionObj,
-        class_id: listData.rows[0].class_id,
-        section_id: listData.rows[0].section_id,
-      });
-    }
-  }, [listData?.rows?.length, classSectionObj?.section_id]);
-
-  const selectClass = "w-full md:w-40 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:12px_12px] bg-[right_1rem_center]";
-
-
   return (
     <div 
         className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200"
-        
     >
         <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-sm p-5">
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
@@ -190,8 +213,8 @@ const ListingComponent = ({ rolePriority = null }) => {
                     {selected}
                 </h2>
                 
-                <div className="flex-1 w-full flex flex-col md:flex-row items-center gap-4 xl:px-8">
-                    <div className="w-full max-w-xl">
+                <div className="flex-1 w-full flex flex-col md:flex-row items-center gap-3 xl:px-6">
+                    <div className="w-full max-w-md">
                         <Search
                             action={setMarksheets}
                             api={API.MarksheetAPI}
@@ -202,50 +225,61 @@ const ListingComponent = ({ rolePriority = null }) => {
                         />
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4 shrink-0">
-                        <select
-                            value={classSectionObj?.class_id || ""}
-                            onChange={(event) =>
-                                setClassSectionObj({
-                                ...classSectionObj,
-                                class_id: event.target.value,
-                                })
-                            }
-                            className={selectClass}
-                        >
-                            <option value="" disabled>Select Class</option>
-                            {allClasses?.listData?.length
-                                ? allClasses.listData.map((cls) => (
-                                    <option value={cls.class_id} key={cls.class_id}>{cls.class_name}</option>
-                                ))
-                                : schoolClasses?.listData?.length
-                                ? schoolClasses.listData.map((cls) => (
-                                    <option value={cls.class_id} key={cls.class_id}>{cls.class_name}</option>
-                                ))
-                                : null}
-                        </select>
+                    <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 shrink-0">
+                        {/* Class Dropdown */}
+                        <div className="relative flex items-center min-w-[160px] w-full sm:w-auto">
+                            <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
+                            <select
+                                value={classSectionObj?.class_id ?? ""}
+                                onChange={(event) =>
+                                    setClassSectionObj((prev) => ({
+                                      ...prev,
+                                      class_id: event.target.value ? Number(event.target.value) : "",
+                                      section_id: "",
+                                    }))
+                                }
+                                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all cursor-pointer shadow-2xs appearance-none"
+                            >
+                                <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Class</option>
+                                {classList.map((cls) => (
+                                    <option 
+                                        value={cls.id} 
+                                        key={`class-${cls.id}`}
+                                        className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
+                                    >
+                                        {cls.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
+                        </div>
 
-                        <select
-                            value={classSectionObj?.section_id || ""}
-                            onChange={(event) =>
-                                setClassSectionObj({
-                                ...classSectionObj,
-                                section_id: event.target.value,
-                                })
-                            }
-                            className={selectClass}
-                        >
-                            <option value="" disabled>Select Section</option>
-                            {allSections?.listData?.length
-                                ? allSections.listData.map((section) => (
-                                    <option value={section.section_id} key={section.section_id}>{section.section_name}</option>
-                                ))
-                                : schoolSections?.listData?.length
-                                ? schoolSections.listData.map((section) => (
-                                    <option value={section.section_id} key={section.section_id}>{section.section_name}</option>
-                                ))
-                                : null}
-                        </select>
+                        {/* Section Dropdown */}
+                        <div className="relative flex items-center min-w-[160px] w-full sm:w-auto">
+                            <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3.5 pointer-events-none z-10" />
+                            <select
+                                value={classSectionObj?.section_id ?? ""}
+                                onChange={(event) =>
+                                    setClassSectionObj((prev) => ({
+                                      ...prev,
+                                      section_id: event.target.value ? Number(event.target.value) : "",
+                                    }))
+                                }
+                                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all cursor-pointer shadow-2xs appearance-none"
+                            >
+                                <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Section</option>
+                                {sectionList.map((sec) => (
+                                    <option 
+                                        value={sec.id} 
+                                        key={`section-${sec.id}`}
+                                        className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
+                                    >
+                                        {sec.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
+                        </div>
                     </div>
                 </div>
 
@@ -253,7 +287,7 @@ const ListingComponent = ({ rolePriority = null }) => {
                     <button
                         onClick={() => navigateTo(`/marksheet/create`)}
                         disabled={!classSectionObj?.class_id || !classSectionObj?.section_id}
-                        className="w-full xl:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:-translate-y-0.5 whitespace-nowrap shrink-0"
+                        className="w-full xl:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-200 shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5 whitespace-nowrap shrink-0"
                     >
                         <PlusCircle className="w-5 h-5" />
                         Create New {selected}
@@ -267,8 +301,8 @@ const ListingComponent = ({ rolePriority = null }) => {
                 api={API.MarksheetAPI}
                 getQuery={getPaginatedData}
                 columns={datagridColumns(rolePriority)}
-                rows={listData.rows}
-                count={listData.count}
+                rows={listData?.rows || []}
+                count={listData?.count || 0}
                 loading={loading}
                 selected={selected}
                 pageSizeOptions={pageSizeOptions}

@@ -12,7 +12,16 @@ function getModel(modelName: string): any {
   return (prisma as any)[modelName];
 }
 
-function getSchoolFilter(request: NextRequest): Record<string, unknown> {
+const MODELS_WITH_SCHOOL_ID = new Set([
+  "student", "teacher", "employee", "bus", "holiday",
+  "homework", "noticeboard", "school_house", "payment",
+  "school_class_data", "marksheet", "attendance", "timetable", "image"
+]);
+
+function getSchoolFilter(request: NextRequest, modelName?: string): Record<string, unknown> {
+  if (modelName && !MODELS_WITH_SCHOOL_ID.has(modelName)) {
+    return {};
+  }
   const cond = Utility.getSchoolIdFromHeader(request);
   if (!cond.school_id) return {};
   return { school_id: parseInt(String(cond.school_id)) };
@@ -65,7 +74,7 @@ export async function genericList(
   const search = searchParams.get("search") || "";
   const { limit, offset } = Utility.getPagination(page, size);
 
-  const schoolFilter = getSchoolFilter(request);
+  const schoolFilter = getSchoolFilter(request, modelName);
   const whereCondition: Record<string, unknown> = { ...schoolFilter };
 
   if (search && searchFields.length > 0) {
@@ -97,20 +106,49 @@ export async function genericList(
   }
 }
 
+const MODEL_ALLOWED_FIELDS: Record<string, Set<string>> = {
+  school_class: new Set(["name", "status"]),
+  section: new Set(["name", "status"]),
+  subject: new Set(["name", "status"]),
+  amenity: new Set(["name", "description", "status"]),
+  payment_method: new Set(["name"]),
+  user_role: new Set(["name", "priority", "status"]),
+};
+
+function sanitizePayload(modelName: string, payload: Record<string, unknown>): Record<string, unknown> {
+  const allowed = MODEL_ALLOWED_FIELDS[modelName];
+  if (!allowed) return { ...payload };
+  const sanitized: Record<string, unknown> = {};
+  for (const key of Object.keys(payload)) {
+    if (allowed.has(key)) {
+      sanitized[key] = payload[key];
+    }
+  }
+  return sanitized;
+}
+
 export async function genericCreate(
   request: NextRequest,
   modelName: string,
   userId: number,
   returnId = false
 ) {
-  const schoolFilter = getSchoolFilter(request);
+  const schoolFilter = getSchoolFilter(request, modelName);
   try {
-    const payload = await request.json();
+    const rawPayload = await request.json();
+    const payload = sanitizePayload(modelName, rawPayload);
     const model = getModel(modelName);
     
+    const now = new Date();
     const dataToCreate: Record<string, unknown> = { ...payload, ...schoolFilter };
     if (MODELS_WITH_CREATED_BY.has(modelName)) {
       dataToCreate.created_by = userId;
+    }
+    if (MODELS_WITH_UPDATED_AT.has(modelName)) {
+      dataToCreate.created_at = now;
+      dataToCreate.updated_at = now;
+    } else if (MODELS_WITH_CREATED_AT.has(modelName)) {
+      dataToCreate.created_at = now;
     }
 
     const record = await model.create({
@@ -120,8 +158,8 @@ export async function genericCreate(
       return NextResponse.json(Utility.formatResponse(200, { id: record.id }), { status: 200 });
     }
     return NextResponse.json(Utility.formatResponse(200, "Created Successfully"), { status: 200 });
-  } catch (err) {
-    return NextResponse.json(Utility.formatResponse(409, err), { status: 409 });
+  } catch (err: any) {
+    return NextResponse.json(Utility.formatResponse(409, err?.message || String(err)), { status: 409 });
   }
 }
 
@@ -132,12 +170,16 @@ export async function genericUpdate(
 ) {
   try {
     const payload = await request.json();
-    const { id, ...updateData } = payload;
+    const { id, ...rawUpdateData } = payload;
+    const updateData = sanitizePayload(modelName, rawUpdateData);
     const model = getModel(modelName);
 
     const dataToUpdate: Record<string, unknown> = { ...updateData };
     if (MODELS_WITH_UPDATED_BY.has(modelName)) {
       dataToUpdate.updated_by = userId;
+    }
+    if (MODELS_WITH_UPDATED_AT.has(modelName)) {
+      dataToUpdate.updated_at = new Date();
     }
 
     await model.update({
@@ -145,8 +187,8 @@ export async function genericUpdate(
       data: dataToUpdate,
     });
     return NextResponse.json(Utility.formatResponse(200, "Updated Successfully"), { status: 200 });
-  } catch (err) {
-    return NextResponse.json(Utility.formatResponse(500, err), { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json(Utility.formatResponse(500, err?.message || String(err)), { status: 500 });
   }
 }
 

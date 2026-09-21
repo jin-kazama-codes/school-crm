@@ -24,7 +24,7 @@ export const HolidayAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -39,7 +39,7 @@ export const HolidayAPI = {
       },
       method: "POST",
       data: holiday,
-      signal: cancel ? cancelApiObject[this.createHoliday.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.createHoliday ? cancelApiObject.createHoliday.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -53,7 +53,7 @@ export const HolidayAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateHoliday.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.updateHoliday ? cancelApiObject.updateHoliday.handleRequestCancellation().signal : undefined,
     });
   }
 };

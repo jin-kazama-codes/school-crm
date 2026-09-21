@@ -52,6 +52,10 @@ const ListingComponent = () => {
         setOpenDialog(true);
     };
 
+    const refreshData = () => {
+        getPaginatedData(oldPagination?.page || 0, oldPagination?.pageSize || 5, setListingClasses, API.ClassAPI);
+    };
+
     return (
         <div 
             className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200"
@@ -102,7 +106,7 @@ const ListingComponent = () => {
                     setSearchFlag={setSearchFlag}
                 />
             
-            <FormComponent openDialog={openDialog} setOpenDialog={setOpenDialog} />
+            <FormComponent openDialog={openDialog} setOpenDialog={setOpenDialog} onRefresh={refreshData} />
         </div>
     );
 };

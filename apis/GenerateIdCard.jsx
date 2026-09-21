@@ -32,7 +32,7 @@ export const GenerateIdCardAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined
     });
     return response;
   }

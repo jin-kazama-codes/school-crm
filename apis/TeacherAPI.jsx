@@ -24,7 +24,7 @@ export const TeacherAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -39,7 +39,7 @@ export const TeacherAPI = {
       },
       method: "POST",
       data: teacher,
-      signal: cancel ? cancelApiObject[this.createTeacher.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.createTeacher ? cancelApiObject.createTeacher.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -53,7 +53,7 @@ export const TeacherAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateTeacher.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.updateTeacher ? cancelApiObject.updateTeacher.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -67,7 +67,7 @@ export const TeacherAPI = {
       },
       method: "POST",
       data: data,
-      signal: cancel ? cancelApiObject[this.insertIntoMappingTable.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.insertIntoMappingTable ? cancelApiObject.insertIntoMappingTable.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -80,7 +80,7 @@ export const TeacherAPI = {
         "x-access-token": getLocalStorage("auth").token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getTeacherDetail.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getTeacherDetail ? cancelApiObject.getTeacherDetail.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -95,7 +95,7 @@ export const TeacherAPI = {
       },
       method: "DELETE",
       data: fields,
-      signal: cancel ? cancelApiObject[this.deleteFromMappingTable.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.deleteFromMappingTable ? cancelApiObject.deleteFromMappingTable.handleRequestCancellation().signal : undefined,
     });
   }
 };

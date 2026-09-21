@@ -24,7 +24,7 @@ export const SubjectAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const SubjectAPI = {
             },
             method: "POST",
             data: subject,
-            signal: cancel ? cancelApiObject[this.createSubject.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.createSubject ? cancelApiObject.createSubject.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -53,7 +53,7 @@ export const SubjectAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateSubject.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.updateSubject ? cancelApiObject.updateSubject.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -67,7 +67,7 @@ export const SubjectAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getSubjectsByClass.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getSubjectsByClass ? cancelApiObject.getSubjectsByClass.handleRequestCancellation().signal : undefined,
         });
         return response;
     }

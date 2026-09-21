@@ -24,7 +24,7 @@ export const AmenityAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const AmenityAPI = {
             },
             method: "POST",
             data: amenity,
-            signal: cancel ? cancelApiObject[this.createAmenity.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.createAmenity ? cancelApiObject.createAmenity.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -53,7 +53,7 @@ export const AmenityAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateAmenity.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.updateAmenity ? cancelApiObject.updateAmenity.handleRequestCancellation().signal : undefined,
         });
     }
 }

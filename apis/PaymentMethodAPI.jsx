@@ -24,7 +24,7 @@ export const PaymentMethodAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const PaymentMethodAPI = {
             },
             method: "POST",
             data: PaymentMethod,
-            signal: cancel ? cancelApiObject[this.createPaymentMethod.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.createPaymentMethod ? cancelApiObject.createPaymentMethod.handleRequestCancellation().signal : undefined
         });
     },
 
@@ -53,7 +53,7 @@ export const PaymentMethodAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updatePaymentMethod.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.updatePaymentMethod ? cancelApiObject.updatePaymentMethod.handleRequestCancellation().signal : undefined
         });
     }
 }

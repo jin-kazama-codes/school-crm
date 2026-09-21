@@ -21,7 +21,7 @@ export const HomeworkAPI = {
       url: `/homework?page=${page}&size=${size}${queryParam}${searchParam}`,
       headers: { "x-access-token": getLocalStorage("auth")?.token },
       method: "GET",
-      signal: cancel ? cancelApiObject[HomeworkAPI.getAll.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -33,7 +33,7 @@ export const HomeworkAPI = {
       headers: { "x-access-token": getLocalStorage("auth").token },
       method: "POST",
       data: homework,
-      signal: cancel ? cancelApiObject[HomeworkAPI.createHomework.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.createHomework ? cancelApiObject.createHomework.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -44,7 +44,7 @@ export const HomeworkAPI = {
       headers: { "x-access-token": getLocalStorage("auth").token },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[HomeworkAPI.updateHomework.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.updateHomework ? cancelApiObject.updateHomework.handleRequestCancellation().signal : undefined,
     });
   },
 };

@@ -22,7 +22,7 @@ export const CountryAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getCountries.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.getCountries ? cancelApiObject.getCountries.handleRequestCancellation().signal : undefined
         });
         return response;
     }

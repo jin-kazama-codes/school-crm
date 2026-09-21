@@ -24,7 +24,7 @@ export const SectionAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -39,7 +39,7 @@ export const SectionAPI = {
       },
       method: "POST",
       data: section,
-      signal: cancel ? cancelApiObject[this.createSection.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.createSection ? cancelApiObject.createSection.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -53,7 +53,7 @@ export const SectionAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateSection.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.updateSection ? cancelApiObject.updateSection.handleRequestCancellation().signal : undefined,
     });
   },
   getIdByName: async (name, cancel = false) => {
@@ -63,7 +63,7 @@ export const SectionAPI = {
       headers: {
         "x-access-token": getLocalStorage("auth").token
       },
-      signal: cancel ? cancelApiObject[this.getClassIds.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getIdByName ? cancelApiObject.getIdByName.handleRequestCancellation().signal : undefined,
     });
     return response;
   }

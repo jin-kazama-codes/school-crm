@@ -22,7 +22,7 @@ export const ImageAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getImage.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.getImage ? cancelApiObject.getImage.handleRequestCancellation().signal : undefined
         });
         return response;
     },
@@ -37,7 +37,7 @@ export const ImageAPI = {
             },
             method: "POST",
             data: image_src,
-            signal: cancel ? cancelApiObject[this.createImage.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.createImage ? cancelApiObject.createImage.handleRequestCancellation().signal : undefined
         });
     },
 
@@ -51,7 +51,7 @@ export const ImageAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateImage.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.updateImage ? cancelApiObject.updateImage.handleRequestCancellation().signal : undefined
         });
     },
 
@@ -65,7 +65,7 @@ export const ImageAPI = {
             },
             method: "DELETE",
             data: fields,
-            signal: cancel ? cancelApiObject[this.deleteImage.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.deleteImage ? cancelApiObject.deleteImage.handleRequestCancellation().signal : undefined
         });
     },
 
@@ -80,7 +80,7 @@ export const ImageAPI = {
             },
             method: "POST",
             data: data,
-            signal: cancel ? cancelApiObject[this.uploadImage.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.uploadImage ? cancelApiObject.uploadImage.handleRequestCancellation().signal : undefined
         });
     },
     uploadImageToS3: async (data, cancel = false) => {
@@ -92,7 +92,7 @@ export const ImageAPI = {
             },
             method: "POST",
             data: data,
-            signal: cancel ? cancelApiObject[this.uploadImage.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.uploadImageToS3 ? cancelApiObject.uploadImageToS3.handleRequestCancellation().signal : undefined
         });
     }
 };

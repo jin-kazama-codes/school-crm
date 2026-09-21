@@ -24,7 +24,7 @@ export const SchoolAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined
     });
     return response;
   },
@@ -39,7 +39,7 @@ export const SchoolAPI = {
       },
       method: "POST",
       data: school,
-      signal: cancel ? cancelApiObject[this.createSchool.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.createSchool ? cancelApiObject.createSchool.handleRequestCancellation().signal : undefined
     });
   },
 
@@ -53,7 +53,7 @@ export const SchoolAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateSchool.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.updateSchool ? cancelApiObject.updateSchool.handleRequestCancellation().signal : undefined
     });
   },
 
@@ -67,7 +67,7 @@ export const SchoolAPI = {
       },
       method: "POST",
       data: data,
-      signal: cancel ? cancelApiObject[this.insertIntoMappingTable.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.insertIntoMappingTable ? cancelApiObject.insertIntoMappingTable.handleRequestCancellation().signal : undefined
     });
   },
 
@@ -81,7 +81,7 @@ export const SchoolAPI = {
       },
       method: "GET",
       params: getLocalStorage("auth")?.role === 1 ? { school_id: school_id } : null,    //this is included in backend req.query
-      signal: cancel ? cancelApiObject[this.getSchoolClasses.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.getSchoolClasses ? cancelApiObject.getSchoolClasses.handleRequestCancellation().signal : undefined
     });
     return response;
   },
@@ -96,7 +96,7 @@ export const SchoolAPI = {
       },
       method: "GET",
       params: getLocalStorage("auth")?.role === 1 ? { school_id: school_id } : null,    //this is included in backend req.query
-      signal: cancel ? cancelApiObject[this.getSchoolClasses.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.getTeacherClasses ? cancelApiObject.getTeacherClasses.handleRequestCancellation().signal : undefined
     });
     return response;
   },
@@ -111,7 +111,7 @@ export const SchoolAPI = {
       },
       method: "DELETE",
       data: fields,
-      signal: cancel ? cancelApiObject[this.deleteFromMappingTable.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.deleteFromMappingTable ? cancelApiObject.deleteFromMappingTable.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -124,7 +124,7 @@ export const SchoolAPI = {
         "x-access-token": getLocalStorage("auth").token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getDetailsForICard.name].handleRequestCancellation().signal : undefined
+      signal: cancel && cancelApiObject.getDetailsForICard ? cancelApiObject.getDetailsForICard.handleRequestCancellation().signal : undefined
     });
     return response;
   }

@@ -18,9 +18,15 @@ export const TimeTableAPI = {
     getAll: async (conditionObj = false, page = 0, size = 10, search = false, authInfo, cancel = false) => {
         let queryParam = '';
         if (conditionObj) {
-          Object.keys(conditionObj).map(key => {
-            queryParam += `&${key}=${conditionObj[key]}`
-          })
+          if (conditionObj.key && conditionObj.value !== undefined) {
+            queryParam += `&${conditionObj.key}=${conditionObj.value}`;
+          } else {
+            Object.keys(conditionObj).forEach(key => {
+              if (conditionObj[key] !== undefined && conditionObj[key] !== null && conditionObj[key] !== false) {
+                queryParam += `&${key}=${conditionObj[key]}`;
+              }
+            });
+          }
         }
         const searchParam = search ? `&search=${search}` : '';
         const { data: response } = await api.request({
@@ -29,7 +35,7 @@ export const TimeTableAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined
         });
         return response;
     },
@@ -44,7 +50,7 @@ export const TimeTableAPI = {
             },
             method: "POST",
             data: timeTable,
-            signal: cancel ? cancelApiObject[this.createTimeTable.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.createTimeTable ? cancelApiObject.createTimeTable.handleRequestCancellation().signal : undefined
         });
     },
 
@@ -58,7 +64,7 @@ export const TimeTableAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateTimeTable.name].handleRequestCancellation().signal : undefined
+            signal: cancel && cancelApiObject.updateTimeTable ? cancelApiObject.updateTimeTable.handleRequestCancellation().signal : undefined
         });
     }
 }

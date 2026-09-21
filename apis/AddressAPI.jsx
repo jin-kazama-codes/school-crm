@@ -22,7 +22,7 @@ export const AddressAPI = {
       headers: {
         "x-access-token": getLocalStorage("auth").token
       },
-      signal: cancel ? cancelApiObject[this.getAddress.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getAddress ? cancelApiObject.getAddress.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -37,7 +37,7 @@ export const AddressAPI = {
       },
       method: "POST",
       data: address,
-      signal: cancel ? cancelApiObject[this.createAddress.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.createAddress ? cancelApiObject.createAddress.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -51,7 +51,7 @@ export const AddressAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateAddress.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.updateAddress ? cancelApiObject.updateAddress.handleRequestCancellation().signal : undefined,
     });
   }
 };

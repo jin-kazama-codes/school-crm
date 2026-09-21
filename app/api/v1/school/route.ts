@@ -71,7 +71,8 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
   const r = applyRateLimit(req); if (r) return r;
   try {
     const payload = await req.json();
-    const school = await prisma.school.create({ data: { ...payload, created_by: userId } });
+    const now = new Date();
+    const school = await prisma.school.create({ data: { ...payload, created_by: userId, created_at: now, updated_at: now } });
     return NextResponse.json(Utility.formatResponse(200, { id: school.id }), { status: 200 });
   } catch (err) {
     return NextResponse.json(Utility.formatResponse(409, err), { status: 409 });
@@ -84,7 +85,7 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
   try {
     const payload = await req.json();
     const { id, ...updateData } = payload;
-    await prisma.school.update({ where: { id }, data: { ...updateData, updated_by: userId } });
+    await prisma.school.update({ where: { id }, data: { ...updateData, updated_by: userId, updated_at: new Date() } });
     return NextResponse.json(Utility.formatResponse(200, "Updated Successfully"), { status: 200 });
   } catch (err) {
     return NextResponse.json(Utility.formatResponse(500, err), { status: 500 });

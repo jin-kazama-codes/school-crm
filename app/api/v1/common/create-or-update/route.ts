@@ -28,15 +28,16 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
       }
       await model.update({
         where: { id: obj.id },
-        data: { ...payload, updated_by: userId },
+        data: { ...payload, updated_by: userId, updated_at: new Date() },
       });
       return NextResponse.json(Utility.formatResponse(200, { id: obj.id }), { status: 200 });
     } else {
       if (payload.table === "user" && payload.password) {
         payload.password = await Utility.createHash(payload.password);
       }
+      const now = new Date();
       const record = await model.create({
-        data: { ...payload, created_by: userId, ...(schoolId ? { school_id: schoolId } : {}) },
+        data: { ...payload, created_by: userId, created_at: now, updated_at: now, ...(schoolId ? { school_id: schoolId } : {}) },
       });
       return NextResponse.json(Utility.formatResponse(200, { id: record.id }), { status: 200 });
     }

@@ -24,7 +24,7 @@ export const NoticeBoardAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.title].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -39,7 +39,7 @@ export const NoticeBoardAPI = {
       },
       method: "POST",
       data: noticeboard,
-      signal: cancel ? cancelApiObject[this.createNoticeBoard.title].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.createNoticeBoard ? cancelApiObject.createNoticeBoard.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -53,7 +53,7 @@ export const NoticeBoardAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateNoticeBoard.title].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.updateNoticeBoard ? cancelApiObject.updateNoticeBoard.handleRequestCancellation().signal : undefined,
     });
   }
 };

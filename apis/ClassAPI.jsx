@@ -24,7 +24,7 @@ export const ClassAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const ClassAPI = {
             },
             method: "POST",
             data: classs,
-            signal: cancel ? cancelApiObject[this.createClass.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.createClass ? cancelApiObject.createClass.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -53,7 +53,7 @@ export const ClassAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateClass.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.updateClass ? cancelApiObject.updateClass.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -66,7 +66,7 @@ export const ClassAPI = {
                 "x-access-token": getLocalStorage("auth").token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getClassSectionList.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getClassSectionList ? cancelApiObject.getClassSectionList.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -78,7 +78,7 @@ export const ClassAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getClassIds.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getIdByName ? cancelApiObject.getIdByName.handleRequestCancellation().signal : undefined,
         });
         return response;
     },

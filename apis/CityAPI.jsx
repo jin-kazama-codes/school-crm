@@ -22,7 +22,7 @@ export const CityAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getCities.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getCities ? cancelApiObject.getCities.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -33,7 +33,7 @@ export const CityAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getCities.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAllCities ? cancelApiObject.getAllCities.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -45,7 +45,7 @@ export const CityAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getCityIds.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getIdByName ? cancelApiObject.getIdByName.handleRequestCancellation().signal : undefined,
         });
         return response;
     },

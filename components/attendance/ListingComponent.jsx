@@ -1,13 +1,4 @@
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use, reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
-*/
-
 import { useEffect, useState } from "react";
-import { useNavigate } from "@/lib/routerAdapter";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 
@@ -17,16 +8,23 @@ import ServerPaginationGrid from '../common/Datagrid';
 
 import { datagridColumns } from "./AttendanceConfig";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
+import { setAttendances } from "../../redux/actions/AttendanceAction";
 import { setTeachers } from "../../redux/actions/TeacherAction";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
-
 
 const pageSizeOptions = [10, 20, 50];
 
 const ListingComponent = ({ rolePriority = null }) => {
     const selected = useSelector(state => state.menuItems.selected);
-    const { listData, loading } = useSelector(state => state.allTeachers);
+    const attendanceState = useSelector(state => state.allAttendances);
+    const teacherState = useSelector(state => state.allTeachers);
+
+    // Prefer allAttendances, fallback to allTeachers
+    const { listData = { count: 0, rows: [] }, loading = false } = (attendanceState && attendanceState.listData) ? attendanceState : (teacherState || { listData: { count: 0, rows: [] }, loading: false });
+
+    const attendanceApi = API.AttendanceAPI || API.TeacherAPI;
+    const attendanceAction = setAttendances || setTeachers;
 
     const dispatch = useDispatch();
 
@@ -43,12 +41,11 @@ const ListingComponent = ({ rolePriority = null }) => {
 
     useEffect(() => {
         dispatch(setMenuItem("Attendance"));
-    }, []);
+    }, [dispatch]);
 
     return (
         <div 
             className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200"
-            
         >
             <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-sm p-5">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -56,8 +53,8 @@ const ListingComponent = ({ rolePriority = null }) => {
                     
                     <div className="flex-1 w-full flex justify-center md:px-8 max-w-2xl">
                         <Search
-                            action={setTeachers}
-                            api={API.TeacherAPI}
+                            action={attendanceAction}
+                            api={attendanceApi}
                             getSearchData={getPaginatedData}
                             oldPagination={oldPagination}
                             reloadBtn={reloadBtn}
@@ -68,19 +65,19 @@ const ListingComponent = ({ rolePriority = null }) => {
             </div>
 
             <ServerPaginationGrid
-                    action={setTeachers}
-                    api={API.TeacherAPI}
-                    getQuery={getPaginatedData}
-                    columns={datagridColumns(rolePriority)}
-                    rows={[]}
-                    count={listData.count}
-                    loading={loading}
-                    selected={selected}
-                    pageSizeOptions={pageSizeOptions}
-                    setOldPagination={setOldPagination}
-                    searchFlag={searchFlag}
-                    setSearchFlag={setSearchFlag}
-                />
+                action={attendanceAction}
+                api={attendanceApi}
+                getQuery={getPaginatedData}
+                columns={datagridColumns(rolePriority)}
+                rows={listData?.rows || []}
+                count={listData?.count || 0}
+                loading={loading}
+                selected={selected}
+                pageSizeOptions={pageSizeOptions}
+                setOldPagination={setOldPagination}
+                searchFlag={searchFlag}
+                setSearchFlag={setSearchFlag}
+            />
         </div>
     );
 };
@@ -90,3 +87,4 @@ ListingComponent.propTypes = {
 };
 
 export default ListingComponent;
+

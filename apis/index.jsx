@@ -34,10 +34,12 @@ import { TimeTableAPI } from "./TimeTableAPI";
 import { TeacherAPI } from "./TeacherAPI";
 import { UserAPI } from "./UserAPI";
 import { UserRoleAPI } from "./UserRoleAPI";
+import { AttendanceAPI } from "./AttendanceAPI";
 
 export default {
     AddressAPI,
     AmenityAPI,
+    AttendanceAPI,
     BusAPI,
     CityAPI,
     ClassAPI,

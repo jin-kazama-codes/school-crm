@@ -31,19 +31,20 @@ const initialValues = {
   status: "active",
 };
 
-const FormComponent = ({ openDialog, setOpenDialog }) => {
+const FormComponent = ({ openDialog, setOpenDialog, onRefresh }) => {
   const handleDialogClose = () => {
     setOpenDialog(false);
+    navigateTo("#", { state: { id: undefined } });
   };
 
   const [title, setTitle] = useState("Create");
   const [loading, setLoading] = useState(false);
   const [initialState, setInitialState] = useState(initialValues);
 
-  const selected = useSelector((state) => state.menuItems.selected);
-  const toastInfo = useSelector((state) => state.toastInfo);
   const navigateTo = useNavigate();
   const dispatch = useDispatch();
+  const selected = useSelector((state) => state.menuItems.selected);
+  const toastInfo = useSelector((state) => state.toastInfo);
 
   const { state } = useLocation();
   const { toastAndNavigate, getLocalStorage } = Utility();
@@ -55,14 +56,16 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
     if(selectedMenu?.selected) {
         dispatch(setMenuItem(selectedMenu.selected));
     }
-    if (id) {
-      setTitle("Update");
-      populateData(id);
-    } else {
-      setTitle("Create");
-      setInitialState(initialValues);
+    if (openDialog) {
+      if (id) {
+        setTitle("Update");
+        populateData(id);
+      } else {
+        setTitle("Create");
+        setInitialState(initialValues);
+      }
     }
-  }, [id]);
+  }, [id, openDialog]);
 
   const updateAmenity = useCallback((values) => {
     setLoading(true);
@@ -71,19 +74,17 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
         if (amenity?.status === "Success") {
           setLoading(false);
           toastAndNavigate(dispatch, true, "info", "Successfully Updated");
-          setTimeout(() => {
-            handleDialogClose();
-            location.href = "/amenity/listing"; 
-          }, 2000);
+          handleDialogClose();
+          if (typeof onRefresh === "function") {
+            onRefresh();
+          }
         } else {
           setLoading(false); 
           toastAndNavigate(
             dispatch,
             true,
             "error",
-            "An Error Occurred, Please Try Again",
-            navigateTo,
-            location.reload()
+            "An Error Occurred, Please Try Again"
           );
         }
       })
@@ -93,13 +94,11 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
           dispatch,
           true,
           "error",
-          err?.response?.data?.msg,
-          navigateTo,
-          location.reload()
+          err?.response?.data?.msg || "An Error Occurred"
         );
         throw err;
       });
-  }, []);
+  }, [onRefresh]);
 
   const populateData = useCallback(
     (id) => {
@@ -116,9 +115,7 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
               dispatch,
               true,
               "error",
-              "An Error Occurred, Please Try Again",
-              navigateTo,
-              location.reload()
+              "An Error Occurred, Please Try Again"
             );
           }
         })
@@ -128,9 +125,7 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
             dispatch,
             true,
             "error",
-            err?.response?.data?.msg,
-            navigateTo,
-            location.reload()
+            err?.response?.data?.msg || "An Error Occurred"
           );
           throw err;
         });
@@ -145,19 +140,17 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
         if (amenity?.status === "Success") {
           setLoading(false);
           toastAndNavigate(dispatch, true, "success", "Successfully Created");
-          setTimeout(() => {
-            handleDialogClose();
-            navigateTo(0); 
-          }, 2000);
+          handleDialogClose();
+          if (typeof onRefresh === "function") {
+            onRefresh();
+          }
         } else {
           setLoading(false);
           toastAndNavigate(
             dispatch,
             true,
             "error",
-            "An Error Occurred, Please Try Again",
-            navigateTo,
-            location.reload()
+            "An Error Occurred, Please Try Again"
           );
         }
       })
@@ -166,13 +159,12 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
         toastAndNavigate(
           dispatch,
           true,
-          err ? err.response?.data?.msg : "An Error Occurred",
-          navigateTo,
-          location.reload()
+          "error",
+          err ? err.response?.data?.msg : "An Error Occurred"
         );
         throw err;
       });
-  }, []);
+  }, [onRefresh]);
 
   if (!openDialog) return null;
 
@@ -350,6 +342,7 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
 FormComponent.propTypes = {
   openDialog: PropTypes.bool,
   setOpenDialog: PropTypes.func,
+  onRefresh: PropTypes.func,
 };
 
 export default FormComponent;

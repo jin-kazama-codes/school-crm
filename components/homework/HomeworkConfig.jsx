@@ -24,7 +24,11 @@ export const datagridColumns = (rolePriority = null) => {
       align: "center",
       flex: 1,
       minWidth: 150,
-      valueGetter: (params) => capitalizeEveryWord(params.row.title) || "",
+      valueGetter: (value, row) => {
+        const r = row || value?.row || {};
+        const title = r.title || (typeof value === "string" ? value : "");
+        return capitalizeEveryWord(title) || "";
+      },
     },
     {
       field: "class_id",
@@ -33,6 +37,10 @@ export const datagridColumns = (rolePriority = null) => {
       align: "center",
       flex: 0.6,
       minWidth: 80,
+      valueGetter: (value, row) => {
+        const r = row || value?.row || {};
+        return capitalizeEveryWord(r.class_name || r.class || r.class_id || "");
+      },
     },
     {
       field: "section_id",
@@ -41,6 +49,10 @@ export const datagridColumns = (rolePriority = null) => {
       align: "center",
       flex: 0.6,
       minWidth: 80,
+      valueGetter: (value, row) => {
+        const r = row || value?.row || {};
+        return capitalizeEveryWord(r.section_name || r.section || r.section_id || "");
+      },
     },
     {
       field: "subject_id",
@@ -49,6 +61,10 @@ export const datagridColumns = (rolePriority = null) => {
       align: "center",
       flex: 0.8,
       minWidth: 100,
+      valueGetter: (value, row) => {
+        const r = row || value?.row || {};
+        return capitalizeEveryWord(r.subject_name || r.subject || r.subject_id || "");
+      },
     },
     {
       field: "status",

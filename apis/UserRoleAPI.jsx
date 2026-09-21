@@ -24,7 +24,7 @@ export const UserRoleAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const UserRoleAPI = {
             },
             method: "POST",
             data: userRole,
-            signal: cancel ? cancelApiObject[this.createUserRole.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.createUserRole ? cancelApiObject.createUserRole.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -53,7 +53,7 @@ export const UserRoleAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateuserRole.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.updateUserRole ? cancelApiObject.updateUserRole.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -69,7 +69,7 @@ export const UserRoleAPI = {
                 },
                 method: "POST",
                 data: id,
-                signal: cancel ? cancelApiObject[this.getRoleById.name].handleRequestCancellation().signal : undefined,
+                signal: cancel && cancelApiObject.getRoleById ? cancelApiObject.getRoleById.handleRequestCancellation().signal : undefined,
             });
             return response;
         } else {

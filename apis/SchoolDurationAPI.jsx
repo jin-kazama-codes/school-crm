@@ -24,7 +24,7 @@ export const SchoolDurationAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const SchoolDurationAPI = {
             },
             method: "POST",
             data: schoolDuration,
-            signal: cancel ? cancelApiObject[this.createSchoolDuration.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.createSchoolDuration ? cancelApiObject.createSchoolDuration.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -53,7 +53,7 @@ export const SchoolDurationAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateSchoolDuration.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.updateSchoolDuration ? cancelApiObject.updateSchoolDuration.handleRequestCancellation().signal : undefined,
         });
     }
 }

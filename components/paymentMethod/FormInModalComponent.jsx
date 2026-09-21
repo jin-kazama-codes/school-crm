@@ -28,9 +28,10 @@ const initialValues = {
   name: ""
 };
 
-const FormComponent = ({ openDialog, setOpenDialog }) => {
+const FormComponent = ({ openDialog, setOpenDialog, onRefresh }) => {
   const handleDialogClose = () => {
     setOpenDialog(false);
+    navigateTo("#", { state: { id: undefined } });
   };
 
   const [title, setTitle] = useState("Create");
@@ -51,14 +52,16 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
     if(selectedMenu?.selected) {
         dispatch(setMenuItem(selectedMenu.selected));
     }
-    if (id) {
-      setTitle("Update");
-      populateData(id);
-    } else {
-      setTitle("Create");
-      setInitialState(initialValues);
+    if (openDialog) {
+      if (id) {
+        setTitle("Update");
+        populateData(id);
+      } else {
+        setTitle("Create");
+        setInitialState(initialValues);
+      }
     }
-  }, [id]);
+  }, [id, openDialog]);
 
   const updatePaymentMethod = useCallback(values => {
     setLoading(true);
@@ -67,10 +70,10 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
         if (paymentMethod?.status === "Success") {
           setLoading(false);
           toastAndNavigate(dispatch, true, "info", "Successfully Updated");
-          setTimeout(() => {
-            handleDialogClose();
-            location.href = "/payment-method/listing"; 
-          }, 2000);
+          handleDialogClose();
+          if (onRefresh) {
+            onRefresh();
+          }
         } else {
           setLoading(false); 
           toastAndNavigate(dispatch, true, "error", "An Error Occurred, Please Try Again");
@@ -81,7 +84,7 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
         toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred");
         console.log('Error in payment method update', err);
       });
-  }, []);
+  }, [onRefresh]);
 
   const populateData = useCallback(id => {
     setLoading(true);
@@ -110,10 +113,10 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
         if (paymentMethod?.status === "Success") {
           setLoading(false);
           toastAndNavigate(dispatch, true, "success", "Successfully Created");
-          setTimeout(() => {
-            handleDialogClose();
-            navigateTo(0);
-          }, 2000);
+          handleDialogClose();
+          if (onRefresh) {
+            onRefresh();
+          }
         } else {
           setLoading(false);
           toastAndNavigate(dispatch, true, "error", "An Error Occurred, Please Try Again");
@@ -124,7 +127,7 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
         toastAndNavigate(dispatch, true, err ? err.response?.data?.msg : "An Error Occurred");
         console.log('Error in payment method create', err);
       });
-  }, []);
+  }, [onRefresh]);
 
   if (!openDialog) return null;
 
@@ -265,7 +268,8 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
 
 FormComponent.propTypes = {
   openDialog: PropTypes.bool,
-  setOpenDialog: PropTypes.func
+  setOpenDialog: PropTypes.func,
+  onRefresh: PropTypes.func
 };
 
 export default FormComponent;

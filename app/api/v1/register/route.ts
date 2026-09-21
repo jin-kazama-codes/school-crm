@@ -17,8 +17,9 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     const hash = await Utility.createHash(payload.password);
     payload.password = hash;
 
+    const now = new Date();
     const user = await prisma.user.create({
-      data: { ...payload, created_by: userId, ...schoolCondition },
+      data: { ...payload, created_by: userId, created_at: now, updated_at: now, ...schoolCondition },
     });
 
     const token = Utility.getSignedToken(user.id);

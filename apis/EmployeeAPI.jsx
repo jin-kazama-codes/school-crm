@@ -24,7 +24,7 @@ export const EmployeeAPI = {
         "x-access-token": getLocalStorage("auth")?.token
       },
       method: "GET",
-      signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -39,7 +39,7 @@ export const EmployeeAPI = {
       },
       method: "POST",
       data: employee,
-      signal: cancel ? cancelApiObject[this.createEmployee.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.createEmployee ? cancelApiObject.createEmployee.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -53,7 +53,7 @@ export const EmployeeAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel ? cancelApiObject[this.updateEmployee.name].handleRequestCancellation().signal : undefined,
+      signal: cancel && cancelApiObject.updateEmployee ? cancelApiObject.updateEmployee.handleRequestCancellation().signal : undefined,
     });
   }
 };

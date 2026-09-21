@@ -20,9 +20,7 @@ export const UserAPI = {
       url: `/login`,
       method: "POST",
       data: loginInfo,
-      signal: cancel
-        ? cancelApiObject[this.login.name].handleRequestCancellation().signal
-        : undefined,
+      signal: cancel && cancelApiObject.login ? cancelApiObject.login.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -35,9 +33,7 @@ export const UserAPI = {
         "x-access-token": getLocalStorage("auth").token,
       },
       method: "GET",
-      signal: cancel
-        ? cancelApiObject[this.profile.name].handleRequestCancellation().signal
-        : undefined,
+      signal: cancel && cancelApiObject.profile ? cancelApiObject.profile.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -61,9 +57,7 @@ export const UserAPI = {
         "x-access-token": getLocalStorage("auth")?.token,
       },
       method: "GET",
-      signal: cancel
-        ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal
-        : undefined,
+      signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -78,9 +72,7 @@ export const UserAPI = {
       },
       method: "POST",
       data: user,
-      signal: cancel
-        ? cancelApiObject[this.register.name].handleRequestCancellation().signal
-        : undefined,
+      signal: cancel && cancelApiObject.register ? cancelApiObject.register.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -94,9 +86,7 @@ export const UserAPI = {
       },
       method: "PATCH",
       data: fields,
-      signal: cancel
-        ? cancelApiObject[this.update.name].handleRequestCancellation().signal
-        : undefined,
+      signal: cancel && cancelApiObject.update ? cancelApiObject.update.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -110,10 +100,7 @@ export const UserAPI = {
       },
       method: "POST",
       data: fields,
-      signal: cancel
-        ? cancelApiObject[this.changeUserPw.name].handleRequestCancellation()
-          .signal
-        : undefined,
+      signal: cancel && cancelApiObject.changeUserPw ? cancelApiObject.changeUserPw.handleRequestCancellation().signal : undefined,
     });
   },
 
@@ -122,10 +109,7 @@ export const UserAPI = {
       url: `/forgot-password`,
       method: "POST",
       data: fields,
-      signal: cancel
-        ? cancelApiObject[this.forgotPassword.name].handleRequestCancellation()
-          .signal
-        : undefined,
+      signal: cancel && cancelApiObject.forgotPassword ? cancelApiObject.forgotPassword.handleRequestCancellation().signal : undefined,
     });
     return response;
   },
@@ -139,10 +123,7 @@ export const UserAPI = {
       },
       method: "POST",
       data: fields,
-      signal: cancel
-        ? cancelApiObject[this.resetPassword.name].handleRequestCancellation()
-          .signal
-        : undefined
+      signal: cancel && cancelApiObject.resetPassword ? cancelApiObject.resetPassword.handleRequestCancellation().signal : undefined,
     });
     
     return response;

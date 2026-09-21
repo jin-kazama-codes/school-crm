@@ -1,16 +1,8 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
- */
-
 import { useSelector } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-import { Pencil } from 'lucide-react';
+import { Pencil, User } from 'lucide-react';
 import { Utility } from "../utility";
 
 export const datagridColumns = (rolePriority = null) => {
@@ -28,34 +20,58 @@ export const datagridColumns = (rolePriority = null) => {
 
     const columns = [
         {
-            field: "student_id",
-            headerName: "Student Id",
+            field: "student_name",
+            headerName: "Student Name",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 100
+            flex: 1.5,
+            minWidth: 180,
+            valueGetter: (value, row) => row?.student_name || row?.studentName || (row?.student_id ? `Student #${row.student_id}` : "") || "",
+            renderCell: ({ row }) => {
+                const name = row?.student_name || row?.studentName;
+                const displayName = name ? capitalizeEveryWord(name) : (row?.student_id ? `Student #${row.student_id}` : "Unknown");
+                return (
+                    <div className="flex items-center justify-center gap-2.5 w-full h-full">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                            <User className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col text-left truncate max-w-[140px]">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
+                                {displayName}
+                            </span>
+                            {row?.student_id && (
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                                    {row?.roll_no ? `Roll: ${row.roll_no} • ` : ""}ID: #{row.student_id}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
         },
         {
             field: "class_id",
-            headerName: "Class",
+            headerName: "Class & Section",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 100,
+            flex: 1.2,
+            minWidth: 140,
             renderCell: (params) => {
-                let className;
-                let sectionName;
+                const classObj = findById(params?.row?.class_id, schoolClasses?.listData) || findById(params?.row?.class_id, allClasses?.listData);
+                const secObj = findById(params?.row?.section_id, schoolSections?.listData) || findById(params?.row?.section_id, allSections?.listData);
+                
+                const rawClassName = params?.row?.class_name || classObj?.class_name || classObj?.name;
+                const formattedClass = rawClassName ? (!isNaN(Number(rawClassName)) ? appendSuffix(rawClassName) : rawClassName) : (params?.row?.class_id ? `Class ${params.row.class_id}` : '—');
+                const rawSectionName = params?.row?.section_name || secObj?.section_name || secObj?.name;
+                const formattedSection = rawSectionName ? (rawSectionName.toLowerCase().startsWith('sec') ? rawSectionName : `Sec ${rawSectionName}`) : (params?.row?.section_id ? `Sec ${params.row.section_id}` : '');
 
-                if (allClasses?.listData?.length || allSections?.listData?.length) {
-                    className = findById(params?.row?.class_id, allClasses?.listData)?.class_name;
-                    sectionName = findById(params?.row?.section_id, allSections?.listData)?.section_name;
-                } else if (schoolClasses?.listData?.length || schoolSections?.listData?.length) {
-                    className = findById(params?.row?.class_id, schoolClasses?.listData)?.class_name;
-                    sectionName = findById(params?.row?.section_id, schoolSections?.listData)?.section_name;
-                }
                 return (
-                    <div className="flex items-center justify-center w-full h-full font-medium">
-                        {className ? appendSuffix(className) : '/'} {sectionName}
+                    <div className="flex items-center justify-center w-full h-full font-medium text-slate-700 dark:text-slate-200 text-xs">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800">
+                            <span>{formattedClass}</span>
+                            {formattedSection && <span className="text-slate-400">•</span>}
+                            <span>{formattedSection}</span>
+                        </span>
                     </div>
                 );
             }
@@ -65,8 +81,15 @@ export const datagridColumns = (rolePriority = null) => {
             headerName: "Term",
             headerAlign: "center",
             align: "center",
-            flex: 2,
-            minWidth: 80
+            flex: 1,
+            minWidth: 90,
+            renderCell: ({ row: { term } }) => (
+                <div className="flex justify-center items-center w-full h-full">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        Term {term || "I"}
+                    </span>
+                </div>
+            )
         },
         {
             field: "result",
@@ -86,7 +109,7 @@ export const datagridColumns = (rolePriority = null) => {
 
                 return (
                     <div className="flex justify-center items-center w-full h-full">
-                        <div className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border shadow-sm ${getResultStyle()}`}>
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border shadow-xs ${getResultStyle()}`}>
                             {capitalizeEveryWord(result) || ''}
                         </div>
                     </div>
@@ -98,7 +121,7 @@ export const datagridColumns = (rolePriority = null) => {
             headerName: "Action",
             headerAlign: "center",
             align: "center",
-            flex: 1,
+            flex: 0.8,
             minWidth: 75,
             renderCell: ({ row: { id, student_id, term } }) => (
                 <div className="flex justify-center items-center w-full h-full">
@@ -115,3 +138,4 @@ export const datagridColumns = (rolePriority = null) => {
     ];
     return columns;
 };
+

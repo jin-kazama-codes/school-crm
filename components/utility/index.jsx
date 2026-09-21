@@ -53,16 +53,25 @@ export const Utility = () => {
         }
     };
 
+    const isRomanNumeral = (str) => {
+        if (!str || typeof str !== 'string') return false;
+        return /^(M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{1,3}))$/i.test(str);
+    };
+
     /**
      * Function to capitalize the first letter of each word in a string
      * @param str - The string to be capitalized
      * @returns
      */
     const capitalizeEachWord = (str) => {
-        if (!str) return '';
+        if (!str || typeof str !== 'string') return str || '';
         return str
             .split(' ')
-            .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '')
+            .map(word => {
+                if (!word) return '';
+                if (isRomanNumeral(word)) return word.toUpperCase();
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            })
             .join(' ');
     };
 
@@ -356,17 +365,24 @@ export const Utility = () => {
      * @returns {string} - The formatted date string.
      */
     const formatDate = (value) => {
+        if (!value) return "-";
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const date = new Date(value);
-        if (isNaN(date.getTime())) {
-            return value;
+        if (isNaN(date.getTime()) || date.getTime() === 0) {
+            return "-";
         }
         const day = date.getDate();
         const month = monthNames[date.getMonth()];
         const year = date.getFullYear();
 
-        // Construct the formatted date string in the format: "DD-MMM-YYYY"
+        if (year === 1970 && day === 1 && month === "Jan") {
+            if (value === 0 || value === "0" || value === "0000-00-00" || String(value).startsWith("1970-01-01")) {
+                return "-";
+            }
+        }
+
+        // Construct the formatted date string in the format: "D-MMM-YYYY"
         const formattedDate = `${day}-${month}-${year}`;
         return formattedDate;
     };
@@ -611,7 +627,15 @@ export const Utility = () => {
      * @returns {void} - This function does not return any value.
      */
     const toastAndNavigate = (dispatch, display, severity, msg, navigateTo, path = null, reload = false) => {
-        dispatch(displayToast({ toastAlert: display, toastSeverity: severity, toastMessage: msg }));
+        let safeMsg = msg;
+        if (typeof msg !== 'string') {
+            if (msg && typeof msg === 'object') {
+                safeMsg = msg.msg || msg.message || JSON.stringify(msg);
+            } else {
+                safeMsg = String(msg || '');
+            }
+        }
+        dispatch(displayToast({ toastAlert: display, toastSeverity: severity, toastMessage: safeMsg }));
 
         setTimeout(() => {
             dispatch(displayToast({ toastAlert: !display, toastSeverity: "", toastMessage: "" }));

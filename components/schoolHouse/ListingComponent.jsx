@@ -83,19 +83,19 @@ const ListingComponent = ({ rolePriority = null }) => {
             </div>
 
             <ServerPaginationGrid
-                    action={setListingSchoolHouses}
-                    api={API.SchoolHouseAPI}
-                    getQuery={getPaginatedData}
-                    columns={datagridColumns(rolePriority)}
-                    rows={listData?.data || listData?.rows || []}
-                    count={listData?.count}
-                    loading={loading}
-                    selected={selected}
-                    pageSizeOptions={pageSizeOptions}
-                    setOldPagination={setOldPagination}
-                    searchFlag={searchFlag}
-                    setSearchFlag={setSearchFlag}
-                />
+                action={setListingSchoolHouses}
+                api={API.SchoolHouseAPI}
+                getQuery={getPaginatedData}
+                columns={datagridColumns(rolePriority)}
+                rows={listData?.rows || listData?.data || []}
+                count={listData?.count || 0}
+                loading={loading}
+                selected={selected}
+                pageSizeOptions={pageSizeOptions}
+                setOldPagination={setOldPagination}
+                searchFlag={searchFlag}
+                setSearchFlag={setSearchFlag}
+            />
         </div>
     );
 };

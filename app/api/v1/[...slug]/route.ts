@@ -21,7 +21,10 @@ const MODEL_MAPPING: Record<string, { model: string; searchFields: string[] }> =
   "bus": { model: "bus", searchFields: ["registration_no", "driver", "route"] },
   "noticeboards": { model: "noticeboard", searchFields: ["title", "description"] },
   "noticeboard": { model: "noticeboard", searchFields: ["title", "description"] },
+  "noticeboarddetails": { model: "noticeboard", searchFields: ["title", "description"] },
+  "noticeboard-details": { model: "noticeboard", searchFields: ["title", "description"] },
   "notice": { model: "noticeboard", searchFields: ["title", "description"] },
+  "notices": { model: "noticeboard", searchFields: ["title", "description"] },
   "payments": { model: "payment", searchFields: ["type_duration", "academic_year"] },
   "payment": { model: "payment", searchFields: ["type_duration", "academic_year"] },
   "payment-methods": { model: "payment_method", searchFields: ["name"] },
@@ -35,8 +38,8 @@ const MODEL_MAPPING: Record<string, { model: string; searchFields: string[] }> =
   "time-tables": { model: "timetable", searchFields: ["batch", "duration"] },
   "time-table": { model: "timetable", searchFields: ["batch", "duration"] },
   "timetables": { model: "timetable", searchFields: ["batch", "duration"] },
-  "timetable": { model: "timetable", searchFields: ["batch", "duration"] },
   "attendance": { model: "attendance", searchFields: [] },
+  "attendances": { model: "attendance", searchFields: [] },
   "user-roles": { model: "user_role", searchFields: ["name"] },
   "user-role": { model: "user_role", searchFields: ["name"] },
   "sections": { model: "section", searchFields: ["name"] },
@@ -159,12 +162,33 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
     }
   }
 
+  // Generic get-by-pk handler
+  if (endpoint.startsWith("get-by-pk/")) {
+    try {
+      const parts = endpoint.split("/");
+      const table = parts[1];
+      const id = parts[2];
+      const modelName = Utility.getPrismaModelName(table);
+      if (!modelName) {
+        return NextResponse.json(Utility.formatResponse(400, "Invalid table"), { status: 400 });
+      }
+      const model = (prisma as any)[modelName];
+      const data = await model.findUnique({ where: { id: parseInt(id) } });
+      if (!data) {
+        return NextResponse.json(Utility.formatResponse(404, "Data Not Found"), { status: 404 });
+      }
+      return NextResponse.json(Utility.formatResponse(200, data), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
   // Enriched teacher listing with JOINed class, section, subject names
   if (endpoint === "get-teachers") {
     try {
       const { searchParams } = new URL(req.url);
-      const page   = parseInt(searchParams.get("page")   || "0");
-      const size   = parseInt(searchParams.get("size")   || "10");
+      const page = parseInt(searchParams.get("page") || "0");
+      const size = parseInt(searchParams.get("size") || "10");
       const search = (searchParams.get("search") || "").trim();
       const { limit, offset } = Utility.getPagination(page, size);
       const schoolCond = Utility.getSchoolIdFromHeader(req);
@@ -225,6 +249,439 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
           ${searchClause}
 
         ORDER BY t.updated_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+
+      if (rows.length > 0) {
+        const count = Number(rows[0]?.count || 0);
+        const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Enriched homework listing with JOINed class, section, subject, teacher names
+  if (endpoint === "get-homeworks" || endpoint === "get-homework" || endpoint === "homeworks" || endpoint === "homework") {
+    try {
+      const { searchParams } = new URL(req.url);
+      const page = parseInt(searchParams.get("page") || "0");
+      const size = parseInt(searchParams.get("size") || "10");
+      const search = (searchParams.get("search") || "").trim();
+      const { limit, offset } = Utility.getPagination(page, size);
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = schoolCond.school_id ? parseInt(String(schoolCond.school_id)) : null;
+
+      const searchWild = `%${search}%`;
+      const schoolClause = schoolId ? Prisma.sql`AND h.school_id = ${schoolId}` : Prisma.sql``;
+      const searchClause = search
+        ? Prisma.sql`AND (h.title ILIKE ${searchWild} OR h.description ILIKE ${searchWild} OR cl.name ILIKE ${searchWild} OR se.name ILIKE ${searchWild} OR sub.name ILIKE ${searchWild} OR h.status::text ILIKE ${searchWild})`
+        : Prisma.sql``;
+
+      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          h.id,
+          h.school_id,
+          h.teacher_id,
+          h.class_id,
+          h.section_id,
+          h.subject_id,
+          h.title,
+          h.description,
+          h.status,
+          h.created_at,
+          h.updated_at,
+          cl.name AS class_name,
+          se.name AS section_name,
+          sub.name AS subject_name,
+          CONCAT(t.firstname, ' ', COALESCE(t.lastname, '')) AS teacher_name,
+          COUNT(*) OVER() AS count
+        FROM homework h
+        LEFT JOIN class   cl  ON cl.id  = h.class_id
+        LEFT JOIN section se  ON se.id  = h.section_id
+        LEFT JOIN subject sub ON sub.id = h.subject_id
+        LEFT JOIN teacher t   ON t.id   = h.teacher_id
+        WHERE 1=1
+          ${schoolClause}
+          ${searchClause}
+        ORDER BY h.updated_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+
+      if (rows.length > 0) {
+        const count = Number(rows[0]?.count || 0);
+        const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Enriched timetable listing with JOINed class, section, subject names
+  if (
+    endpoint === "get-time-tables" ||
+    endpoint === "get-time-table" ||
+    endpoint === "time-tables" ||
+    endpoint === "time-table" ||
+    endpoint === "get-timetables" ||
+    endpoint === "timetables"
+  ) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const page = parseInt(searchParams.get("page") || "0");
+      const size = parseInt(searchParams.get("size") || "10");
+      const search = (searchParams.get("search") || "").trim();
+      const { limit, offset } = Utility.getPagination(page, size);
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = searchParams.get("school_id")
+        ? parseInt(searchParams.get("school_id")!)
+        : (schoolCond.school_id ? parseInt(String(schoolCond.school_id)) : null);
+
+      const classId = searchParams.get("classId") || searchParams.get("class_id") || searchParams.get("class");
+      const sectionId = searchParams.get("section") || searchParams.get("section_id");
+      const day = searchParams.get("day");
+      const batch = searchParams.get("batch");
+
+      const searchWild = `%${search}%`;
+      const schoolClause = schoolId ? Prisma.sql`AND tt.school_id = ${schoolId}` : Prisma.sql``;
+      const classClause = classId ? Prisma.sql`AND tt.class_id = ${parseInt(classId, 10)}` : Prisma.sql``;
+      const sectionClause = sectionId ? Prisma.sql`AND tt.section_id = ${parseInt(sectionId, 10)}` : Prisma.sql``;
+      const dayClause = day ? Prisma.sql`AND LOWER(tt.day::text) = LOWER(${day})` : Prisma.sql``;
+      const batchClause = batch ? Prisma.sql`AND LOWER(tt.batch) = LOWER(${batch})` : Prisma.sql``;
+      const searchClause = search
+        ? Prisma.sql`AND (cl.name ILIKE ${searchWild} OR se.name ILIKE ${searchWild} OR sub.name ILIKE ${searchWild} OR tt.batch ILIKE ${searchWild} OR tt.day::text ILIKE ${searchWild} OR tt.duration ILIKE ${searchWild})`
+        : Prisma.sql``;
+
+      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          tt.id,
+          tt.school_id,
+          tt.class_id,
+          tt.section_id,
+          tt.subject_id,
+          tt.period,
+          tt.duration,
+          tt.day,
+          tt.batch,
+          cl.name AS class_name,
+          se.name AS section_name,
+          sub.name AS subject_name,
+          COUNT(*) OVER() AS count
+        FROM timetable tt
+        LEFT JOIN class   cl  ON cl.id  = tt.class_id
+        LEFT JOIN section se  ON se.id  = tt.section_id
+        LEFT JOIN subject sub ON sub.id = tt.subject_id
+        WHERE 1=1
+          ${schoolClause}
+          ${classClause}
+          ${sectionClause}
+          ${dayClause}
+          ${batchClause}
+          ${searchClause}
+        ORDER BY
+          tt.class_id ASC,
+          tt.section_id ASC,
+          CASE LOWER(tt.day::text)
+            WHEN 'monday' THEN 1
+            WHEN 'tuesday' THEN 2
+            WHEN 'wednesday' THEN 3
+            WHEN 'thursday' THEN 4
+            WHEN 'friday' THEN 5
+            WHEN 'saturday' THEN 6
+            WHEN 'sunday' THEN 7
+            ELSE 8
+          END ASC,
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+
+      if (rows.length > 0) {
+        const count = Number(rows[0]?.count || 0);
+        const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Enriched attendance listing with JOINed student/teacher/employee name, class, section
+  if (
+    endpoint === "get-attendances" ||
+    endpoint === "get-attendance" ||
+    endpoint === "attendances" ||
+    endpoint === "attendance"
+  ) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const page = parseInt(searchParams.get("page") || "0", 10);
+      const size = parseInt(searchParams.get("size") || "10", 10);
+      const search = (searchParams.get("search") || "").trim();
+      const parent = searchParams.get("parent");
+      const parentId = searchParams.get("parentId") || searchParams.get("parent_id");
+      const classId = searchParams.get("classId") || searchParams.get("class_id");
+      const sectionId = searchParams.get("sectionId") || searchParams.get("section_id");
+      const status = searchParams.get("status");
+
+      const { limit, offset } = Utility.getPagination(page, size);
+
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = searchParams.get("school_id")
+        ? parseInt(searchParams.get("school_id")!, 10)
+        : (schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : null);
+
+      const searchWild = `%${search}%`;
+      const schoolClause = schoolId ? Prisma.sql`AND a.school_id = ${schoolId}` : Prisma.sql``;
+      const parentClause = parent ? Prisma.sql`AND LOWER(a.parent::text) = LOWER(${parent})` : Prisma.sql``;
+      const parentIdClause = parentId ? Prisma.sql`AND a.parent_id = ${parseInt(parentId, 10)}` : Prisma.sql``;
+      const classClause = classId ? Prisma.sql`AND a.class_id = ${parseInt(classId, 10)}` : Prisma.sql``;
+      const sectionClause = sectionId ? Prisma.sql`AND a.section_id = ${parseInt(sectionId, 10)}` : Prisma.sql``;
+      const statusClause = status ? Prisma.sql`AND LOWER(a.status::text) = LOWER(${status})` : Prisma.sql``;
+      const searchClause = search
+        ? Prisma.sql`AND (
+            st.firstname ILIKE ${searchWild} OR st.lastname ILIKE ${searchWild} OR
+            tc.firstname ILIKE ${searchWild} OR tc.lastname ILIKE ${searchWild} OR
+            em.firstname ILIKE ${searchWild} OR em.lastname ILIKE ${searchWild} OR
+            cl.name ILIKE ${searchWild} OR se.name ILIKE ${searchWild} OR
+            a.status::text ILIKE ${searchWild} OR a.parent::text ILIKE ${searchWild}
+          )`
+        : Prisma.sql``;
+
+      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          a.id,
+          a.school_id,
+          a.parent::text AS parent,
+          a.parent_id,
+          a.class_id,
+          a.section_id,
+          a.date,
+          a.status::text AS status,
+          a.created_at,
+          COALESCE(
+            CASE 
+              WHEN a.parent = 'student' THEN CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))
+              WHEN a.parent = 'teacher' THEN CONCAT(tc.firstname, ' ', COALESCE(tc.lastname, ''))
+              WHEN a.parent = 'employee' THEN CONCAT(em.firstname, ' ', COALESCE(em.lastname, ''))
+            END,
+            CONCAT(COALESCE(st.firstname, tc.firstname, em.firstname, ''), ' ', COALESCE(st.lastname, tc.lastname, em.lastname, ''))
+          ) AS name,
+          cl.name AS class_name,
+          se.name AS section_name,
+          COUNT(*) OVER() AS count
+        FROM attendance a
+        LEFT JOIN student  st ON st.id = a.parent_id AND a.parent = 'student'
+        LEFT JOIN teacher  tc ON tc.id = a.parent_id AND a.parent = 'teacher'
+        LEFT JOIN employee em ON em.id = a.parent_id AND a.parent = 'employee'
+        LEFT JOIN class    cl ON cl.id = a.class_id
+        LEFT JOIN section  se ON se.id = a.section_id
+        WHERE 1=1
+          ${schoolClause}
+          ${parentClause}
+          ${parentIdClause}
+          ${classClause}
+          ${sectionClause}
+          ${statusClause}
+          ${searchClause}
+        ORDER BY a.date DESC NULLS LAST, a.id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+
+      if (rows.length > 0) {
+        const count = Number(rows[0]?.count || 0);
+        const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Enriched school house listing with JOINed student (captain, vice_captain) and teacher (teacher_incharge)
+  if (
+    endpoint === "get-school-houses" ||
+    endpoint === "get-school-house" ||
+    endpoint === "school-houses" ||
+    endpoint === "school-house"
+  ) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const page = parseInt(searchParams.get("page") || "0", 10);
+      const size = parseInt(searchParams.get("size") || "10", 10);
+      const search = (searchParams.get("search") || "").trim();
+
+      const { limit, offset } = Utility.getPagination(page, size);
+
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = searchParams.get("school_id")
+        ? parseInt(searchParams.get("school_id")!, 10)
+        : (schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : null);
+
+      const searchWild = `%${search}%`;
+      const schoolClause = schoolId ? Prisma.sql`AND sh.school_id = ${schoolId}` : Prisma.sql``;
+      const searchClause = search
+        ? Prisma.sql`AND (
+            sh.name ILIKE ${searchWild} OR
+            sh.color_code ILIKE ${searchWild} OR
+            sh.status::text ILIKE ${searchWild} OR
+            cap.firstname ILIKE ${searchWild} OR cap.lastname ILIKE ${searchWild} OR
+            vc.firstname ILIKE ${searchWild} OR vc.lastname ILIKE ${searchWild} OR
+            ti.firstname ILIKE ${searchWild} OR ti.lastname ILIKE ${searchWild}
+          )`
+        : Prisma.sql``;
+
+      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          sh.id,
+          sh.school_id,
+          sh.name,
+          sh.color_code,
+          sh.captain,
+          sh.vice_captain,
+          sh.teacher_incharge,
+          sh.strength,
+          sh.status::text AS status,
+          sh.created_at,
+          sh.created_by,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(cap.firstname, ' ', COALESCE(cap.lastname, ''))), ''),
+            NULLIF(TRIM(cap.firstname), '')
+          ) AS "captainName",
+          COALESCE(
+            NULLIF(TRIM(CONCAT(cap.firstname, ' ', COALESCE(cap.lastname, ''))), ''),
+            NULLIF(TRIM(cap.firstname), '')
+          ) AS captain_name,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(vc.firstname, ' ', COALESCE(vc.lastname, ''))), ''),
+            NULLIF(TRIM(vc.firstname), '')
+          ) AS "viceCaptainNname",
+          COALESCE(
+            NULLIF(TRIM(CONCAT(vc.firstname, ' ', COALESCE(vc.lastname, ''))), ''),
+            NULLIF(TRIM(vc.firstname), '')
+          ) AS "viceCaptainName",
+          COALESCE(
+            NULLIF(TRIM(CONCAT(vc.firstname, ' ', COALESCE(vc.lastname, ''))), ''),
+            NULLIF(TRIM(vc.firstname), '')
+          ) AS vice_captain_name,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(ti.firstname, ' ', COALESCE(ti.lastname, ''))), ''),
+            NULLIF(TRIM(ti.firstname), '')
+          ) AS "teacherName",
+          COALESCE(
+            NULLIF(TRIM(CONCAT(ti.firstname, ' ', COALESCE(ti.lastname, ''))), ''),
+            NULLIF(TRIM(ti.firstname), '')
+          ) AS teacher_name,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(ti.firstname, ' ', COALESCE(ti.lastname, ''))), ''),
+            NULLIF(TRIM(ti.firstname), '')
+          ) AS teacher_incharge_name,
+          COUNT(*) OVER() AS count
+        FROM school_house sh
+        LEFT JOIN student cap ON (cap.id = sh.captain OR cap.parent_id = sh.captain)
+        LEFT JOIN student vc  ON (vc.id  = sh.vice_captain OR vc.parent_id = sh.vice_captain)
+        LEFT JOIN teacher ti  ON (ti.id  = sh.teacher_incharge OR ti.parent_id = sh.teacher_incharge)
+        WHERE 1=1
+          ${schoolClause}
+          ${searchClause}
+        ORDER BY sh.id ASC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+
+      if (rows.length > 0) {
+        const count = Number(rows[0]?.count || 0);
+        const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Enriched marksheet listing with JOINed student, class, and section
+  if (
+    endpoint === "get-marksheets" ||
+    endpoint === "get-marksheet" ||
+    endpoint === "marksheets" ||
+    endpoint === "marksheet"
+  ) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const page = parseInt(searchParams.get("page") || "0", 10);
+      const size = parseInt(searchParams.get("size") || "10", 10);
+      const search = (searchParams.get("search") || "").trim();
+      const classId = searchParams.get("classId") || searchParams.get("class_id");
+      const sectionId = searchParams.get("sectionId") || searchParams.get("section_id");
+      const term = searchParams.get("term");
+      const session = searchParams.get("session");
+      const result = searchParams.get("result");
+
+      const { limit, offset } = Utility.getPagination(page, size);
+
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = searchParams.get("school_id")
+        ? parseInt(searchParams.get("school_id")!, 10)
+        : (schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : null);
+
+      const searchWild = `%${search}%`;
+      const schoolClause = schoolId ? Prisma.sql`AND m.school_id = ${schoolId}` : Prisma.sql``;
+      const classClause = classId ? Prisma.sql`AND m.class_id = ${parseInt(classId, 10)}` : Prisma.sql``;
+      const sectionClause = sectionId ? Prisma.sql`AND m.section_id = ${parseInt(sectionId, 10)}` : Prisma.sql``;
+      const termClause = term ? Prisma.sql`AND m.term::text = ${term}` : Prisma.sql``;
+      const sessionClause = session ? Prisma.sql`AND m.session ILIKE ${session}` : Prisma.sql``;
+      const resultClause = result ? Prisma.sql`AND m.result::text = ${result}` : Prisma.sql``;
+      const searchClause = search
+        ? Prisma.sql`AND (
+            st.firstname ILIKE ${searchWild} OR st.lastname ILIKE ${searchWild} OR
+            m.session ILIKE ${searchWild} OR m.term::text ILIKE ${searchWild} OR
+            m.result::text ILIKE ${searchWild} OR cl.name ILIKE ${searchWild} OR se.name ILIKE ${searchWild}
+          )`
+        : Prisma.sql``;
+
+      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          m.id,
+          m.school_id,
+          m.student_id,
+          m.class_id,
+          m.section_id,
+          m.session,
+          m.term,
+          m.result,
+          m.created_at,
+          m.updated_at,
+          m.created_by,
+          m.updated_by,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))), ''),
+            NULLIF(TRIM(st.firstname), '')
+          ) AS student_name,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))), ''),
+            NULLIF(TRIM(st.firstname), '')
+          ) AS "studentName",
+          st.roll_no,
+          st.enrollment_no,
+          cl.name AS class_name,
+          se.name AS section_name,
+          COUNT(*) OVER() AS count
+        FROM marksheet m
+        LEFT JOIN student st ON (st.id = m.student_id OR st.parent_id = m.student_id)
+        LEFT JOIN class   cl ON cl.id = m.class_id
+        LEFT JOIN section se ON se.id = m.section_id
+        WHERE 1=1
+          ${schoolClause}
+          ${classClause}
+          ${sectionClause}
+          ${termClause}
+          ${sessionClause}
+          ${resultClause}
+          ${searchClause}
+        ORDER BY m.id ASC
         LIMIT ${limit} OFFSET ${offset}
       `);
 

@@ -22,7 +22,7 @@ export const StateAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getStates.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getStates ? cancelApiObject.getStates.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -34,7 +34,7 @@ export const StateAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getStates.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getIdByName ? cancelApiObject.getIdByName.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -45,7 +45,7 @@ export const StateAPI = {
             headers: {
                 "x-access-token": getLocalStorage("auth").token
             },
-            signal: cancel ? cancelApiObject[this.getStates.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAllStates ? cancelApiObject.getAllStates.handleRequestCancellation().signal : undefined,
         });
         return response;
     }

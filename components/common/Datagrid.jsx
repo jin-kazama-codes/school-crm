@@ -61,11 +61,8 @@ function getCellRawText(col, row) {
 }
 
 function getRowId(row, selected) {
-    return selected === 'Class'
-        ? row.class_id
-        : selected === 'Section'
-            ? row.section_id
-            : row.id;
+    if (!row) return undefined;
+    return row.id ?? row.class_id ?? row.section_id ?? row.school_id ?? row.user_id;
 }
 
 // ─── Column Filter Popover ────────────────────────────────────────────────────

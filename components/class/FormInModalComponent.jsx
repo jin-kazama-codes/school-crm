@@ -28,90 +28,80 @@ import formBg from "../assets/formBg.png";
 const initialValues = {
   name: "",
   status: "active",
-  subjects: [],
 };
 
-const FormComponent = ({ openDialog, setOpenDialog }) => {
+const FormComponent = ({ openDialog, setOpenDialog, onRefresh }) => {
   const handleDialogClose = () => {
     setOpenDialog(false);
+    navigateTo("#", { state: { id: undefined } });
   };
 
   const [title, setTitle] = useState("Create");
   const [loading, setLoading] = useState(false);
   const [initialState, setInitialState] = useState(initialValues);
 
+  const navigateTo = useNavigate();
+  const dispatch = useDispatch();
   const selected = useSelector((state) => state.menuItems.selected);
   const toastInfo = useSelector((state) => state.toastInfo);
 
-  const navigateTo = useNavigate();
-  const dispatch = useDispatch();
   const { state } = useLocation();
-  const { toastAndNavigate, getLocalStorage, getIdsFromObject } = Utility();
+  const { toastAndNavigate, getLocalStorage } = Utility();
 
   let id = state?.id;
 
   useEffect(() => {
     const selectedMenu = getLocalStorage("menu");
-    if(selectedMenu?.selected) {
-        dispatch(setMenuItem(selectedMenu.selected));
+    if (selectedMenu?.selected) {
+      dispatch(setMenuItem(selectedMenu.selected));
     }
     
-    if (id) {
-      setTitle("Update");
-      populateData(id);
-    } else {
-      setTitle("Create");
-      setInitialState(initialValues);
+    if (openDialog) {
+      if (id) {
+        setTitle("Update");
+        populateData(id);
+      } else {
+        setTitle("Create");
+        setInitialState(initialValues);
+      }
     }
-  }, [id]);
+  }, [id, openDialog]);
 
   const updateClass = useCallback((values) => {
-    const dataFields = [
-      {
-        ...values,
-        subjects: getIdsFromObject(values.subjects),
-      },
-    ];
-    const paths = ["/update-class"];
     setLoading(true);
-
-    API.CommonAPI.multipleAPICall("PATCH", paths, dataFields)
-      .then((response) => {
-        let status = true;
-        response.forEach((resp) => {
-          if (resp.data.status !== "Success") {
-            status = false;
-          }
-        });
-        if (status) {
+    API.ClassAPI.updateClass(values)
+      .then(({ data: resp }) => {
+        if (resp?.status === "Success") {
           setLoading(false);
           toastAndNavigate(
             dispatch,
             true,
             "info",
-            "Successfully Updated",
-            navigateTo,
-            `/class/listing`,
-            location.reload()
+            "Successfully Updated"
           );
+          handleDialogClose();
+          if (typeof onRefresh === "function") {
+            onRefresh();
+          }
         } else {
           setLoading(false);
           toastAndNavigate(
             dispatch,
             true,
             "error",
-            "An Error Occurred. Please Try Again",
-            navigateTo,
-            location.reload()
+            "An Error Occurred. Please Try Again"
           );
         }
       })
       .catch((err) => {
         setLoading(false);
-        toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
-        throw err;
+        const errMsg = typeof err?.response?.data?.msg === 'string' 
+          ? err.response.data.msg 
+          : err?.response?.data?.msg?.message || err?.message || "An Error Occurred";
+        toastAndNavigate(dispatch, true, "error", errMsg);
+        console.error("Error updating class:", err);
       });
-  }, []);
+  }, [onRefresh]);
 
   const populateData = useCallback((id) => {
     setLoading(true);
@@ -128,65 +118,50 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
             dispatch,
             true,
             "error",
-            "An Error Occurred, Please Try Again",
-            navigateTo,
-            0
+            "An Error Occurred, Please Try Again"
           );
         }
       })
       .catch((err) => {
         setLoading(false);
-        toastAndNavigate(
-          dispatch,
-          true,
-          "error",
-          err ? err?.response?.data?.msg : "An Error Occurred",
-          navigateTo,
-          0
-        );
-        throw err;
+        const errMsg = typeof err?.response?.data?.msg === 'string' 
+          ? err.response.data.msg 
+          : err?.response?.data?.msg?.message || err?.message || "An Error Occurred";
+        toastAndNavigate(dispatch, true, "error", errMsg);
+        console.error("Error populating class:", err);
       });
   }, []);
 
   const createClass = useCallback((values) => {
     setLoading(true);
-    values = {
-      ...values,
-      subjects: getIdsFromObject(values?.subjects),
-    };
     API.ClassAPI.createClass(values)
       .then(({ data: classs }) => {
         if (classs?.status === "Success") {
           setLoading(false);
           toastAndNavigate(dispatch, true, "success", "Successfully Created");
-          setTimeout(() => {
-            handleDialogClose();
-            navigateTo(0); 
-          }, 2000);
+          handleDialogClose();
+          if (typeof onRefresh === "function") {
+            onRefresh();
+          }
         } else {
           setLoading(false);
           toastAndNavigate(
             dispatch,
             true,
             "error",
-            "An Error Occurred, Please Try Again",
-            navigateTo,
-            0
+            "An Error Occurred, Please Try Again"
           );
         }
       })
       .catch((err) => {
         setLoading(false);
-        toastAndNavigate(
-          dispatch,
-          true,
-          err ? err.response?.data?.msg : "An Error Occurred",
-          navigateTo,
-          0
-        );
-        throw err;
+        const errMsg = typeof err?.response?.data?.msg === 'string' 
+          ? err.response.data.msg 
+          : err?.response?.data?.msg?.message || err?.message || "An Error Occurred";
+        toastAndNavigate(dispatch, true, "error", errMsg);
+        console.error("Error creating class:", err);
       });
-  }, []);
+  }, [onRefresh]);
 
   if (!openDialog) return null;
 
@@ -347,6 +322,7 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
 FormComponent.propTypes = {
   openDialog: PropTypes.bool,
   setOpenDialog: PropTypes.func,
+  onRefresh: PropTypes.func,
 };
 
 export default FormComponent;

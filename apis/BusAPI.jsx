@@ -24,7 +24,7 @@ export const BusAPI = {
                 "x-access-token": getLocalStorage("auth")?.token
             },
             method: "GET",
-            signal: cancel ? cancelApiObject[this.getAll.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.getAll ? cancelApiObject.getAll.handleRequestCancellation().signal : undefined,
         });
         return response;
     },
@@ -39,7 +39,7 @@ export const BusAPI = {
             },
             method: "POST",
             data: bus,
-            signal: cancel ? cancelApiObject[this.createBus.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.createBus ? cancelApiObject.createBus.handleRequestCancellation().signal : undefined,
         });
     },
 
@@ -53,7 +53,7 @@ export const BusAPI = {
             },
             method: "PATCH",
             data: fields,
-            signal: cancel ? cancelApiObject[this.updateBus.name].handleRequestCancellation().signal : undefined,
+            signal: cancel && cancelApiObject.updateBus ? cancelApiObject.updateBus.handleRequestCancellation().signal : undefined,
         });
     }
 }
