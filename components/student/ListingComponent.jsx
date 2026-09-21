@@ -58,6 +58,20 @@ const ListingComponent = ({ rolePriority = null }) => {
   
   const { getPaginatedData } = useCommon();
   const { findMultipleById, findById, fetchAndSetAll, getLocalStorage, setLocalStorage, toastAndNavigate } = Utility();
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const BLOOD_GROUP_MAP = {
+    A_pos: 'A+', A_neg: 'A−', B_pos: 'B+', B_neg: 'B−',
+    AB_pos: 'AB+', AB_neg: 'AB−', O_pos: 'O+', O_neg: 'O−'
+  };
+  const bloodGroupLabel = (val) => BLOOD_GROUP_MAP[val] || val || '';
   
   const [reloadBtn, setReloadBtn] = useState(null);
   useEffect(() => {
@@ -156,11 +170,13 @@ const ListingComponent = ({ rolePriority = null }) => {
 
   const horizontalData = {
     Session: studentDetail?.studentData?.session,
-    Name: studentDetail?.studentData?.firstname,
+    Name: studentDetail?.studentData?.firstname
+      ? `${studentDetail.studentData.firstname} ${studentDetail.studentData.lastname || ''}`.trim()
+      : '',
     Email: studentDetail?.studentData?.email,
-    Dob: studentDetail?.studentData?.dob,
-    Admission_date: studentDetail?.studentData?.admission_date,
-    Blood_group: studentDetail?.studentData?.blood_group,
+    Dob: formatDate(studentDetail?.studentData?.dob),
+    Admission_date: formatDate(studentDetail?.studentData?.admission_date),
+    Blood_group: bloodGroupLabel(studentDetail?.studentData?.blood_group),
     Class: className,
     Section: sectionName
   };

@@ -79,15 +79,24 @@ const ViewDetailModal = ({
         <div className="p-6 space-y-6">
           <div className="flex flex-col md:flex-row gap-6 bg-slate-50/70 dark:bg-[#141414] rounded-2xl p-5 border border-slate-100 dark:border-[#1a1a1a]">
             {/* Image */}
-            {detail?.imageData && detail?.imageData[0]?.image_src && (
-              <div className="shrink-0 flex justify-center">
+            <div className="shrink-0 flex justify-center">
+              {detail?.imageData && detail?.imageData[0]?.image_src ? (
                 <img
                   className="w-36 h-44 object-cover rounded-xl shadow-md border-2 border-emerald-500/20"
                   src={detail.imageData[0].image_src}
                   alt={name}
                 />
-              </div>
-            )}
+              ) : (
+                <div className="w-36 h-44 rounded-xl shadow-md border-2 border-emerald-500/20 bg-gradient-to-br from-emerald-50 to-slate-100 dark:from-emerald-950/30 dark:to-slate-800 flex flex-col items-center justify-center gap-2">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                    <svg className="w-9 h-9 text-emerald-400 dark:text-emerald-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                    </svg>
+                  </div>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">No Photo</span>
+                </div>
+              )}
+            </div>
 
             {/* Horizontal Data & Address */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 items-center text-xs">
@@ -98,7 +107,10 @@ const ViewDetailModal = ({
                       {key.replace(/_/g, ' ')}:
                     </span>
                     <span className="text-slate-800 dark:text-gray-100 font-semibold break-words">
-                      {capitalizeEveryWord(horizontalData[key])}
+                      {/* Don't capitalize dates, blood groups, emails — just display as-is */}
+                      {/[0-9]{2}\s[A-Z][a-z]+\s[0-9]{4}|[A-Z0-9+−]{2,4}|@/.test(String(horizontalData[key]))
+                        ? horizontalData[key]
+                        : capitalizeEveryWord(horizontalData[key])}
                     </span>
                   </React.Fragment>
                 )
