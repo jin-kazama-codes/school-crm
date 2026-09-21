@@ -33,6 +33,7 @@ const pageSizeOptions = [10, 20, 50];
 const ListingComponent = ({ rolePriority = null }) => {
   const [openModal, setOpenModal] = useState(false);
   const [studentDetail, setStudentDetail] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [countryData, setCountryData] = useState([]);
   const [stateData, setStateData] = useState([]);
   const [cityData, setCityData] = useState([]);
@@ -47,7 +48,9 @@ const ListingComponent = ({ rolePriority = null }) => {
   const dispatch = useDispatch();
   const URLParams = useParams();
   const { state } = useLocation();
-  let id = state?.id;
+  // NOTE: Do NOT use state?.id for the modal — that pollutes the /student/create form.
+  // selectedStudentId is local state set by the datagrid action button.
+  let id = null; // listing page never reads id from location
   
   //revisit for pagination
   const [searchFlag, setSearchFlag] = useState({
@@ -124,8 +127,8 @@ const ListingComponent = ({ rolePriority = null }) => {
   }, [subjectsInRedux?.listData?.length]);
 
   useEffect(() => {
-    if (id) {
-      populateData(id);
+    if (selectedStudentId) {
+      populateData(selectedStudentId);
 
       API.CountryAPI.getCountries()
         .then(countries => {
@@ -133,9 +136,7 @@ const ListingComponent = ({ rolePriority = null }) => {
             setCountryData(countries.data.list);
           }
         })
-        .catch(err => {
-          throw err;
-        });
+        .catch(err => { throw err; });
 
       API.StateAPI.getAllStates()
         .then(states => {
@@ -143,9 +144,7 @@ const ListingComponent = ({ rolePriority = null }) => {
             setStateData(states.data.rows);
           }
         })
-        .catch(err => {
-          throw err;
-        });
+        .catch(err => { throw err; });
 
       API.CityAPI.getAllCities()
         .then(cities => {
@@ -153,12 +152,10 @@ const ListingComponent = ({ rolePriority = null }) => {
             setCityData(cities.data.rows);
           }
         })
-        .catch(err => {
-          throw err;
-        });
+        .catch(err => { throw err; });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [selectedStudentId]);
 
   useEffect(() => {
     dispatch(setMenuItem("Student"));
@@ -212,7 +209,7 @@ const ListingComponent = ({ rolePriority = null }) => {
 
           {rolePriority > 1 && (
             <button
-                onClick={() => navigateTo(`/student/create`)}
+                onClick={() => navigateTo(`/student/create`, { state: null })}
                 className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:-translate-y-0.5 whitespace-nowrap"
             >
                 <PlusCircle className="w-5 h-5" />
@@ -226,7 +223,7 @@ const ListingComponent = ({ rolePriority = null }) => {
             action={setStudents}
             api={API.StudentAPI}
             getQuery={getPaginatedData}
-            columns={datagridColumns(rolePriority, setOpenModal)}
+            columns={datagridColumns(rolePriority, setOpenModal, setSelectedStudentId)}
             rolePriority={rolePriority}
             condition={classConditionObj}
             importBtn={importBtn}

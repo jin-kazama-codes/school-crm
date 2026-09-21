@@ -18,7 +18,7 @@ import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
 import { Utility } from "../utility";
 
-export const datagridColumns = (rolePriority = null, setOpen = null) => {
+export const datagridColumns = (rolePriority = null, setOpen = null, setSelectedId = null) => {
     const schoolClasses = useSelector(state => state.schoolClasses);
     const allClasses = useSelector(state => state.allClasses);
     const schoolSections = useSelector(state => state.schoolSections);
@@ -34,7 +34,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
 
     const handleActionShow = (id) => {
         if (setOpen) setOpen(true);
-        navigateTo("#", { state: { id: id } });
+        if (setSelectedId) setSelectedId(id);
     };
 
     useEffect(() => {

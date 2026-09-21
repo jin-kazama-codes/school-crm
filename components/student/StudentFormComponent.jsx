@@ -260,21 +260,40 @@ const StudentFormComponent = ({
     formik.setFieldValue("subjects", selectedValues);
   };
 
-  const inputClass = (fieldName) => `w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
-    formik.touched[fieldName] && formik.errors[fieldName] 
-    ? 'border-red-500 focus:ring-red-500/50' 
-    : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
-  } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
-  
-  const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
-  const errorClass = "mt-1 text-sm text-red-500";
+  const inputClass = (fieldName) =>
+    `w-full px-4 py-2.5 bg-white dark:bg-[#1e1e1e] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
+      formik.touched[fieldName] && formik.errors[fieldName]
+        ? 'border-red-400 focus:ring-red-500/40 bg-red-50/30 dark:bg-red-900/10'
+        : 'border-slate-200 dark:border-slate-700 focus:ring-emerald-500/40 hover:border-slate-300 dark:hover:border-slate-600'
+    }`;
+
+  const selectClass = (fieldName) =>
+    `${inputClass(fieldName)} appearance-none cursor-pointer`;
+
+  const labelClass = "block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5";
+  const errorClass = "mt-1 text-xs text-red-500 font-medium";
+
+  const SectionHeader = ({ icon, title, subtitle }) => (
+    <div className="col-span-1 md:col-span-2 flex items-center gap-3 pt-2 pb-1">
+      <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-base">
+        {icon}
+      </div>
+      <div>
+        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 tracking-tight">{title}</h3>
+        {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500">{subtitle}</p>}
+      </div>
+      <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800 ml-2" />
+    </div>
+  );
 
   return (
-    <div className="p-6">
+    <div className="p-6 md:p-8">
       <form ref={refId} onSubmit={formik.handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
-          {/* Session */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          {/* ── Section: Personal Information ─────────────────────────── */}
+          <SectionHeader icon="👤" title="Personal Information" subtitle="Basic student identity details" />
+
           <div className="col-span-1">
             <label className={labelClass}>Session*</label>
             <select
@@ -293,7 +312,7 @@ const StudentFormComponent = ({
           </div>
 
           {/* First Name */}
-          <div className="col-span-1 md:col-span-1 lg:col-span-2">
+          <div className="col-span-1">
             <label className={labelClass}>Firstname*</label>
             <input
               type="text"
@@ -307,7 +326,7 @@ const StudentFormComponent = ({
           </div>
 
           {/* Last Name */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-1">
+          <div className="col-span-1">
             <label className={labelClass}>Lastname*</label>
             <input
               type="text"
@@ -326,6 +345,7 @@ const StudentFormComponent = ({
             <input
               type="text"
               name="contact_no"
+              placeholder="e.g. 9876543210"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.contact_no}
@@ -340,6 +360,7 @@ const StudentFormComponent = ({
             <input
               type="email"
               name="email"
+              placeholder="student@example.com"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.email}
@@ -349,11 +370,12 @@ const StudentFormComponent = ({
           </div>
 
           {/* Aadhaar Number */}
-          <div className="col-span-1 lg:col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <label className={labelClass}>Aadhaar Number*</label>
             <input
               type="text"
               name="aadhaar_no"
+              placeholder="12-digit Aadhaar number"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.aadhaar_no}
@@ -363,8 +385,8 @@ const StudentFormComponent = ({
           </div>
 
           {/* Is Specially Abled */}
-          <div className="col-span-1 flex flex-col justify-center">
-            <label className="flex items-center gap-3 cursor-pointer">
+          <div className="col-span-1 flex items-center">
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors w-full">
               <input
                 type="checkbox"
                 name="is_specially_abled"
@@ -372,7 +394,10 @@ const StudentFormComponent = ({
                 onChange={(e) => formik.setFieldValue("is_specially_abled", e.target.checked)}
                 className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
               />
-              <span className="font-medium text-slate-700 dark:text-slate-300">Is Specially Abled</span>
+              <div>
+                <span className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Specially Abled</span>
+                <p className="text-xs text-slate-400">Check if applicable</p>
+              </div>
             </label>
           </div>
 
@@ -385,7 +410,7 @@ const StudentFormComponent = ({
               value={formik.values.gender}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className={inputClass("gender")}
+              className={selectClass("gender")}
             >
               <option value="" disabled>Select Gender</option>
               {Object.keys(config.gender).map((item) => (
@@ -395,11 +420,13 @@ const StudentFormComponent = ({
             {formik.touched.gender && formik.errors.gender && <p className={errorClass}>{formik.errors.gender}</p>}
           </div>
 
-          {/* Head */}
+          {/* ── Section: Academic Details ──────────────────────────────── */}
+          <SectionHeader icon="🎓" title="Academic Details" subtitle="Class, section and enrollment info" />
+
           {userId && (
-            <div className="col-span-1 lg:col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className={labelClass}>
-                {updatedValues?.gender === "male" ? "Head Boy" : updatedValues?.gender === "female" ? "Head Girl" : "Select Head of School"}
+                {updatedValues?.gender === "male" ? "Head Boy" : updatedValues?.gender === "female" ? "Head Girl" : "Head of School"}
               </label>
               <select
                 name="head"
@@ -407,15 +434,13 @@ const StudentFormComponent = ({
                 onChange={(e) => {
                   if (formik.values.gender) {
                     formik.setFieldValue("head", e.target.value);
-                    if (e.target.value == 1) {
-                      validateHead();
-                    }
+                    if (e.target.value == 1) { validateHead(); }
                   } else {
                     toastAndNavigate(dispatch, true, "info", "Please Select Gender");
                   }
                 }}
                 onBlur={formik.handleBlur}
-                className={inputClass("head")}
+                className={selectClass("head")}
               >
                 {Object.keys(config.head).map((item) => (
                   <option key={item} value={item}>{config.head[item]}</option>
@@ -461,7 +486,7 @@ const StudentFormComponent = ({
               value={formik.values.admission_type}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className={inputClass("admission_type")}
+              className={selectClass("admission_type")}
             >
               {Object.keys(config.admission_type).map((item) => (
                 <option key={item} value={item}>{config.admission_type[item]}</option>
@@ -482,7 +507,7 @@ const StudentFormComponent = ({
                 if (formik.values.subjects) formik.setFieldValue("subjects", []);
               }}
               onBlur={formik.handleBlur}
-              className={inputClass("class")}
+              className={selectClass("class")}
             >
               <option value="" disabled>Select Class</option>
               {schoolClasses?.listData?.map((cls) => (
@@ -503,7 +528,7 @@ const StudentFormComponent = ({
                 if (formik.values.subjects) formik.setFieldValue("subjects", []);
               }}
               onBlur={formik.handleBlur}
-              className={inputClass("section")}
+              className={selectClass("section")}
             >
               <option value="" disabled>Select Section</option>
               {schoolSections?.listData?.map((section) => (
@@ -513,7 +538,7 @@ const StudentFormComponent = ({
             {formik.touched.section && formik.errors.section && <p className={errorClass}>{formik.errors.section}</p>}
           </div>
 
-          {/* Subjects (Multiple Select workaround for Autocomplete) */}
+          {/* Subjects */}
           <div className="col-span-1 md:col-span-2">
             <label className={labelClass}>Subjects*</label>
             <select
@@ -522,15 +547,18 @@ const StudentFormComponent = ({
               value={formik.values.subjects.map(s => s.id)}
               onChange={handleSubjectsChange}
               onBlur={formik.handleBlur}
-              className={`${inputClass("subjects")} h-24`}
+              className={`${inputClass("subjects")} h-28`}
             >
               {schoolSubjects?.listData?.map((sub) => (
                 <option value={sub.id} key={sub.id}>{sub.name}</option>
               ))}
             </select>
             {formik.touched.subjects && formik.errors.subjects && <p className={errorClass}>{formik.errors.subjects}</p>}
-            <p className="text-xs text-slate-500 mt-1">Hold Ctrl (or Cmd) to select multiple.</p>
+            <p className="text-xs text-slate-400 mt-1">💡 Hold Ctrl (or ⌘) to select multiple subjects</p>
           </div>
+
+          {/* ── Section: Additional Details ────────────────────────────── */}
+          <SectionHeader icon="📋" title="Additional Details" subtitle="Blood group, house, status and more" />
 
           {/* Blood Group */}
           <div className="col-span-1">
@@ -540,7 +568,7 @@ const StudentFormComponent = ({
               value={formik.values.blood_group}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className={inputClass("blood_group")}
+              className={selectClass("blood_group")}
             >
               <option value="" disabled>Select Blood Group</option>
               {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
@@ -586,7 +614,7 @@ const StudentFormComponent = ({
               value={formik.values.nationality}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className={inputClass("nationality")}
+              className={selectClass("nationality")}
             >
               <option value="indian">Indian</option>
               <option value="nri">NRI</option>
@@ -602,7 +630,7 @@ const StudentFormComponent = ({
               value={formik.values.caste_group}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className={inputClass("caste_group")}
+              className={selectClass("caste_group")}
             >
               <option value="" disabled>Select Caste</option>
               <option value="general">General</option>
@@ -621,7 +649,7 @@ const StudentFormComponent = ({
               value={formik.values.house || ""}
               onChange={(e) => formik.setFieldValue("house", e.target.value)}
               onBlur={formik.handleBlur}
-              className={inputClass("house")}
+              className={selectClass("house")}
             >
               <option value="" disabled>Select House</option>
               {!listingSchoolHouses?.listData?.rows?.length ? (
@@ -643,7 +671,7 @@ const StudentFormComponent = ({
               value={formik.values.status}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className={inputClass("status")}
+              className={selectClass("status")}
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
