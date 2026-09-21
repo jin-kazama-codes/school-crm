@@ -434,14 +434,43 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         SELECT
           s.id, s.school_id, s.firstname, s.lastname, s.roll_no,
           s.dob, s.gender, s.blood_group, s.contact_no, s.email,
-          s.class AS class_id, s.section AS section_id,
+          s.father_name, s.mother_name,
+          s.class, s.class AS class_id,
+          s.section, s.section AS section_id,
           s.status, s.session,
           cl.name AS class_name,
           se.name AS section_name,
+          CASE 
+            WHEN cl.name IS NOT NULL AND se.name IS NOT NULL THEN CONCAT(cl.name, ' ', se.name)
+            WHEN cl.name IS NOT NULL THEN cl.name
+            ELSE NULL
+          END AS class_section,
+          sch.name AS school_name,
+          addr.street, addr.landmark, addr.zipcode,
+          ci.name AS city_name,
+          st.name AS state_name,
+          img.image_src AS student_image,
           COUNT(*) OVER() AS count
         FROM student s
-        LEFT JOIN class   cl ON cl.id = s.class
-        LEFT JOIN section se ON se.id = s.section
+        LEFT JOIN school  sch ON sch.id = s.school_id
+        LEFT JOIN class   cl  ON cl.id  = s.class
+        LEFT JOIN section se  ON se.id  = s.section
+        LEFT JOIN LATERAL (
+          SELECT street, landmark, zipcode, city, state
+          FROM address
+          WHERE parent = 'student' AND parent_id = s.id
+          ORDER BY id DESC
+          LIMIT 1
+        ) addr ON true
+        LEFT JOIN city ci ON ci.id = addr.city
+        LEFT JOIN state st ON st.id = addr.state
+        LEFT JOIN LATERAL (
+          SELECT image_src
+          FROM image
+          WHERE parent = 'student' AND parent_id = s.id
+          ORDER BY priority ASC, id DESC
+          LIMIT 1
+        ) img ON true
         WHERE 1=1
           ${schoolClause}
           ${classClause}

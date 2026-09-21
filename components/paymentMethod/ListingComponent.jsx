@@ -67,7 +67,7 @@ const ListingComponent = () => {
         >
             <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-sm p-5">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize whitespace-nowrap">
+                    <h2 className="text-xl sm:text-2xl font-extrabold font-display text-slate-800 dark:text-white tracking-tight capitalize whitespace-nowrap leading-tight">
                         {selected}
                     </h2>
                     

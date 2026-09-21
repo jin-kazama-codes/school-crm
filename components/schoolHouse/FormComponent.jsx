@@ -166,7 +166,7 @@ const FormComponent = () => {
                         <Castle className="w-8 h-8" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                        <h1 className="text-3xl font-extrabold font-display text-slate-800 dark:text-slate-100 tracking-tight">
                             {title} {selected}
                         </h1>
                         <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">

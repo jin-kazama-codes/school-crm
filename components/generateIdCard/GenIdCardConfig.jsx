@@ -30,47 +30,28 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
     const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate } = Utility();
 
     function formatAddress(params) {
-        const { street, landmark, state_name, city_name, zipcode } = params?.row || {};
-        return [street, landmark, state_name, city_name, zipcode].filter(Boolean).join(", ");
+        const { street, landmark, city_name, state_name, zipcode } = params?.row || {};
+        const parts = [street, landmark, city_name, state_name, zipcode].filter(Boolean);
+        return parts.length ? parts.join(", ") : "—";
     }    
 
     function transformClassSection(value) {
-        if (typeof value !== 'string') return value;
+        if (!value || typeof value !== 'string') return value || "—";
     
-        const specials = {
-            "Nursery": "Nursery",
-            "Pre-K": "Pre-K"
-        };
+        const parts = value.trim().split(/\s+/);
+        if (parts.length < 2) return value;
     
-        const parts = value.split(' ');
-        if (parts.length !== 2) return value;
-    
-        const [number, section] = parts;
-        let suffix;
-    
-        if (specials[number]) {
-            return `${specials[number]} ${section}`;
-        } else {
-            switch (number) {
-                case '1':
-                    suffix = 'st';
-                    break;
-                case '2':
-                    suffix = 'nd';
-                    break;
-                case '3':
-                    suffix = 'rd';
-                    break;
-                default:
-                    suffix = 'th';
-                    break;
-            }
-    
-            return `${number}${suffix} ${section}`;
+        const [cls, ...secParts] = parts;
+        const section = secParts.join(' ');
+        if (/^\d+$/.test(cls)) {
+            const n = parseInt(cls, 10);
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            const suffix = s[(v - 20) % 10] || s[v] || s[0];
+            return `${n}${suffix} ${section}`;
         }
+        return `${cls} ${section}`;
     }
-    
-    
 
     useEffect(() => {
         if (!getLocalStorage("schoolInfo")) {
@@ -93,7 +74,8 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 150
+            minWidth: 160,
+            valueFormatter: (value) => value || "—",
         },
         {
             field: 'student_image',
@@ -101,17 +83,35 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: 'center',
             align: 'center',
             flex: 1,
-            minWidth: 150,
-            valueGetter: (value) => value?.split("/").pop(), // for export
-            renderCell: (params) => (
-                <div className="flex justify-center items-center w-full h-full p-2">
-                    <img
-                        src={params.row.student_image} // use params.row.student_image for the image URL
-                        alt="No Image Found"
-                        className="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
-                    />
-                </div>
-            ),
+            minWidth: 120,
+            valueGetter: (value) => value?.split("/").pop() || "", // for export
+            renderCell: (params) => {
+                const img = params?.row?.student_image;
+                const initials = `${(params?.row?.firstname?.[0] || '').toUpperCase()}${(params?.row?.lastname?.[0] || '').toUpperCase()}` || 'S';
+                return (
+                    <div className="flex justify-center items-center w-full h-full p-1.5">
+                        {img ? (
+                            <img
+                                src={img}
+                                alt="Student"
+                                className="w-10 h-10 rounded-full object-cover border border-emerald-500/30 shadow-sm"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                    }
+                                }}
+                            />
+                        ) : null}
+                        <div
+                            style={{ display: img ? 'none' : 'flex' }}
+                            className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 items-center justify-center font-bold text-xs tracking-wider border border-emerald-500/30 shadow-sm select-none"
+                        >
+                            {initials}
+                        </div>
+                    </div>
+                );
+            },
         },
         {
             field: "fullname",
@@ -120,8 +120,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             align: "center",
             flex: 1,
             minWidth: 150,
-            // this function combines the values of firstname and lastname into one string
-            valueGetter: (value, row) => `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname)|| ''}`
+            valueGetter: (value, row) => `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname)|| ''}`.trim() || "—"
         },
         {
             field: "father_name",
@@ -129,7 +128,8 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 150
+            minWidth: 150,
+            valueFormatter: (value) => value || "—",
         },
         {
             field: "mother_name",
@@ -137,7 +137,8 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 150
+            minWidth: 150,
+            valueFormatter: (value) => value || "—",
         },
         {
             field: "class_section",
@@ -145,7 +146,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 200,
+            minWidth: 150,
             valueFormatter: (value) => transformClassSection(value),
         },
         {
@@ -154,7 +155,8 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 150
+            minWidth: 140,
+            valueFormatter: (value) => value || "—",
         },
         {
             field: "dob",
@@ -162,8 +164,8 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 150,
-            valueFormatter: (value) => `${formatDate(value)}`
+            minWidth: 140,
+            valueFormatter: (value) => (value ? `${formatDate(value)}` : "—"),
         },
         {
             field: 'address',
@@ -171,7 +173,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             headerAlign: 'center',
             align: 'center',
             flex: 1,
-            minWidth: 150,
+            minWidth: 200,
             valueGetter: formatAddress,
         }
     ];
