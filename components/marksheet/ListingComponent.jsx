@@ -27,7 +27,7 @@ import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
 
-const pageSizeOptions = [5, 10, 20];
+const pageSizeOptions = [10, 20, 50];
 
 const ListingComponent = ({ rolePriority = null }) => {
   const [classSectionObj, setClassSectionObj] = useState(null);

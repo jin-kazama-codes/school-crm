@@ -175,7 +175,7 @@ const ServerPaginationGrid = ({
     count,
     loading,
     selected,
-    pageSizeOptions = [5, 10, 20, 50],
+    pageSizeOptions = [10, 20, 50],
     searchFlag = { search: false, searching: false },
     setOldPagination,
     imports,

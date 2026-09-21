@@ -23,7 +23,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
 
   const { searchParams } = new URL(req.url);
   const page     = parseInt(searchParams.get("page")      || "0",  10);
-  const size     = parseInt(searchParams.get("size")      || "5",  10);
+  const size     = parseInt(searchParams.get("size")      || "10",  10);
   const search   = searchParams.get("search")   || "";
   const month    = searchParams.get("month")    ? parseInt(searchParams.get("month") as string, 10) : null;
   const classId  = searchParams.get("classId")  ? parseInt(searchParams.get("classId")  as string, 10) : null;

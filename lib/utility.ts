@@ -188,12 +188,13 @@ const Utility = {
    */
   getPagination: (
     page = 0,
-    size = 5
+    size = 10
   ): { limit: number; offset: number } => {
     const limit = size;
     const offset = page * size;
     return { limit, offset };
   },
+
 
   /**
    * Function to capitalize the first letter of each word in a string

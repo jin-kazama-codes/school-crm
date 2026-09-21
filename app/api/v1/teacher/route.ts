@@ -11,7 +11,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
 
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "0");
-  const size = parseInt(searchParams.get("size") || "5");
+  const size = parseInt(searchParams.get("size") || "10");
   const search = (searchParams.get("search") || "").trim();
   const { limit, offset } = Utility.getPagination(page, size);
   const schoolCond = Utility.getSchoolIdFromHeader(req);

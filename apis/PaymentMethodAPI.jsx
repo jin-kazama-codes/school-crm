@@ -15,7 +15,7 @@ const { getLocalStorage } = Utility();
 export const PaymentMethodAPI = {
     /** Get payment methods from the database that meets the specified query parameters
      */
-    getAll: async (conditionObj = false, page = 0, size = 5, search = false, authInfo, cancel = false) => {
+    getAll: async (conditionObj = false, page = 0, size = 10, search = false, authInfo, cancel = false) => {
         const queryParam = conditionObj ? `&${conditionObj.key}=${conditionObj.value}` : '';
         const searchParam = search ? `&search=${search}` : '';
         const { data: response } = await api.request({

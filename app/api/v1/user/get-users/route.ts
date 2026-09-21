@@ -10,7 +10,7 @@ export const GET = withAuth(async (request: NextRequest, { userId }) => {
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") || "0");
-  const size = parseInt(searchParams.get("size") || "5");
+  const size = parseInt(searchParams.get("size") || "10");
   const search = searchParams.get("search") || "";
   const { limit, offset } = Utility.getPagination(page, size);
 

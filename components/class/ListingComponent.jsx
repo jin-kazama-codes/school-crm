@@ -24,7 +24,7 @@ import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
 
-const pageSizeOptions = [5, 10, 20];
+const pageSizeOptions = [10, 20, 50];
 
 const ListingComponent = () => {
     const [openDialog, setOpenDialog] = useState(false);

@@ -46,7 +46,7 @@ export const UserAPI = {
   getAll: async (
     conditionObj = false,
     page = 0,
-    size = 5,
+    size = 10,
     search = false,
     authInfo,
     cancel = false
