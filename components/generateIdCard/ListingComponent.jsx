@@ -63,7 +63,7 @@ const ListingComponent = ({ rolePriority = null }) => {
       ...classConditionObj,
       sectionId: classSectionObj.section
     }
-    : null;
+    : classConditionObj;
 
   useEffect(() => {
     dispatch(setMenuItem("Generate ID Card"));
@@ -85,7 +85,7 @@ const ListingComponent = ({ rolePriority = null }) => {
   }, []);
 
   useEffect(() => {
-    if (classSectionObj?.class && classSectionObj?.section) {
+    if (classSectionObj?.class) {
       getPaginatedData(0, 100, setGenerateIdCard, API.GenerateIdCardAPI, classConditionObj);
     }
   }, [classSectionObj?.class, classSectionObj?.section]);
@@ -93,7 +93,8 @@ const ListingComponent = ({ rolePriority = null }) => {
 
   useEffect(() => {
     const getAndSetSections = () => {
-      const classSections = classData?.filter(obj => obj.class_id === classSectionObj?.class) || [];
+      // eslint-disable-next-line eqeqeq
+      const classSections = classData?.filter(obj => obj.class_id == classSectionObj?.class) || [];
       const selectedSections = classSections.map(
         ({ section_id, section_name }) => ({ section_id, section_name })
       );

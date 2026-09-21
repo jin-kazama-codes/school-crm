@@ -15,7 +15,8 @@ function getModel(modelName: string): any {
 const MODELS_WITH_SCHOOL_ID = new Set([
   "student", "teacher", "employee", "bus", "holiday",
   "homework", "noticeboard", "school_house", "payment",
-  "school_class_data", "marksheet", "attendance", "timetable", "image"
+  "school_class_data", "marksheet", "attendance", "timetable", "image",
+  "school_duration"
 ]);
 
 function getSchoolFilter(request: NextRequest, modelName?: string): Record<string, unknown> {
