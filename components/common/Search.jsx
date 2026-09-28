@@ -16,7 +16,8 @@ const Search = ({
     setSearchFlag,
     reloadBtn,
     action,
-    api
+    api,
+    pageSize = 10
 }) => {
     const [inputValue, setInputValue] = useState("");
 
@@ -29,7 +30,7 @@ const Search = ({
             handleReload();
             return;
         }
-        getSearchData(0, 5, action, api, condition, inputValue.trim());
+        getSearchData(0, pageSize, action, api, condition, inputValue.trim());
         setSearchFlag({
             search: true,
             searching: true,
@@ -54,7 +55,7 @@ const Search = ({
             search: false,
             searching: false
         });
-        getSearchData(0, 5, action, api, condition, '');
+        getSearchData(0, pageSize, action, api, condition, '');
     };
 
     return (
@@ -98,7 +99,8 @@ Search.propTypes = {
     setSearchFlag: PropTypes.func,
     reloadBtn: PropTypes.object,
     action: PropTypes.func,
-    api: PropTypes.object
+    api: PropTypes.object,
+    pageSize: PropTypes.number
 };
 
 export default Search;

@@ -159,39 +159,47 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
   const renderNotCollapsedStudents = () => {
     return (
       classData?.length > 0 &&
-      classData.map((classs) => (
-        <SidebarItem
-          key={classs.class_id}
-          title={`${addClassKeyword(classs.class_name)}`}
-          to={`/student/listing/${classs.class_id}`}
-          icon={<Building2 className="w-4 h-4" />}
-          selected={selected}
-          rolePriority={rolePriority}
-          menuVisibility={5}
-          isSubMenu={true}
-          isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed}
-        />
-      ))
+      classData.map((classs, index) => {
+        const classId = classs.class_id ?? classs.id;
+        const className = classs.class_name ?? classs.name ?? "";
+        return (
+          <SidebarItem
+            key={classId !== undefined && classId !== null ? `sidebar-class-${classId}` : `sidebar-class-idx-${index}`}
+            title={`${addClassKeyword(className)}`}
+            to={`/student/listing/${classId}`}
+            icon={<Building2 className="w-4 h-4" />}
+            selected={selected}
+            rolePriority={rolePriority}
+            menuVisibility={5}
+            isSubMenu={true}
+            isCollapsed={isCollapsed}
+            setIsCollapsed={setIsCollapsed}
+          />
+        );
+      })
     );
   };
 
   const renderCollapsedStudents = () => {
     return (
       classData?.length > 0 &&
-      classData.map((classs) => (
-        <SidebarItem
-          key={classs.class_id}
-          to={`/student/listing/${classs.class_id}`}
-          icon={<span className="text-[10px] font-bold">{mapping[classs.class_name] || classs.class_name.substring(0,2)}</span>}
-          selected={selected}
-          rolePriority={rolePriority}
-          menuVisibility={5}
-          isSubMenu={true}
-          isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed}
-        />
-      ))
+      classData.map((classs, index) => {
+        const classId = classs.class_id ?? classs.id;
+        const className = classs.class_name ?? classs.name ?? "";
+        return (
+          <SidebarItem
+            key={classId !== undefined && classId !== null ? `sidebar-col-class-${classId}` : `sidebar-col-class-idx-${index}`}
+            to={`/student/listing/${classId}`}
+            icon={<span className="text-[10px] font-bold">{mapping[className] || String(className).substring(0,2)}</span>}
+            selected={selected}
+            rolePriority={rolePriority}
+            menuVisibility={5}
+            isSubMenu={true}
+            isCollapsed={isCollapsed}
+            setIsCollapsed={setIsCollapsed}
+          />
+        );
+      })
     );
   };
 

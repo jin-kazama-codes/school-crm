@@ -80,7 +80,8 @@ export const SchoolAPI = {
         "x-access-token": getLocalStorage("auth").token
       },
       method: "GET",
-      params: getLocalStorage("auth")?.role === 1 ? { school_id: school_id } : null,    //this is included in backend req.query
+      // Bug #11 fix: compare rolePriority (1=SuperAdmin) not role (FK id)
+      params: getLocalStorage("auth")?.rolePriority === 1 ? { school_id: school_id } : null,
       signal: cancel && cancelApiObject.getSchoolClasses ? cancelApiObject.getSchoolClasses.handleRequestCancellation().signal : undefined
     });
     return response;
@@ -95,7 +96,8 @@ export const SchoolAPI = {
         "x-access-token": getLocalStorage("auth").token
       },
       method: "GET",
-      params: getLocalStorage("auth")?.role === 1 ? { school_id: school_id } : null,    //this is included in backend req.query
+      // Bug #11 fix: compare rolePriority (1=SuperAdmin) not role (FK id)
+      params: getLocalStorage("auth")?.rolePriority === 1 ? { school_id: school_id } : null,
       signal: cancel && cancelApiObject.getTeacherClasses ? cancelApiObject.getTeacherClasses.handleRequestCancellation().signal : undefined
     });
     return response;

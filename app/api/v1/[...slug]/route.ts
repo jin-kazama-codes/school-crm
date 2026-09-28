@@ -679,6 +679,8 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
         return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
       }
+      // Bug fix: must explicitly return 404 — do NOT fall through to generic handler
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
     }
@@ -778,6 +780,72 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
     }
   }
 
+  // Enriched user listing — JOINs user_role so role_name is a searchable string field.
+  // The generic handler cannot do this because user.role is an Int FK, not a text field.
+  if (endpoint === "get-users" || endpoint === "users") {
+    try {
+      const { searchParams } = new URL(req.url);
+      const page   = parseInt(searchParams.get("page") || "0", 10);
+      const size   = parseInt(searchParams.get("size") || "10", 10);
+      const search = (searchParams.get("search") || "").trim();
+      const { limit, offset } = Utility.getPagination(page, size);
+
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId   = schoolCond.school_id
+        ? parseInt(String(schoolCond.school_id), 10)
+        : null;
+
+      const searchWild  = `%${search}%`;
+      const schoolClause = schoolId
+        ? Prisma.sql`AND u.school_id = ${schoolId}`
+        : Prisma.sql``;
+      const searchClause = search
+        ? Prisma.sql`AND (
+            u.username   ILIKE ${searchWild} OR
+            u.email      ILIKE ${searchWild} OR
+            u.contact_no ILIKE ${searchWild} OR
+            ur.name      ILIKE ${searchWild}
+          )`
+        : Prisma.sql``;
+
+      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          u.id,
+          u.school_id,
+          u.username,
+          u.email,
+          u.contact_no,
+          u.role,
+          u.designation,
+          u.gender::text  AS gender,
+          u.status::text  AS status,
+          u.created_at,
+          u.updated_at,
+          u.created_by,
+          u.updated_by,
+          ur.name         AS role_name,
+          ur.priority     AS role_priority,
+          COUNT(*) OVER() AS count
+        FROM "user" u
+        LEFT JOIN user_role ur ON ur.id = u.role
+        WHERE 1=1
+          ${schoolClause}
+          ${searchClause}
+        ORDER BY u.updated_at DESC NULLS LAST
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+
+      if (rows.length > 0) {
+        const count     = Number(rows[0]?.count || 0);
+        const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
   // Generic List Handler for get-X endpoints
   if (endpoint.startsWith("get-")) {
     const entityKey = endpoint.replace("get-", "");
@@ -851,7 +919,13 @@ async function handlePost(req: NextRequest, endpoint: string) {
   if (endpoint === "encrypt-text") {
     try {
       const body = await req.json();
-      const encrypted = Utility.encryptText(JSON.stringify(body.data));
+      // body.data can be a number, string, or object — stringify only objects/arrays,
+      // leave primitives as-is so decrypt round-trip stays clean.
+      const raw = body.data;
+      const textToEncrypt = (typeof raw === "object" && raw !== null)
+        ? JSON.stringify(raw)
+        : String(raw);
+      const encrypted = Utility.encryptText(textToEncrypt);
       return NextResponse.json(Utility.formatResponse(200, encrypted), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
@@ -861,26 +935,46 @@ async function handlePost(req: NextRequest, endpoint: string) {
   if (endpoint === "decrypt-text") {
     try {
       const body = await req.json();
-      const decrypted = Utility.decryptText(body.data?.encrypted_id, body.data?.vect);
-      return NextResponse.json(Utility.formatResponse(200, decrypted ? JSON.parse(decrypted) : null), { status: 200 });
+      // The client (CommonAPI.decryptText) sends: POST body = { encrypted_id, vect }
+      // NOT wrapped under a 'data' key. Support both forms for robustness.
+      const encrypted_id = body.encrypted_id ?? body.data?.encrypted_id;
+      const vect         = body.vect         ?? body.data?.vect;
+      if (!encrypted_id || !vect) {
+        return NextResponse.json(
+          Utility.formatResponse(400, "Missing encrypted_id or vect in request body"),
+          { status: 400 }
+        );
+      }
+      const decrypted = Utility.decryptText(encrypted_id, vect);
+      if (!decrypted) {
+        return NextResponse.json(Utility.formatResponse(400, "Decryption failed"), { status: 400 });
+      }
+      // Try JSON.parse; if value is a plain primitive string (e.g. a number encrypted as "5"),
+      // return it directly to avoid JSON.parse throwing on non-JSON strings.
+      let parsed: unknown;
+      try { parsed = JSON.parse(decrypted); } catch { parsed = decrypted; }
+      return NextResponse.json(Utility.formatResponse(200, parsed), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
     }
   }
 
   // School Class Mapping
+  // Body sent from frontend (FormComponent.jsx insertIntoMappingTable call):
+  // [school_id(0), class_id(1), section_id(2), subject_ids(3), class_fee(4), class_capacity(5), late_fee(6), late_fee_duration(7)]
   if (endpoint === "create-school-class-mapping") {
     try {
       const schoolCond = Utility.getSchoolIdFromHeader(req);
       const schoolId = schoolCond.school_id ? parseInt(String(schoolCond.school_id)) : undefined;
       const body = await req.json();
-      const class_id = body[1] || body.class_id;
-      const section_id = body[2] || body.section_id;
-      const class_fee = parseFloat(body[0] || body.class_fee || 0);
-      const subject_ids = String(body[3] || body.subject_ids || "");
-      const late_fee = parseFloat(body[4] || body.late_fee || 0);
-      const late_fee_duration = String(body[5] || body.late_fee_duration || "");
-      const class_capacity = parseInt(body[6] || body.class_capacity || 0);
+      // Use explicit named keys first (object form), then fall back to positional array form
+      const class_id       = body.class_id       ?? body[1];
+      const section_id     = body.section_id     ?? body[2];
+      const subject_ids    = String(body.subject_ids    ?? body[3] ?? "");
+      const class_fee      = parseFloat(body.class_fee      ?? body[4] ?? 0);
+      const class_capacity = parseInt(String(body.class_capacity ?? body[5] ?? 0));
+      const late_fee       = parseFloat(body.late_fee       ?? body[6] ?? 0);
+      const late_fee_duration = String(body.late_fee_duration ?? body[7] ?? "");
 
       await prisma.school_class_data.create({
         data: {

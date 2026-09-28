@@ -1,19 +1,20 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+﻿/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
  * This software is the confidential information of School CRM Inc., and is licensed as
  * restricted rights software. The use,reproduction, or disclosure of this software is subject to
  * restrictions set forth in your license agreement with School CRM.
-*/
+ */
 
 import React, { useState, useEffect } from "react";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 import { useFormik } from "formik";
 import dayjs from "dayjs";
+import { ChevronDown } from "lucide-react";
 
 import noticeBoardValidation from "./Validation";
-import config from '../config';
+import config from "../config";
 
 const initialValues = {
     title: "",
@@ -31,7 +32,6 @@ const NoticeBoardFormComponent = ({
     setReset,
     updatedValues = null
 }) => {
-
     const [initialState, setInitialState] = useState(initialValues);
 
     const formik = useFormik({
@@ -51,9 +51,8 @@ const NoticeBoardFormComponent = ({
         if (onChange) {
             onChange({
                 values: formik.values,
-                validated: formik.isSubmitting
-                    ? Object.keys(formik.errors).length === 0
-                    : false
+                // Bug #13 fix: formik.isSubmitting is false by the time onSubmit fires.
+                validated: Object.keys(formik.errors).length === 0
             });
         }
     };
@@ -80,47 +79,62 @@ const NoticeBoardFormComponent = ({
     // Format date for native date input (YYYY-MM-DD)
     const formatDateForInput = (dateValue) => {
         if (!dateValue) return "";
-        return dayjs(dateValue).format('YYYY-MM-DD');
+        try {
+            const d = dayjs(dateValue);
+            return d.isValid() ? d.format('YYYY-MM-DD') : "";
+        } catch {
+            return "";
+        }
     };
 
     const handleDateChange = (field, e) => {
-        // Formik was originally storing whatever Dayjs/date object MUI DatePicker gave it.
-        // We'll store it as a dayjs object to maintain compatibility with existing logic if any.
         const val = e.target.value;
         formik.setFieldValue(field, val ? dayjs(val) : "");
     };
 
+    const inputClass = (field) =>
+        `w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all ${
+            formik.touched[field] && formik.errors[field]
+                ? "border-rose-500 focus:ring-rose-500/20 focus:border-rose-500"
+                : "border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500"
+        }`;
+
+    const selectClass = (field) =>
+        `w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all cursor-pointer appearance-none ${
+            formik.touched[field] && formik.errors[field]
+                ? "border-rose-500 focus:ring-rose-500/20 focus:border-rose-500"
+                : "border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500"
+        }`;
+
     return (
-        <div className="p-6">
-            <form ref={refId} onSubmit={formik.handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <form ref={refId} onSubmit={formik.handleSubmit}>
+            {/* Engraved Card Container */}
+            <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     
                     {/* Title */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Title
+                    <div className="col-span-1 md:col-span-2 lg:col-span-4 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Notice Title <span className="text-rose-500">*</span>
                         </label>
                         <input
                             type="text"
                             name="title"
-                            autoComplete="new-title"
+                            autoComplete="off"
                             onBlur={formik.handleBlur}
                             onChange={formik.handleChange}
                             value={formik.values.title}
-                            className={`w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
-                                formik.touched.title && formik.errors.title 
-                                ? 'border-red-500 focus:ring-red-500/50' 
-                                : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
-                            }`}
+                            placeholder="e.g., Annual Sports Meet 2026 Schedule & Guidelines"
+                            className={inputClass("title")}
                         />
                         {formik.touched.title && formik.errors.title && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.title}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.title}</p>
                         )}
                     </div>
 
                     {/* Publish Date */}
-                    <div className="col-span-1 lg:col-span-1">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <div className="col-span-1 lg:col-span-1 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                             Publish Date
                         </label>
                         <input
@@ -129,20 +143,16 @@ const NoticeBoardFormComponent = ({
                             onBlur={formik.handleBlur}
                             onChange={(e) => handleDateChange("publish_date", e)}
                             value={formatDateForInput(formik.values.publish_date)}
-                            className={`w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-700 dark:text-slate-300 ${
-                                formik.touched.publish_date && formik.errors.publish_date 
-                                ? 'border-red-500 focus:ring-red-500/50' 
-                                : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
-                            }`}
+                            className={inputClass("publish_date")}
                         />
                         {formik.touched.publish_date && formik.errors.publish_date && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.publish_date}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.publish_date}</p>
                         )}
                     </div>
 
                     {/* Expiry Date */}
-                    <div className="col-span-1 lg:col-span-1">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <div className="col-span-1 lg:col-span-1 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                             Expiry Date
                         </label>
                         <input
@@ -151,71 +161,62 @@ const NoticeBoardFormComponent = ({
                             onBlur={formik.handleBlur}
                             onChange={(e) => handleDateChange("expiry_date", e)}
                             value={formatDateForInput(formik.values.expiry_date)}
-                            className={`w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-700 dark:text-slate-300 ${
-                                formik.touched.expiry_date && formik.errors.expiry_date 
-                                ? 'border-red-500 focus:ring-red-500/50' 
-                                : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
-                            }`}
+                            className={inputClass("expiry_date")}
                         />
                         {formik.touched.expiry_date && formik.errors.expiry_date && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.expiry_date}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.expiry_date}</p>
                         )}
                     </div>
 
                     {/* Status */}
-                    <div className="col-span-1 lg:col-span-2">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Status
+                    <div className="col-span-1 lg:col-span-2 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Notice Status
                         </label>
-                        <select
-                            name="status"
-                            onBlur={formik.handleBlur}
-                            onChange={formik.handleChange}
-                            value={formik.values.status}
-                            className={`w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-700 dark:text-slate-300 ${
-                                formik.touched.status && formik.errors.status 
-                                ? 'border-red-500 focus:ring-red-500/50' 
-                                : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
-                            }`}
-                        >
-                            <option value="" disabled>Select Status</option>
-                            {Object.keys(config.status).map(item => (
-                                <option key={item} value={item}>
-                                    {config.status[item]}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="status"
+                                onBlur={formik.handleBlur}
+                                onChange={formik.handleChange}
+                                value={formik.values.status}
+                                className={selectClass("status")}
+                            >
+                                {Object.keys(config.status).map(item => (
+                                    <option key={item} value={item} className="bg-white dark:bg-[#161616]">
+                                        {config.status[item]}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                         {formik.touched.status && formik.errors.status && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.status}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.status}</p>
                         )}
                     </div>
 
                     {/* Description */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Description
+                    <div className="col-span-1 md:col-span-2 lg:col-span-4 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Notice Description & Details
                         </label>
                         <textarea
                             name="description"
-                            autoComplete="new-description"
-                            rows="4"
+                            autoComplete="off"
+                            rows={5}
                             onBlur={formik.handleBlur}
                             onChange={formik.handleChange}
                             value={formik.values.description}
-                            className={`w-full px-4 py-3 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-y ${
-                                formik.touched.description && formik.errors.description 
-                                ? 'border-red-500 focus:ring-red-500/50' 
-                                : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50'
-                            }`}
+                            placeholder="Provide comprehensive details, instructions, venue details or announcement text..."
+                            className={`${inputClass("description")} resize-y custom-scrollbar`}
                         />
                         {formik.touched.description && formik.errors.description && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.description}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.description}</p>
                         )}
                     </div>
 
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     );
 };
 

@@ -10,7 +10,7 @@ import * as yup from "yup";
 
 const checkoutSchema = yup.object().shape({
     name: yup.string()
-        .min(0, 'Name is Too Short!')
+        .min(1, 'Name is Too Short!')
         .max(20, 'Name is Too Long!')
         .required("This Field is Required")
 });

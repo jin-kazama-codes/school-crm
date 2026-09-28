@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-import { Save, X as XIcon, RotateCcw } from "lucide-react";
+import { Building2, Save, RotateCcw, ArrowLeft, Image as ImageIcon } from "lucide-react";
 
 import API from "../../apis";
 import AddressFormComponent from "../address/AddressFormComponent";
@@ -70,18 +70,36 @@ const FormComponent = () => {
     const dispatch = useDispatch();
     const userParams = useParams();
 
-    const { state } = useLocation();
+    const { pathname, state } = useLocation();
     const { getPaginatedData } = useCommon();
     const { createSchoolCode, formatImageName, getLocalStorage, getIdsFromObject, findMultipleById,
         fetchAndSetAll, toastAndNavigate } = Utility();
 
-    //after page refresh the id in router state becomes undefined, so getting school id from url params
-    let id = state?.id || userParams?.id;
+    const isCreate = pathname?.includes("/create") || pathname?.endsWith("/create");
+    let id = isCreate ? undefined : (userParams?.id || state?.id);
 
     useEffect(() => {
         const selectedMenu = getLocalStorage("menu");
-        dispatch(setMenuItem(selectedMenu.selected));
+        if (selectedMenu?.selected) {
+            dispatch(setMenuItem(selectedMenu.selected));
+        }
     }, []);
+
+    useEffect(() => {
+        if (isCreate) {
+            setTitle("Create");
+            setUpdatedValues(null);
+            setUpdatedDisplayImage([]);
+            setUpdatedBannerImage([]);
+            setPreviewDisplay([]);
+            setPreviewBanner([]);
+            setDeletedImage([]);
+            setDeletedBannerImage([]);
+            setDirty(false);
+            setSubmitted(false);
+            setReset(true);
+        }
+    }, [isCreate]);
 
     const updateSchoolAndAddress = useCallback(async formData => {
         setLoading(true);
@@ -103,12 +121,7 @@ const FormComponent = () => {
         }
 
         try {
-            const responses = await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
-            // if (responses) {        //due to this if schoolform or address form is dirty, then other forms are also manipulated
-            //     updateImageAndClassData(formData);
-            // }
-
-            console.log("func pe aaya");
+            await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
             updateImageAndClassData(formData);
         } catch (err) {
             setLoading(false);
@@ -118,27 +131,9 @@ const FormComponent = () => {
     }, [formData]);
 
     const updateImageAndClassData = useCallback(async formData => {
-        // delete the selected (removed) images from Azure which are in deletedImage state
-        // if (deletedImage.length) {
-        //     deletedImage.forEach(image => {
-        //         deleteFileFromAzure("school", image);
-        //         console.log("Deleted normal image from azure");
-        //     });
-        // }
-        // delete the selected (removed) images from Azure which are in deletedBannerImage state
-        // if (deletedBannerImage.length) {
-        //     deletedBannerImage.forEach(image => {
-        //         deleteFileFromAzure("school/banner", image);
-        //         console.log("Deleted  banner image from azure");
-        //     });
-        // }
         let status = null;
 
-        console.log("formdatadirty",formData.schoolData.dirty);
-
         if (formData.schoolData.dirty) {
-
-            console.log("ander ayaa");
             // Delete all class sections from the mapping table
             await API.SchoolAPI.deleteFromMappingTable({ school_id: id });
 
@@ -170,11 +165,16 @@ const FormComponent = () => {
                 parent: "school",
                 parent_id: id
             });
+            // Bug #5 fix: track whether any image operation was attempted
+            // If no image changes at all, we still need to resolve loading + toast
+            let imageOpPending = false;
+
             // upload new images to backend folder and insert in db
             if (formData.imageData?.values?.image) {
+                imageOpPending = true;
                 Array.from(formData.imageData.values?.image).map(async image => {
                     formattedName = formatImageName(image.name);
-                        API.ImageAPI.uploadImageToS3({
+                    API.ImageAPI.uploadImageToS3({
                         image: image,
                         folder: `school/${formattedName}`,
                     })
@@ -186,15 +186,15 @@ const FormComponent = () => {
                                     parent_id: formData.schoolData.values.id,
                                     parent: 'school',
                                     type: 'display'
-                                })
+                                });
                             }
-
-                        })
+                        });
                 });
                 status = true;
             }
             // insert old images only in db & not on azure
             if (formData.imageData?.values?.constructor === Array) {
+                imageOpPending = true;
                 formData.imageData.values.map(async image => {
                     await API.ImageAPI.createImage({
                         image_src: image.image_src,
@@ -209,6 +209,7 @@ const FormComponent = () => {
 
             // upload new parent images to azure and insert in db
             if (formData.bannerImageData?.values?.image) {
+                imageOpPending = true;
                 Array.from(formData.bannerImageData.values.image).map(async image => {
                     let formattedName = formatImageName(image.name);
                     await API.ImageAPI.uploadImageToS3({
@@ -223,14 +224,15 @@ const FormComponent = () => {
                                     parent_id: formData.schoolData.values.id,
                                     parent: 'school',
                                     type: 'banner'
-                                })
+                                });
                             }
-                        })
+                        });
                 });
                 status = true;
             }
             // insert old images parent only in db & not on azure
             if (formData.bannerImageData?.values?.constructor === Array) {
+                imageOpPending = true;
                 formData.bannerImageData.values.map(async image => {
                     await API.ImageAPI.createImage({
                         image_src: image.image_src,
@@ -242,7 +244,9 @@ const FormComponent = () => {
                 });
                 status = true;
             }
-            if (status) {
+            // Bug #5 fix: always resolve loading state.
+            // If no image ops occurred, treat as success (class/address data was already updated above).
+            if (status || !imageOpPending) {
                 setLoading(false);
                 toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, '/school/listing');
             }
@@ -251,7 +255,7 @@ const FormComponent = () => {
             toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
             console.log("Error in School Update", err);
         }
-    }, [formData]);
+    }, [formData, id]);
 
     const populateSchoolData = useCallback(id => {
         setLoading(true);
@@ -274,8 +278,8 @@ const FormComponent = () => {
                             imageData: responses[2]?.data?.data
                         };
                         setUpdatedValues(dataObj);
-                        setUpdatedDisplayImage(dataObj?.imageData?.filter(img => img.type === "display"));
-                        setUpdatedBannerImage(dataObj?.imageData?.filter(img => img.type === "banner"));
+                        setUpdatedDisplayImage(dataObj?.imageData?.filter(img => img.type === "display") || []);
+                        setUpdatedBannerImage(dataObj?.imageData?.filter(img => img.type === "banner") || []);
                         setLoading(false);
                     })
                     .catch(err => {
@@ -313,7 +317,7 @@ const FormComponent = () => {
                         parent: 'school'
                     });
 
-                    promise2 = formData.schoolData.values.sections.map((innerArray, classIndex) => {
+                    promise2 = Promise.all(formData.schoolData.values.sections.map(async (innerArray, classIndex) => {
                         // Get class-related data or default to 0 if not available
                         const schoolClass = formData.schoolData.values.classes[classIndex] || 0;
                         const classFee = formData.schoolData.values.classes_fee[classIndex] || 0;
@@ -321,57 +325,58 @@ const FormComponent = () => {
                         const classLateFee = formData.schoolData.values.classes_late_fee[classIndex] || 0;
                         const classLateFeeDuration = formData.schoolData.values.classes_late_fee_duration[classIndex] || 0;
 
-                        // Iterating through each section in the class then associating subject ids for each section of class
-                        innerArray.map(async (sectionData, sectionIndex) => {
+                        // Bug #4 fix: await ALL section inserts before resolving
+                        return Promise.all(innerArray.map(async (sectionData, sectionIndex) => {
                             // Get subject array for the current section or default to empty array
                             const subjectArray = formData.schoolData.values.subjects[classIndex] ? formData.schoolData.values.subjects[classIndex][sectionIndex] : [];
-                            await API.SchoolAPI.insertIntoMappingTable(
+                            return API.SchoolAPI.insertIntoMappingTable(
                                 [school.data.id, schoolClass, sectionData.section_id,
                                 getIdsFromObject(subjectArray, allSubjects?.listData), classFee, classCapacity, classLateFee,
                                     classLateFeeDuration]
                             );
-                        });
-                    });
+                        }));
+                    }));
+
                     if (formData.imageData.values?.image?.length) {
-                        promise3 = Array.from(formData.imageData.values.image).map(async (image) => {
+                        promise3 = Promise.all(Array.from(formData.imageData.values.image).map(async (image) => {
                             let formattedName = formatImageName(image.name);
-                            API.ImageAPI.uploadImageToS3({
+                            return API.ImageAPI.uploadImageToS3({
                                 image: image,
                                 folder: `school/${formattedName}`,
                             })
                                 .then(res => {
                                     if (res.data.status === "Success") {
-                                        API.ImageAPI.createImage({
+                                        return API.ImageAPI.createImage({
                                             image_src: res.data.data,
                                             school_id: school.data.id,
                                             parent_id: school.data.id,
                                             parent: 'school',
                                             type: 'display'
-                                        })
+                                        });
                                     }
-                                })
-                        });
+                                });
+                        }));
                     }
 
                     if (formData.bannerImageData.values.image?.length) {
-                        promise4 = Array.from(formData.bannerImageData.values.image).map(async (image) => {
+                        promise4 = Promise.all(Array.from(formData.bannerImageData.values.image).map(async (image) => {
                             let formattedName = formatImageName(image.name);
-                            API.ImageAPI.uploadImageToS3({
+                            return API.ImageAPI.uploadImageToS3({
                                 image: image,
                                 folder: `school/${formattedName}`,
                             })
                                 .then(res => {
                                     if (res.data.status === "Success") {
-                                        API.ImageAPI.createImage({
+                                        return API.ImageAPI.createImage({
                                             image_src: res.data.data,
                                             school_id: school.data.id,
                                             parent_id: school.data.id,
                                             parent: 'school',
                                             type: 'banner'
-                                        })
+                                        });
                                     }
-                                })
-                        });
+                                });
+                        }));
                     }
 
                     return Promise.all([promise1, promise2, promise3, promise4])
@@ -425,17 +430,17 @@ const FormComponent = () => {
 
     //Create/Update/Populate School
     useEffect(() => {
-        if (id && !submitted && formAmenitiesInRedux?.listData?.rows && allSubjects?.listData) {
+        if (!isCreate && id && !submitted && formAmenitiesInRedux?.listData?.rows && allSubjects?.listData) {
             setTitle("Update");
             populateSchoolData(id);
         }
-        if (formData.schoolData.validated && formData.addressData.validated && formData.imageData.validated && formData.bannerImageData.validated) {
+        // Bug #7 fix: require submitted flag to prevent accidental submission on mount / state change
+        if (submitted && formData.schoolData.validated && formData.addressData.validated && formData.imageData.validated && formData.bannerImageData.validated) {
             formData.schoolData.values?.id ? updateSchoolAndAddress(formData) : createSchool(formData);
         } else {
             setSubmitted(false);
         }
-    }, [id, submitted, formAmenitiesInRedux?.listData?.rows, allSubjects?.listData]);
-
+    }, [id, isCreate, submitted, formAmenitiesInRedux?.listData?.rows, allSubjects?.listData]);
 
     const handleSubmit = async () => {
         await schoolFormRef.current.Submit();
@@ -458,24 +463,50 @@ const FormComponent = () => {
     };
 
     return (
-        <div 
-            className="min-h-screen p-4 md:p-8 animate-in fade-in duration-500"
-            style={{
-                backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${formBg?.src || formBg})`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-                backgroundSize: "cover",
-                backgroundAttachment: "fixed"
-            }}
-        >
-            <div className="max-w-7xl mx-auto space-y-8">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
-                        {`${title} ${selected}`}
-                    </h1>
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex items-start justify-center">
+            <div 
+                className="w-full max-w-7xl rounded-2xl border border-slate-200/90 dark:border-[#262626] overflow-hidden shadow-2xl relative bg-white dark:bg-[#101010]"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                    backgroundAttachment: "fixed"
+                }}
+            >
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-b border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${
+                            title === "Update" 
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
+                                : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50"
+                        }`}>
+                            <Building2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                                {`${title} ${selected || "School"}`}
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {title === "Update" 
+                                    ? "Modify school profiles, classes, sections, affiliated subjects, and media assets" 
+                                    : "Register a new school branch with affiliated board, classes, fee structures, and media"}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => navigateTo("/school/listing")}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+                    >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        Back to List
+                    </button>
                 </div>
 
-                <div className="space-y-6">
+                {/* Body */}
+                <div className="p-6 space-y-6">
                     <SchoolFormComponent
                         onChange={(data) => {
                             handleFormChange(data, 'school');
@@ -505,99 +536,121 @@ const FormComponent = () => {
                         updatedValues={updatedValues?.addressData}
                     />
 
-                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full">
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Display Image</h3>
-                        <ImagePicker
-                            key="image"
-                            onChange={data => handleFormChange(data, 'display')}
-                            refId={imageFormRef}
-                            reset={reset}
-                            setReset={setReset}
-                            setDirty={setDirty}
-                            preview={previewDisplay}
-                            setPreview={setPreviewDisplay}
-                            updatedImage={updatedDisplayImage}
-                            setUpdatedImage={setUpdatedDisplayImage}
-                            deletedImage={deletedImage}
-                            setDeletedImage={setDeletedImage}
-                            imageType="Display"
-                            ENV={ENV}
-                        />
-                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-[#222]">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    Display Image
+                                </h3>
+                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Official Logo / Picture</span>
+                            </div>
+                            <ImagePicker
+                                key="image"
+                                onChange={data => handleFormChange(data, 'display')}
+                                refId={imageFormRef}
+                                reset={reset}
+                                setReset={setReset}
+                                setDirty={setDirty}
+                                preview={previewDisplay}
+                                setPreview={setPreviewDisplay}
+                                updatedImage={updatedDisplayImage}
+                                setUpdatedImage={setUpdatedDisplayImage}
+                                deletedImage={deletedImage}
+                                setDeletedImage={setDeletedImage}
+                                imageType="Display"
+                                ENV={ENV}
+                            />
+                        </div>
 
-                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full">
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Banner Images</h3>
-                        <ImagePicker
-                            key="banner"
-                            onChange={data => handleFormChange(data, 'banner')}
-                            refId={bannerImageFormRef}
-                            reset={reset}
-                            setReset={setReset}
-                            setDirty={setDirty}
-                            preview={previewBanner}
-                            setPreview={setPreviewBanner}
-                            updatedImage={updatedBannerImage}
-                            setUpdatedImage={setUpdatedBannerImage}
-                            deletedImage={deletedBannerImage}
-                            setDeletedImage={setDeletedBannerImage}
-                            imageType="Banner"
-                            multiple={true}
-                            ENV={ENV}
-                            validation={false}
-                        />
+                        <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-[#222]">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    Banner Images
+                                </h3>
+                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Campus & Facility Banners</span>
+                            </div>
+                            <ImagePicker
+                                key="banner"
+                                onChange={data => handleFormChange(data, 'banner')}
+                                refId={bannerImageFormRef}
+                                reset={reset}
+                                setReset={setReset}
+                                setDirty={setDirty}
+                                preview={previewBanner}
+                                setPreview={setPreviewBanner}
+                                updatedImage={updatedBannerImage}
+                                setUpdatedImage={setUpdatedBannerImage}
+                                deletedImage={deletedBannerImage}
+                                setDeletedImage={setDeletedBannerImage}
+                                imageType="Banner"
+                                multiple={true}
+                                ENV={ENV}
+                                validation={false}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-4 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl p-4 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-                    {title !== "Update" && (
-                        <button 
-                            type="button" 
-                            disabled={!dirty || submitted}
-                            onClick={() => {
-                                if (window.confirm("Do You Really Want To Reset?")) {
-                                    setReset(true);
-                                }
-                            }}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex items-center justify-between gap-3">
+                    <div>
+                        {title !== "Update" && (
+                            <button
+                                type="reset"
+                                disabled={!dirty || submitted}
+                                onClick={() => {
+                                    if (window.confirm("Do you really want to reset this form?")) {
+                                        setReset(true);
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Reset Form
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => navigateTo("/school/listing")}
+                            className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
                         >
-                            <RotateCcw className="w-5 h-5" />
-                            Reset
+                            Cancel
                         </button>
-                    )}
-                    
-                    <button 
-                        type="button"
-                        onClick={() => navigateTo(`/${selected.toLowerCase()}/listing`)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
-                    >
-                        <XIcon className="w-5 h-5" />
-                        Cancel
-                    </button>
-                    
-                    <button 
-                        type="button" 
-                        onClick={handleSubmit} 
-                        disabled={!dirty || submitted}
-                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
-                            title === "Update" 
-                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
-                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
-                        }`}
-                    >
-                        <Save className="w-5 h-5" />
-                        {title === "Update" ? "Update School" : "Save School"}
-                    </button>
+                        <button
+                            type="submit"
+                            onClick={() => handleSubmit()}
+                            disabled={!dirty || submitted}
+                            className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                title === "Update"
+                                    ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30"
+                                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
+                            }`}
+                        >
+                            <Save className="w-4 h-4" />
+                            {title === "Update" ? "Update School" : "Save School"}
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <Toast 
-                alerting={toastInfo.toastAlert}
-                severity={toastInfo.toastSeverity}
-                message={toastInfo.toastMessage}
-            />
-            {loading && <Loader />}
+                <Toast
+                    alerting={toastInfo.toastAlert}
+                    severity={toastInfo.toastSeverity}
+                    message={toastInfo.toastMessage}
+                />
+
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
+                        <Loader />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
 export default FormComponent;
+

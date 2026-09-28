@@ -35,6 +35,8 @@ export function useNavigate() {
     }
     if (options && "state" in options) {
       setNavigationState(options.state);
+    } else if (typeof to === "string" && !to.startsWith("#")) {
+      setNavigationState(null);
     }
     const scroll = options?.scroll ?? false;
     if (to === "#" || to === "") {

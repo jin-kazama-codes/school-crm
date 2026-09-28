@@ -60,6 +60,101 @@ function getCellRawText(col, row) {
     return String(val);
 }
 
+const ROMAN_TO_ARABIC = {
+    i: '1', ii: '2', iii: '3', iv: '4', v: '5',
+    vi: '6', vii: '7', viii: '8', ix: '9', x: '10',
+    xi: '11', xii: '12', xiii: '13', xiv: '14', xv: '15'
+};
+
+const ARABIC_TO_ROMAN = {
+    '1': 'i', '2': 'ii', '3': 'iii', '4': 'iv', '5': 'v',
+    '6': 'vi', '7': 'vii', '8': 'viii', '9': 'ix', '10': 'x',
+    '11': 'xi', '12': 'xii', '13': 'xiii', '14': 'xiv', '15': 'xv'
+};
+
+const STRICT_WORDS = new Set([
+    'active', 'inactive', 'pass', 'fail', 'paid', 'unpaid', 'pending',
+    'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv',
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15',
+    'a', 'b', 'c', 'd', 'e', 'f'
+]);
+
+function normalizeTokens(str) {
+    if (!str) return [];
+    return String(str)
+        .toLowerCase()
+        .split(/[^a-z0-9]+/i)
+        .filter(Boolean);
+}
+
+function smartMatchText(cellVal, filterQuery) {
+    if (filterQuery === null || filterQuery === undefined || filterQuery === '') return true;
+    if (cellVal === null || cellVal === undefined) return false;
+
+    const query = String(filterQuery).trim().toLowerCase();
+    if (!query) return true;
+
+    const cellStr = String(cellVal).trim().toLowerCase();
+    if (!cellStr) return false;
+
+    if (cellStr === query) return true;
+
+    const cellTokens = normalizeTokens(cellStr);
+    const queryTokens = normalizeTokens(query);
+
+    if (queryTokens.length === 0) return true;
+
+    // Single token filter (e.g. "II", "2", "Active", "A", "Science")
+    if (queryTokens.length === 1) {
+        const singleQuery = queryTokens[0];
+        const isRoman = Boolean(ROMAN_TO_ARABIC[singleQuery]);
+        const isArabic = Boolean(ARABIC_TO_ROMAN[singleQuery]);
+        const equivArabic = isRoman ? ROMAN_TO_ARABIC[singleQuery] : null;
+        const equivRoman = isArabic ? ARABIC_TO_ROMAN[singleQuery] : null;
+
+        const hasExactToken = cellTokens.some(tok => {
+            if (tok === singleQuery) return true;
+            if (isRoman && tok === equivArabic) return true;
+            if (isArabic && tok === equivRoman) return true;
+            return false;
+        });
+        if (hasExactToken) return true;
+
+        if (STRICT_WORDS.has(singleQuery)) {
+            return false;
+        }
+
+        return cellTokens.some(tok => tok.includes(singleQuery)) || cellStr.includes(singleQuery);
+    }
+
+    // Multi-token filter (e.g. "Class II", "Class 2", "Science Lab")
+    const allTokensMatch = queryTokens.every(qTok => {
+        const qRoman = ROMAN_TO_ARABIC[qTok];
+        const qArabic = ARABIC_TO_ROMAN[qTok];
+        return cellTokens.some(cTok => {
+            if (cTok === qTok) return true;
+            if (qRoman && cTok === qRoman) return true;
+            if (qArabic && cTok === qArabic) return true;
+            if (!STRICT_WORDS.has(qTok) && qTok.length >= 3) {
+                return cTok.includes(qTok);
+            }
+            return false;
+        });
+    });
+
+    if (allTokensMatch) return true;
+
+    try {
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+        if (regex.test(cellStr)) return true;
+    } catch {
+        // ignore regex parsing error
+    }
+
+    return false;
+}
+
 function getRowId(row, selected) {
     if (!row) return undefined;
     return row.id ?? row.class_id ?? row.section_id ?? row.school_id ?? row.user_id;
@@ -222,9 +317,25 @@ const ServerPaginationGrid = ({
         return () => document.removeEventListener('mousedown', handler);
     }, [openFilterCol, openColsMenu]);
 
+    // ── Active search query derived from column filters & quick search ─────
+    const activeSearchQuery = useMemo(() => {
+        const filterStr = Object.values(columnFilters)
+            .map(val => (val || '').trim())
+            .filter(Boolean)
+            .join(' ');
+        return filterStr || tableSearch.trim();
+    }, [columnFilters, tableSearch]);
+
     // ── Sync Pagination with Server via getQuery ─────────────────────────────
     useEffect(() => {
-        if (!searchFlag?.search && !searchFlag?.searching) {
+        if (activeSearchQuery) {
+            if (typeof getQuery === 'function') {
+                getQuery(paginationModel.page, paginationModel.pageSize, action, api, condition, activeSearchQuery);
+            }
+            if (typeof setOldPagination === 'function') {
+                setOldPagination(paginationModel);
+            }
+        } else if (!searchFlag?.search && !searchFlag?.searching) {
             if (typeof getQuery === 'function') {
                 getQuery(paginationModel.page, paginationModel.pageSize, action, api, condition);
             }
@@ -236,7 +347,7 @@ const ServerPaginationGrid = ({
                 getQuery(searchFlag, searchFlag, action, api, condition);
             }
         }
-    }, [selected, paginationModel.page, paginationModel.pageSize, searchFlag?.searching]);
+    }, [selected, paginationModel.page, paginationModel.pageSize, searchFlag?.searching, activeSearchQuery]);
 
     // Reset pagination when selected entity changes
     useEffect(() => {
@@ -262,28 +373,6 @@ const ServerPaginationGrid = ({
     const processedRows = useMemo(() => {
         let result = Array.isArray(rows) ? [...rows] : [];
 
-        // Apply quick table search
-        if (tableSearch.trim()) {
-            const q = tableSearch.toLowerCase().trim();
-            result = result.filter(row => {
-                return visibleColumns.some(col => {
-                    const text = getCellRawText(col, row);
-                    return text.toLowerCase().includes(q);
-                });
-            });
-        }
-
-        // Apply per-column text filters
-        Object.entries(columnFilters).forEach(([field, filterText]) => {
-            if (!filterText) return;
-            const col = columns.find(c => c.field === field);
-            const lowerFilter = filterText.toLowerCase();
-            result = result.filter(row => {
-                const text = col ? getCellRawText(col, row) : String(row[field] || '');
-                return text.toLowerCase().includes(lowerFilter);
-            });
-        });
-
         // Apply sort
         if (sortField) {
             const col = columns.find(c => c.field === sortField);
@@ -303,7 +392,7 @@ const ServerPaginationGrid = ({
         }
 
         return result;
-    }, [rows, columnFilters, sortField, sortDir, columns, visibleColumns, tableSearch]);
+    }, [rows, sortField, sortDir, columns]);
 
     // ── Sort Handler ─────────────────────────────────────────────────────────
     const handleSort = useCallback((field) => {
@@ -327,6 +416,7 @@ const ServerPaginationGrid = ({
             else next[field] = value;
             return next;
         });
+        setPaginationModel(prev => ({ ...prev, page: 0 }));
     }, []);
 
     // ── Column Visibility Toggle ─────────────────────────────────────────────
@@ -427,13 +517,19 @@ const ServerPaginationGrid = ({
                         <input
                             type="text"
                             value={tableSearch}
-                            onChange={(e) => setTableSearch(e.target.value)}
+                            onChange={(e) => {
+                                setTableSearch(e.target.value);
+                                setPaginationModel(prev => ({ ...prev, page: 0 }));
+                            }}
                             placeholder="Quick search table…"
                             className="w-44 sm:w-60 pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 transition-all font-medium"
                         />
                         {tableSearch && (
                             <button
-                                onClick={() => setTableSearch('')}
+                                onClick={() => {
+                                    setTableSearch('');
+                                    setPaginationModel(prev => ({ ...prev, page: 0 }));
+                                }}
                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                             >
                                 <X className="w-3.5 h-3.5" />

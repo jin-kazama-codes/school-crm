@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+﻿/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
@@ -67,9 +67,8 @@ const TimeTableFormComponent = ({
         if (onChange) {
             onChange({
                 values: formik.values,
-                validated: formik.isSubmitting
-                    ? Object.keys(formik.errors).length === 0
-                    : false
+                // Bug #13 fix: formik.isSubmitting is false by the time onSubmit fires.
+                validated: Object.keys(formik.errors).length === 0
             });
         }
     };

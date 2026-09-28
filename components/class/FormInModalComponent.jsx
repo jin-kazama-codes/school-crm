@@ -1,18 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use, reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import { Formik } from "formik";
 import PropTypes from "prop-types";
-import { X, BookOpen, RotateCcw, Save } from "lucide-react";
+import { X, BookOpen, RotateCcw, Save, ChevronDown } from "lucide-react";
 
 import API from "../../apis";
 import config from "../config";
@@ -22,7 +18,6 @@ import Toast from "../common/Toast";
 
 import { setMenuItem } from "../../redux/actions/NavigationAction";
 import { Utility } from "../utility";
-
 import formBg from "../assets/formBg.png";
 
 const initialValues = {
@@ -31,6 +26,7 @@ const initialValues = {
 };
 
 const FormComponent = ({ openDialog, setOpenDialog, onRefresh }) => {
+  const firstInputRef = useRef(null);
   const handleDialogClose = () => {
     setOpenDialog(false);
     navigateTo("#", { state: { id: undefined } });
@@ -49,6 +45,15 @@ const FormComponent = ({ openDialog, setOpenDialog, onRefresh }) => {
   const { toastAndNavigate, getLocalStorage } = Utility();
 
   let id = state?.id;
+
+  useEffect(() => {
+    if (openDialog && !loading) {
+      const timer = setTimeout(() => {
+        firstInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [openDialog, id, loading]);
 
   useEffect(() => {
     const selectedMenu = getLocalStorage("menu");
@@ -165,143 +170,172 @@ const FormComponent = ({ openDialog, setOpenDialog, onRefresh }) => {
 
   if (!openDialog) return null;
 
-  const inputClass = (touched, error) => `w-full px-4 py-2.5 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
-    touched && error 
-    ? 'border-red-500 focus:ring-red-500/50' 
-    : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
-  } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
-
-  const labelClass = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5";
-  const errorClass = "mt-1.5 text-sm text-red-500 font-medium";
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+      {/* Backdrop */}
       <div 
-        className="w-full max-w-2xl bg-white dark:bg-[#1a1a1a] rounded-[24px] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
+        className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" 
+        onClick={handleDialogClose}
+        aria-hidden="true"
+      />
+
+      {/* Modal Dialog Card */}
+      <div 
+        className="relative w-full max-w-lg bg-white dark:bg-[#101010] rounded-2xl shadow-2xl overflow-hidden border border-slate-200/90 dark:border-[#262626] flex flex-col max-h-[90vh] z-10 animate-in zoom-in-95 duration-200"
         style={{
-            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url(${formBg?.src || formBg})`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "cover"
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: "cover"
         }}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-black/50 backdrop-blur-md sticky top-0 z-10">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                    <BookOpen className="w-6 h-6" />
-                </div>
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        {`${title} ${selected}`}
-                    </h2>
-                </div>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${
+              title === "Update" 
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
+                : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50"
+            }`}>
+              <BookOpen className="w-5 h-5" />
             </div>
-            <button 
-                onClick={handleDialogClose}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
-            >
-                <X className="w-6 h-6" />
-            </button>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                {`${title} ${selected}`}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {title === "Update" ? "Update grade or academic standard details" : "Register a new academic class standard"}
+              </p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={handleDialogClose}
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1a1a1a] rounded-xl transition-all cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-            <Formik
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <Formik
             initialValues={initialState}
             enableReinitialize 
             validationSchema={classValidation}
             onSubmit={(values) => {
-                values.id ? updateClass(values) : createClass(values);
+              values.id ? updateClass(values) : createClass(values);
             }}
-            >
+          >
             {({
-                values,
-                errors,
-                touched,
-                dirty,
-                isSubmitting,
-                handleBlur,
-                handleChange,
-                handleSubmit,
-                resetForm,
+              values,
+              errors,
+              touched,
+              dirty,
+              isSubmitting,
+              handleBlur,
+              handleChange,
+              handleSubmit,
+              resetForm,
             }) => (
-                <form onSubmit={handleSubmit} className="space-y-6 flex flex-col h-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 flex-1">
-                        
-                        <div className="flex flex-col">
-                            <label className={labelClass}>Name*</label>
-                            <input
-                                type="text"
-                                name="name"
-                                autoComplete="new-name"
-                                onBlur={handleBlur}
-                                onChange={handleChange}
-                                value={values.name}
-                                className={inputClass(touched.name, errors.name)}
-                                placeholder="e.g., Grade 10"
-                            />
-                            {touched.name && errors.name && (
-                                <p className={errorClass}>{errors.name}</p>
-                            )}
-                        </div>
+              <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                <div className="p-6">
+                  {/* Engraved Card Container */}
+                  <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-4">
+                    {/* Name Input */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        Class Name <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        ref={firstInputRef}
+                        autoFocus
+                        type="text"
+                        name="name"
+                        autoComplete="off"
+                        onBlur={handleBlur}
+                        onChange={handleChange}
+                        value={values.name}
+                        className={`w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all ${
+                          touched.name && errors.name
+                            ? "border-rose-500 focus:ring-rose-500/20 focus:border-rose-500"
+                            : "border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500"
+                        }`}
+                        placeholder="e.g., Class I, Grade 10, XII"
+                      />
+                      {touched.name && errors.name && (
+                        <p className="text-xs text-rose-500 font-medium">{errors.name}</p>
+                      )}
+                    </div>
 
-                        <div className="flex flex-col">
-                            <label className={labelClass}>Status</label>
-                            <select
-                                name="status"
-                                autoComplete="new-status"
-                                value={values.status}
-                                onChange={handleChange}
-                                className={inputClass(touched.status, errors.status)}
-                            >
-                                {Object.keys(config.status).map((item) => (
-                                <option key={item} value={item}>
-                                    {config.status[item]}
-                                </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 mt-auto">
-                        {title !== "Update" && (
-                            <button
-                            type="button"
-                            disabled={!dirty || isSubmitting}
-                            onClick={() => {
-                                if (window.confirm("Do You Really Want To Reset?")) {
-                                    resetForm();
-                                }
-                            }}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
-                            >
-                            <RotateCcw className="w-5 h-5" />
-                            Reset
-                            </button>
-                        )}
-                        <button
-                            type="button"
-                            onClick={handleDialogClose}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
+                    {/* Status Select */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        Status
+                      </label>
+                      <div className="relative">
+                        <select
+                          name="status"
+                          value={values.status}
+                          onChange={handleChange}
+                          className="w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border border-slate-300 dark:border-[#333] rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer appearance-none"
                         >
-                            <X className="w-5 h-5" />
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={!dirty || isSubmitting}
-                            className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
-                                title === "Update" 
-                                ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
-                                : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
-                            }`}
-                        >
-                            <Save className="w-5 h-5" />
-                            Submit
-                        </button>
+                          {Object.keys(config.status).map((item) => (
+                            <option key={item} value={item} className="bg-white dark:bg-[#161616]">
+                              {config.status[item]}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
-                </form>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex items-center justify-between gap-3 mt-auto">
+                  <div>
+                    {title !== "Update" && (
+                      <button
+                        type="button"
+                        disabled={!dirty || isSubmitting}
+                        onClick={() => {
+                          if (window.confirm("Do you really want to reset this form?")) {
+                            resetForm();
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleDialogClose}
+                      className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!dirty || isSubmitting}
+                      className={`inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                        title === "Update"
+                          ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30"
+                          : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
+                      }`}
+                    >
+                      <Save className="w-4 h-4" />
+                      {title === "Update" ? "Update" : "Save"} {selected}
+                    </button>
+                  </div>
+                </div>
+              </form>
             )}
-            </Formik>
+          </Formik>
         </div>
 
         <Toast
@@ -310,9 +344,9 @@ const FormComponent = ({ openDialog, setOpenDialog, onRefresh }) => {
           message={toastInfo.toastMessage}
         />
         {loading && (
-            <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-                <Loader />
-            </div>
+          <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
+            <Loader />
+          </div>
         )}
       </div>
     </div>

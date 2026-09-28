@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import { RotateCcw, X as XIcon, Save } from "lucide-react";
+import { RotateCcw, X as XIcon, Save, Megaphone, ArrowLeft } from "lucide-react";
 
 import API from "../../apis";
 import Loader from "../common/Loader";
@@ -43,10 +43,11 @@ const FormComponent = () => {
     const navigateTo = useNavigate();
     const dispatch = useDispatch();
     const userParams = useParams();
-    const { state } = useLocation();
+    const { pathname, state } = useLocation();
     const { toastAndNavigate, getLocalStorage } = Utility();
 
-    let id = state?.id || userParams?.id;
+    const isCreate = pathname?.includes("/create") || pathname?.endsWith("/create");
+    let id = isCreate ? undefined : (userParams?.id || state?.id);
 
     useEffect(() => {
         const selectedMenu = getLocalStorage("menu");
@@ -56,9 +57,11 @@ const FormComponent = () => {
     }, []);
 
     const updateNoticeBoard = useCallback(formData => {
-        const dataFields = [
-            { ...formData.noticeboardData.values }
-        ];
+        const values = { ...formData.noticeboardData.values };
+        if (!values.id && id) {
+            values.id = id;
+        }
+        const dataFields = [values];
         const paths = ["/update-notice"];
         setLoading(true);
 
@@ -72,35 +75,41 @@ const FormComponent = () => {
                 });
                 if (status) {
                     setLoading(false);
-                    toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, `/noticeboard/listing/${getLocalStorage('class') || '' }`);
+                    toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, `/noticeboard/listing`);
+                } else {
+                    setLoading(false);
+                    toastAndNavigate(dispatch, true, "error", "An Error Occurred, Please Try Again");
                 }
-                setLoading(false);
             })
             .catch(err => {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred");
                 throw err;
             });
-    }, [formData]);
+    }, [formData, id]);
 
     const populateNoticeBoardData = useCallback(id => {
         setLoading(true);
         const paths = [`/get-by-pk/noticeboard/${id}`];
         API.CommonAPI.multipleAPICall("GET", paths)
             .then(responses => {
-                if (responses[0].data.data) {
-                    responses[0].data.data.publish_date = dayjs(responses[0].data.data.publish_date);
-                    responses[0].data.data.expiry_date = dayjs(responses[0].data.data.expiry_date);
+                if (responses[0]?.data?.data) {
+                    if (responses[0].data.data.publish_date) {
+                        responses[0].data.data.publish_date = dayjs(responses[0].data.data.publish_date);
+                    }
+                    if (responses[0].data.data.expiry_date) {
+                        responses[0].data.data.expiry_date = dayjs(responses[0].data.data.expiry_date);
+                    }
                 }
                 const dataObj = {
-                    noticeboardData: responses[0].data.data
+                    noticeboardData: responses[0]?.data?.data
                 };
                 setUpdatedValues(dataObj);
                 setLoading(false);
             })
             .catch(err => {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred");
                 throw err;
             });
     }, [id]);
@@ -109,29 +118,47 @@ const FormComponent = () => {
         setLoading(true);
         API.NoticeBoardAPI.createNoticeBoard({ ...formData.noticeboardData.values })
             .then(({ data: noticeboard }) => {
-                if (noticeboard?.status === 'Success') {
+                if (noticeboard?.status === 'Success' || noticeboard?.status === 200 || !noticeboard?.status) {
                     setLoading(false);
                     toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/noticeboard/listing`);
+                } else {
+                    setLoading(false);
+                    toastAndNavigate(dispatch, true, "error", noticeboard?.msg || "Failed to create notice");
                 }
             })
             .catch(err => {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred");
                 throw err;
             });
     }, [formData]);
 
     useEffect(() => {
-        if (id && !submitted) {
+        if (isCreate) {
+            setTitle("Create");
+            setUpdatedValues(null);
+            setFormData({
+                noticeboardData: { values: null, validated: false },
+                imageData: { values: null, validated: true }
+            });
+            setDirty(false);
+            setSubmitted(false);
+            setReset(true);
+        } else if (id && !submitted) {
             setTitle("Update");
             populateNoticeBoardData(id);
         }
+    }, [id, isCreate, pathname]);
+
+    useEffect(() => {
         if (formData.noticeboardData.validated) {
-            formData.noticeboardData.values?.id ? updateNoticeBoard(formData) : createNoticeBoard(formData);
+            (!isCreate && (formData.noticeboardData.values?.id || id)) 
+                ? updateNoticeBoard(formData) 
+                : createNoticeBoard(formData);
         } else {
             setSubmitted(false);
         }
-    }, [id, submitted]);
+    }, [formData.noticeboardData.validated]);
 
     const handleSubmit = async () => {
         await noticeboardFormRef.current.Submit();
@@ -145,83 +172,117 @@ const FormComponent = () => {
     };
 
     return (
-        <div 
-            className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300 min-h-[70vh]"
-            style={{
-                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${formBg?.src || formBg})`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-                backgroundSize: "cover",
-                backgroundAttachment: "fixed"
-            }}
-        >
-            <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md border-b border-white/20 dark:border-white/5 p-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize">
-                    {`${title} ${selected}`}
-                </h2>
-            </div>
-
-            <div className="p-4 md:p-6 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
-                <NoticeBoardFormComponent
-                    onChange={(data) => {
-                        handleFormChange(data, 'noticeboard');
-                    }}
-                    refId={noticeboardFormRef}
-                    setDirty={setDirty}
-                    reset={reset}
-                    setReset={setReset}
-                    userId={id}
-                    updatedValues={updatedValues?.noticeboardData}
-                />
-
-                <div className="flex flex-wrap justify-end gap-4 p-6 pt-0">
-                    {title !== "Update" && (
-                        <button 
-                            type="reset" 
-                            disabled={!dirty || submitted}
-                            onClick={() => {
-                                if (window.confirm("Do You Really Want To Reset?")) {
-                                    setReset(true);
-                                }
-                            }}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
-                        >
-                            <RotateCcw className="w-5 h-5" />
-                            Reset
-                        </button>
-                    )}
-                    
-                    <button 
-                        onClick={() => navigateTo(`/noticeboard/listing/${getLocalStorage('class') || ''}`)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
-                    >
-                        <XIcon className="w-5 h-5" />
-                        Cancel
-                    </button>
-                    
-                    <button 
-                        type="submit" 
-                        onClick={() => handleSubmit()} 
-                        disabled={!dirty}
-                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            <div
+                className="rounded-2xl border border-slate-200/90 dark:border-[#262626] overflow-hidden shadow-2xl relative bg-white dark:bg-[#101010] animate-in fade-in duration-300"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                }}
+            >
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-b border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${
                             title === "Update" 
-                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
-                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
-                        }`}
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
+                                : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50"
+                        }`}>
+                            <Megaphone className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                                {`${title} ${selected || "Notice Board"}`}
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {title === "Update" 
+                                    ? "Modify existing notice announcement, validity dates, and publish status" 
+                                    : "Publish and broadcast a new official announcement to the school notice board"}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => navigateTo("/noticeboard/listing")}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
                     >
-                        <Save className="w-5 h-5" />
-                        {title === "Update" ? "Update Notice" : "Submit"}
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        Back to List
                     </button>
                 </div>
+
+                {/* Body */}
+                <div className="p-6">
+                    <NoticeBoardFormComponent
+                        onChange={(data) => {
+                            handleFormChange(data, 'noticeboard');
+                        }}
+                        refId={noticeboardFormRef}
+                        setDirty={setDirty}
+                        reset={reset}
+                        setReset={setReset}
+                        userId={id}
+                        updatedValues={updatedValues?.noticeboardData}
+                    />
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex items-center justify-between gap-3">
+                    <div>
+                        {title !== "Update" && (
+                            <button
+                                type="reset"
+                                disabled={!dirty || submitted}
+                                onClick={() => {
+                                    if (window.confirm("Do you really want to reset this form?")) {
+                                        setReset(true);
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Reset Form
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => navigateTo("/noticeboard/listing")}
+                            className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            onClick={() => handleSubmit()}
+                            disabled={!dirty}
+                            className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                title === "Update"
+                                    ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30"
+                                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
+                            }`}
+                        >
+                            <Save className="w-4 h-4" />
+                            {title === "Update" ? "Update Notice" : "Publish Notice"}
+                        </button>
+                    </div>
+                </div>
+
+                <Toast
+                    alerting={toastInfo.toastAlert}
+                    severity={toastInfo.toastSeverity}
+                    message={toastInfo.toastMessage}
+                />
+
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
+                        <Loader />
+                    </div>
+                )}
             </div>
-
-            <Toast 
-                alerting={toastInfo.toastAlert}
-                severity={toastInfo.toastSeverity}
-                message={toastInfo.toastMessage}
-            />
-
-            {loading && <Loader />}
         </div>
     );
 };

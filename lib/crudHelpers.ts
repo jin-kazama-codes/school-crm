@@ -16,7 +16,8 @@ const MODELS_WITH_SCHOOL_ID = new Set([
   "student", "teacher", "employee", "bus", "holiday",
   "homework", "noticeboard", "school_house", "payment",
   "school_class_data", "marksheet", "attendance", "timetable", "image",
-  "school_duration"
+  "school_duration",
+  "user"
 ]);
 
 function getSchoolFilter(request: NextRequest, modelName?: string): Record<string, unknown> {
@@ -139,7 +140,7 @@ export async function genericCreate(
     const rawPayload = await request.json();
     const payload = sanitizePayload(modelName, rawPayload);
     const model = getModel(modelName);
-    
+
     const now = new Date();
     const dataToCreate: Record<string, unknown> = { ...payload, ...schoolFilter };
     if (MODELS_WITH_CREATED_BY.has(modelName)) {

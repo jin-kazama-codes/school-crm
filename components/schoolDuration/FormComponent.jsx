@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import { Clock, Save, RotateCcw, X } from "lucide-react";
+import { Clock, Save, RotateCcw, ArrowLeft } from "lucide-react";
 
 import API from "../../apis";
 import Loader from "../common/Loader";
@@ -42,22 +42,25 @@ const FormComponent = () => {
     const navigateTo = useNavigate();
     const dispatch = useDispatch();
     const userParams = useParams();
-    const { state } = useLocation();
+    const { pathname, state } = useLocation();
     const { toastAndNavigate, getLocalStorage } = Utility();
 
-    let id = state?.id || userParams?.id;
+    const isCreate = pathname?.includes("/create") || pathname?.endsWith("/create");
+    let id = isCreate ? undefined : (userParams?.id || state?.id);
 
     useEffect(() => {
         const selectedMenu = getLocalStorage("menu");
-        if(selectedMenu?.selected) {
+        if (selectedMenu?.selected) {
             dispatch(setMenuItem(selectedMenu.selected));
         }
     }, []);
 
     const updateSchoolDuration = useCallback(formData => {
-        const dataFields = [
-            { ...formData.schoolDurationData.values },
-        ];
+        const values = { ...formData.schoolDurationData.values };
+        if (!values.id && id) {
+            values.id = id;
+        }
+        const dataFields = [values];
         const paths = ["/update-school-duration"];
         setLoading(true);
 
@@ -74,14 +77,15 @@ const FormComponent = () => {
                     toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, `/school-duration/listing`);
                 } else {
                     setLoading(false);
+                    toastAndNavigate(dispatch, true, "error", "An Error Occurred, Please Try Again");
                 }
             })
             .catch(err => {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred");
                 console.error(err);
             });
-    }, [formData]);
+    }, [formData, id]);
 
     const populateSchoolDurationData = useCallback(id => {
         setLoading(true);
@@ -98,45 +102,60 @@ const FormComponent = () => {
                     data.employee_exit_time = dayjs(data.employee_exit_time);
                 }
                 const dataObj = {
-                    schoolDurationData: response[0].data.data,
+                    schoolDurationData: response[0]?.data?.data,
                 };
                 setUpdatedValues(dataObj);
                 setLoading(false);
             })
             .catch(err => {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred");
             });
-    },[id]);
+    }, [id]);
 
     const createSchoolDuration = useCallback(formData => {
         setLoading(true);
         API.SchoolDurationAPI.createSchoolDuration({ ...formData.schoolDurationData.values })
             .then(({ data: schoolDuration }) => {
-                if (schoolDuration?.status === 'Success') {
+                if (schoolDuration?.status === 'Success' || schoolDuration?.status === 200 || !schoolDuration?.status) {
                     setLoading(false);
                     toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/school-duration/listing`);
                 } else {
                     setLoading(false);
+                    toastAndNavigate(dispatch, true, "error", schoolDuration?.msg || "Failed to create duration");
                 }
             })
             .catch(err => {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred");
             });
-    },[formData]);
+    }, [formData]);
 
     useEffect(() => {
-        if (id && !submitted) {
+        if (isCreate) {
+            setTitle("Create");
+            setUpdatedValues(null);
+            setFormData({
+                schoolDurationData: { values: null, validated: false }
+            });
+            setDirty(false);
+            setSubmitted(false);
+            setReset(true);
+        } else if (id && !submitted) {
             setTitle("Update");
             populateSchoolDurationData(id);
         }
+    }, [id, isCreate, pathname]);
+
+    useEffect(() => {
         if (formData.schoolDurationData.validated) {
-            formData.schoolDurationData.values?.id ? updateSchoolDuration(formData) : createSchoolDuration(formData);
+            (!isCreate && (formData.schoolDurationData.values?.id || id)) 
+                ? updateSchoolDuration(formData) 
+                : createSchoolDuration(formData);
         } else {
             setSubmitted(false);
         }
-    }, [id, submitted]);
+    }, [formData.schoolDurationData.validated]);
 
     const handleSubmit = async () => {
         await schoolDurationFormRef.current.Submit();
@@ -144,101 +163,123 @@ const FormComponent = () => {
     };
 
     const handleFormChange = (data, form) => {
-        form == 'schoolDuration' ? setFormData({ ...formData, schoolDurationData: data }) : '';
-    }
+        if (form === 'schoolDuration') {
+            setFormData({ ...formData, schoolDurationData: data });
+        }
+    };
 
     return (
-        <div 
-            className="min-h-[90vh] m-4 md:m-8 rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in duration-500 relative border border-slate-200 dark:border-slate-800"
-            style={{
-                backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url(${formBg?.src || formBg})`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "start",
-                backgroundSize: "cover",
-                backgroundAttachment: "fixed",
-            }}
-        >
-            <div className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 p-6 md:px-10 flex items-center justify-between sticky top-0 z-10">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-2xl shadow-inner">
-                        <Clock className="w-8 h-8" />
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            <div
+                className="rounded-2xl border border-slate-200/90 dark:border-[#262626] overflow-hidden shadow-2xl relative bg-white dark:bg-[#101010] animate-in fade-in duration-300"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                }}
+            >
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-b border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${
+                            title === "Update" 
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
+                                : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50"
+                        }`}>
+                            <Clock className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                                {`${title} ${selected || "School Duration"}`}
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {title === "Update" 
+                                    ? "Modify existing school schedule, batch periods, and shift timings" 
+                                    : "Configure and schedule school operating hours, period durations, and employee timings"}
+                            </p>
+                        </div>
                     </div>
+                    <button
+                        type="button"
+                        onClick={() => navigateTo("/school-duration/listing")}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+                    >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        Back to List
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6">
+                    <SchoolDurationFormComponent
+                        onChange={(data) => {
+                            handleFormChange(data, 'schoolDuration');
+                        }}
+                        refId={schoolDurationFormRef}
+                        setDirty={setDirty}
+                        reset={reset}
+                        setReset={setReset}
+                        userId={id}
+                        updatedValues={updatedValues?.schoolDurationData}
+                    />
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
-                            {title} {selected}
-                        </h1>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                            Configure school timings and periods
-                        </p>
+                        {title !== "Update" && (
+                            <button
+                                type="reset"
+                                disabled={!dirty || submitted}
+                                onClick={() => {
+                                    if (window.confirm("Do you really want to reset this form?")) {
+                                        setReset(true);
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Reset Form
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => navigateTo("/school-duration/listing")}
+                            className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            onClick={() => handleSubmit()}
+                            disabled={!dirty || submitted}
+                            className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                title === "Update"
+                                    ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30"
+                                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
+                            }`}
+                        >
+                            <Save className="w-4 h-4" />
+                            {title === "Update" ? "Update Duration" : "Save Duration"}
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto">
-                <SchoolDurationFormComponent
-                    onChange={(data) => {
-                        handleFormChange(data, 'schoolDuration');
-                    }}
-                    refId={schoolDurationFormRef}
-                    setDirty={setDirty}
-                    reset={reset}
-                    setReset={setReset}
-                    userId={id}
-                    updatedValues={updatedValues?.schoolDurationData}
+                <Toast
+                    alerting={toastInfo.toastAlert}
+                    severity={toastInfo.toastSeverity}
+                    message={toastInfo.toastMessage}
                 />
 
-                <div className="flex flex-wrap items-center justify-end gap-4 bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl p-4 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-                    {title !== "Update" && (
-                        <button 
-                            type="button" 
-                            disabled={!dirty || submitted}
-                            onClick={() => {
-                                if (window.confirm("Do You Really Want To Reset?")) {
-                                    setReset(true);
-                                }
-                            }}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
-                        >
-                            <RotateCcw className="w-5 h-5" />
-                            Reset
-                        </button>
-                    )}
-                    
-                    <button 
-                        type="button"
-                        onClick={() => navigateTo(`/school-duration/listing`)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
-                    >
-                        <X className="w-5 h-5" />
-                        Cancel
-                    </button>
-                    
-                    <button 
-                        type="button" 
-                        onClick={() => handleSubmit()} 
-                        disabled={!dirty || submitted}
-                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
-                            title === "Update" 
-                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
-                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
-                        }`}
-                    >
-                        <Save className="w-5 h-5" />
-                        {title === "Update" ? "Update Duration" : "Submit"}
-                    </button>
-                </div>
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
+                        <Loader />
+                    </div>
+                )}
             </div>
-
-            <Toast 
-                alerting={toastInfo.toastAlert}
-                severity={toastInfo.toastSeverity}
-                message={toastInfo.toastMessage}
-            />
-            {loading && (
-                <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <Loader />
-                </div>
-            )}
         </div>
     );
 };

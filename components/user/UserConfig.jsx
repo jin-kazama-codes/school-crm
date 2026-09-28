@@ -7,35 +7,23 @@
  * restrictions set forth in your license agreement with School CRM.
  */
 
-import { useEffect } from "react";
 import { useNavigate } from "@/lib/routerAdapter";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { FileEdit } from 'lucide-react';
 
-import API from "../../apis";
-import { setAllUserRoles } from "../../redux/actions/UserRoleAction";
 import { Utility } from "../utility";
 
 export const datagridColumns = () => {
   const selected = useSelector((state) => state.menuItems.selected);
-  const allUserRoles = useSelector((state) => state.allUserRoles);
 
   const { capitalizeEveryWord, formatDate } = Utility();
-  const dispatch = useDispatch();
   const navigateTo = useNavigate();
-  const { findById, fetchAndSetAll } = Utility();
 
   const handleActionEdit = (id) => {
     navigateTo(`/${selected.toLowerCase()}/update/${id}`, {
       state: { id: id },
     });
   };
-
-  useEffect(() => {
-    if (!allUserRoles?.listData?.length) {
-      fetchAndSetAll(dispatch, setAllUserRoles, API.UserRoleAPI);
-    }
-  }, [allUserRoles?.listData?.length]);
 
   const columns = [
     {
@@ -48,20 +36,15 @@ export const datagridColumns = () => {
       valueGetter: (value, row) => `${capitalizeEveryWord(row.username) || ""}`,
     },
     {
-      field: "role",
+      field: "role_name",
       headerName: "Role",
       headerAlign: "center",
       align: "center",
       flex: 1,
       minWidth: 100,
-      renderCell: (params) => {
-        let roleName = findById(params?.row?.role, allUserRoles?.listData)?.name;
-        return (
-          <div className="font-medium text-slate-700 dark:text-slate-300">
-            {roleName ? capitalizeEveryWord(roleName) : '/'}
-          </div>
-        );
-      }
+      // role_name comes directly from the enriched SQL JOIN — no Redux lookup needed.
+      // Column filter now works on the string value (e.g. "Member"), not the raw FK integer.
+      valueGetter: (value, row) => capitalizeEveryWord(row.role_name || row.role?.toString() || ""),
     },
     {
       field: "contact_no",

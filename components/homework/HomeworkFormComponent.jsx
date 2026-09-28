@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
 import { useSelector, useDispatch } from "react-redux";
+import { ChevronDown } from "lucide-react";
 
 import API from "../../apis";
 import config from "../config";
@@ -64,10 +65,8 @@ const HomeworkFormComponent = ({
         if (onChange) {
             onChange({
                 values: formik.values,
-                validated:
-                    formik.isSubmitting
-                        ? Object.keys(formik.errors).length === 0
-                        : false,
+                // Bug #13 fix: formik.isSubmitting is false by the time onSubmit fires.
+                validated: Object.keys(formik.errors).length === 0,
             });
         }
     };
@@ -199,11 +198,18 @@ const HomeworkFormComponent = ({
         if (updatedValues) setInitialState(updatedValues);
     }, [updatedValues]);
 
-    const fieldClass = (field) =>
-        `w-full px-4 py-2 bg-white dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-700 dark:text-slate-300 ${
+    const inputClass = (field) =>
+        `w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all ${
             formik.touched[field] && formik.errors[field]
-                ? "border-red-500 focus:ring-red-500/50"
-                : "border-slate-300 dark:border-slate-700 focus:ring-emerald-500/50"
+                ? "border-rose-500 focus:ring-rose-500/20 focus:border-rose-500"
+                : "border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500"
+        }`;
+
+    const selectClass = (field) =>
+        `w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all cursor-pointer appearance-none ${
+            formik.touched[field] && formik.errors[field]
+                ? "border-rose-500 focus:ring-rose-500/20 focus:border-rose-500"
+                : "border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500"
         }`;
 
     const displayClasses = classesList.length > 0 ? classesList : reduxClasses;
@@ -211,14 +217,15 @@ const HomeworkFormComponent = ({
     const displaySubjects = subjectsList.length > 0 ? subjectsList : reduxSubjects;
 
     return (
-        <div className="p-6">
-            <form ref={refId} onSubmit={formik.handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <form ref={refId} onSubmit={formik.handleSubmit}>
+            {/* Engraved Card Container */}
+            <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
                     {/* Title */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Title *
+                    <div className="col-span-1 md:col-span-2 lg:col-span-4 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Homework Title <span className="text-rose-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -227,136 +234,152 @@ const HomeworkFormComponent = ({
                             onBlur={formik.handleBlur}
                             onChange={formik.handleChange}
                             value={formik.values.title}
-                            className={fieldClass("title")}
+                            placeholder="e.g., Chapter 4 Exercise 4.2 Problem Set"
+                            className={inputClass("title")}
                         />
                         {formik.touched.title && formik.errors.title && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.title}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.title}</p>
                         )}
                     </div>
 
                     {/* Class */}
-                    <div className="col-span-1 lg:col-span-1">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Class *
+                    <div className="col-span-1 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Class <span className="text-rose-500">*</span>
                         </label>
-                        <select
-                            name="class_id"
-                            onBlur={formik.handleBlur}
-                            onChange={formik.handleChange}
-                            value={formik.values.class_id}
-                            className={fieldClass("class_id")}
-                        >
-                            <option value="">Select Class</option>
-                            {displayClasses.map(cls => {
-                                const id = cls.id ?? cls.class_id;
-                                const name = cls.name || cls.class_name || `Class ${id}`;
-                                return (
-                                    <option key={id} value={id}>
-                                        {capitalizeEveryWord(String(name))}
-                                    </option>
-                                );
-                            })}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="class_id"
+                                onBlur={formik.handleBlur}
+                                onChange={formik.handleChange}
+                                value={formik.values.class_id}
+                                className={selectClass("class_id")}
+                            >
+                                <option value="" className="bg-white dark:bg-[#161616]">Select Class</option>
+                                {displayClasses.map(cls => {
+                                    const id = cls.id ?? cls.class_id;
+                                    const name = cls.name || cls.class_name || `Class ${id}`;
+                                    return (
+                                        <option key={id} value={id} className="bg-white dark:bg-[#161616]">
+                                            {capitalizeEveryWord(String(name))}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                         {formik.touched.class_id && formik.errors.class_id && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.class_id}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.class_id}</p>
                         )}
                     </div>
 
                     {/* Section */}
-                    <div className="col-span-1 lg:col-span-1">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Section *
+                    <div className="col-span-1 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Section <span className="text-rose-500">*</span>
                         </label>
-                        <select
-                            name="section_id"
-                            onBlur={formik.handleBlur}
-                            onChange={formik.handleChange}
-                            value={formik.values.section_id}
-                            className={fieldClass("section_id")}
-                        >
-                            <option value="">Select Section</option>
-                            {displaySections.map(sec => {
-                                const id = sec.id ?? sec.section_id;
-                                const name = sec.name || sec.section_name || `Section ${id}`;
-                                return (
-                                    <option key={id} value={id}>
-                                        {capitalizeEveryWord(String(name))}
-                                    </option>
-                                );
-                            })}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="section_id"
+                                onBlur={formik.handleBlur}
+                                onChange={formik.handleChange}
+                                value={formik.values.section_id}
+                                className={selectClass("section_id")}
+                            >
+                                <option value="" className="bg-white dark:bg-[#161616]">Select Section</option>
+                                {displaySections.map(sec => {
+                                    const id = sec.id ?? sec.section_id;
+                                    const name = sec.name || sec.section_name || `Section ${id}`;
+                                    return (
+                                        <option key={id} value={id} className="bg-white dark:bg-[#161616]">
+                                            {capitalizeEveryWord(String(name))}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                         {formik.touched.section_id && formik.errors.section_id && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.section_id}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.section_id}</p>
                         )}
                     </div>
 
                     {/* Subject */}
-                    <div className="col-span-1 lg:col-span-1">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Subject *
+                    <div className="col-span-1 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Subject <span className="text-rose-500">*</span>
                         </label>
-                        <select
-                            name="subject_id"
-                            onBlur={formik.handleBlur}
-                            onChange={formik.handleChange}
-                            value={formik.values.subject_id}
-                            className={fieldClass("subject_id")}
-                        >
-                            <option value="">Select Subject</option>
-                            {displaySubjects.map(sub => {
-                                const id = sub.id ?? sub.subject_id;
-                                const name = sub.name || sub.subject_name || `Subject ${id}`;
-                                return (
-                                    <option key={id} value={id}>
-                                        {capitalizeEveryWord(String(name))}
-                                    </option>
-                                );
-                            })}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="subject_id"
+                                onBlur={formik.handleBlur}
+                                onChange={formik.handleChange}
+                                value={formik.values.subject_id}
+                                className={selectClass("subject_id")}
+                            >
+                                <option value="" className="bg-white dark:bg-[#161616]">Select Subject</option>
+                                {displaySubjects.map(sub => {
+                                    const id = sub.id ?? sub.subject_id;
+                                    const name = sub.name || sub.subject_name || `Subject ${id}`;
+                                    return (
+                                        <option key={id} value={id} className="bg-white dark:bg-[#161616]">
+                                            {capitalizeEveryWord(String(name))}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                         {formik.touched.subject_id && formik.errors.subject_id && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.subject_id}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.subject_id}</p>
                         )}
                     </div>
 
                     {/* Status */}
-                    <div className="col-span-1 lg:col-span-1">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <div className="col-span-1 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                             Status
                         </label>
-                        <select
-                            name="status"
-                            onBlur={formik.handleBlur}
-                            onChange={formik.handleChange}
-                            value={formik.values.status}
-                            className={fieldClass("status")}
-                        >
-                            {Object.keys(config.status).map(item => (
-                                <option key={item} value={item}>{config.status[item]}</option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="status"
+                                onBlur={formik.handleBlur}
+                                onChange={formik.handleChange}
+                                value={formik.values.status}
+                                className={selectClass("status")}
+                            >
+                                {Object.keys(config.status).map(item => (
+                                    <option key={item} value={item} className="bg-white dark:bg-[#161616]">
+                                        {config.status[item]}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                     </div>
 
                     {/* Description */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Description
+                    <div className="col-span-1 md:col-span-2 lg:col-span-4 space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Homework Details & Instructions
                         </label>
                         <textarea
                             name="description"
-                            rows="4"
+                            rows={4}
                             onBlur={formik.handleBlur}
                             onChange={formik.handleChange}
                             value={formik.values.description}
-                            className={`${fieldClass("description")} resize-y`}
+                            placeholder="Provide comprehensive details, question numbers, textbook references or submission guidelines..."
+                            className={`${inputClass("description")} resize-y custom-scrollbar`}
                         />
                         {formik.touched.description && formik.errors.description && (
-                            <p className="mt-1 text-sm text-red-500">{formik.errors.description}</p>
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.description}</p>
                         )}
                     </div>
 
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     );
 };
 

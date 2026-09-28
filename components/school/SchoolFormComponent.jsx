@@ -11,7 +11,7 @@ import PropTypes from "prop-types";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useFormik } from "formik";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Check } from "lucide-react";
 
 import config from "../config";
 import schoolValidation from "./Validation";
@@ -85,9 +85,9 @@ const SchoolFormComponent = ({
         if (onChange) {
             onChange({
                 values: formik.values,
-                validated: formik.isSubmitting
-                    ? Object.keys(formik.errors).length === 0
-                    : false,
+                // Bug #13 fix: formik.isSubmitting is already false by the time onSubmit runs
+                // (Formik resets it asynchronously). Check errors directly instead.
+                validated: Object.keys(formik.errors).length === 0,
                 dirty: formik.dirty
             });
         }
@@ -164,25 +164,23 @@ const SchoolFormComponent = ({
         }
     }, [updatedValues]);
 
-    useEffect(() => {
-        if (formik.values.same_subjects === true) {
-            // Note: index and sectionIndex are not defined here in original code, so this logic might be flawed
-            // Keeping it similar but safe
-        }
-    }, []);
-
-    const inputClasses = "w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500";
-    const labelClasses = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2";
-    const errorClasses = "text-red-500 text-xs mt-1 ml-1 font-medium";
+    const inputClasses = "w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#121212] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500";
+    const selectClasses = "w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#121212] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all outline-none text-slate-900 dark:text-slate-100";
+    const labelClasses = "block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5";
+    const errorClasses = "text-rose-500 text-xs mt-1 ml-0.5 font-medium";
     
     return (
-        <form ref={refId} className="space-y-8">
-            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
-                    Basic Information
-                </h3>
+        <form ref={refId} className="space-y-6">
+            <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+                <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-[#222]">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Basic Information
+                    </h3>
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-500">School Profile & Contact Details</span>
+                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div className="lg:col-span-2">
                         <label className={labelClasses}>Name*</label>
                         <input
@@ -191,7 +189,7 @@ const SchoolFormComponent = ({
                             value={formik.values.name}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.name && formik.errors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.name && formik.errors.name ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Enter school name"
                         />
                         {formik.touched.name && formik.errors.name && (
@@ -207,7 +205,7 @@ const SchoolFormComponent = ({
                             value={formik.values.email}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.email && formik.errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.email && formik.errors.email ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="school@example.com"
                         />
                         {formik.touched.email && formik.errors.email && (
@@ -223,7 +221,7 @@ const SchoolFormComponent = ({
                             value={formik.values.contact_no_1}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.contact_no_1 && formik.errors.contact_no_1 ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.contact_no_1 && formik.errors.contact_no_1 ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Primary contact"
                         />
                         {formik.touched.contact_no_1 && formik.errors.contact_no_1 && (
@@ -239,7 +237,7 @@ const SchoolFormComponent = ({
                             value={formik.values.contact_no_2}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.contact_no_2 && formik.errors.contact_no_2 ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.contact_no_2 && formik.errors.contact_no_2 ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Secondary contact"
                         />
                         {formik.touched.contact_no_2 && formik.errors.contact_no_2 && (
@@ -255,7 +253,7 @@ const SchoolFormComponent = ({
                             value={formik.values.director}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.director && formik.errors.director ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.director && formik.errors.director ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Director's name"
                         />
                         {formik.touched.director && formik.errors.director && (
@@ -271,7 +269,7 @@ const SchoolFormComponent = ({
                             value={formik.values.principal}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.principal && formik.errors.principal ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.principal && formik.errors.principal ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Principal's name"
                         />
                         {formik.touched.principal && formik.errors.principal && (
@@ -287,7 +285,7 @@ const SchoolFormComponent = ({
                             value={formik.values.registered_by}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.registered_by && formik.errors.registered_by ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.registered_by && formik.errors.registered_by ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Registrar"
                         />
                         {formik.touched.registered_by && formik.errors.registered_by && (
@@ -303,7 +301,7 @@ const SchoolFormComponent = ({
                             value={formik.values.registration_year}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.registration_year && formik.errors.registration_year ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.registration_year && formik.errors.registration_year ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="YYYY"
                         />
                         {formik.touched.registration_year && formik.errors.registration_year && (
@@ -319,7 +317,7 @@ const SchoolFormComponent = ({
                             value={formik.values.affiliation_no}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.affiliation_no && formik.errors.affiliation_no ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.affiliation_no && formik.errors.affiliation_no ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Affiliation number"
                         />
                         {formik.touched.affiliation_no && formik.errors.affiliation_no && (
@@ -335,7 +333,7 @@ const SchoolFormComponent = ({
                             value={formik.values.board}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.board && formik.errors.board ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.board && formik.errors.board ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="e.g. CBSE, ICSE"
                         />
                         {formik.touched.board && formik.errors.board && (
@@ -377,8 +375,8 @@ const SchoolFormComponent = ({
                             value={formik.values.payment_date}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.payment_date && formik.errors.payment_date ? 'border-red-500 focus:ring-red-500' : ''}`}
-                            placeholder="Enter Day Number"
+                            className={`${inputClasses} ${formik.touched.payment_date && formik.errors.payment_date ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
+                            placeholder="Day (1-31)"
                         />
                         {formik.touched.payment_date && formik.errors.payment_date && (
                             <p className={errorClasses}>{formik.errors.payment_date}</p>
@@ -387,20 +385,23 @@ const SchoolFormComponent = ({
 
                     <div>
                         <label className={labelClasses}>Session Start Month*</label>
-                        <select
-                            name="session_start"
-                            value={formik.values.session_start}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            className={`${inputClasses} appearance-none ${formik.touched.session_start && formik.errors.session_start ? 'border-red-500 focus:ring-red-500' : ''}`}
-                        >
-                            <option value="">Select Month</option>
-                            {createDropdown(createDivider('monthly'), 'january').map((period, index) => (
-                                <option key={index} value={period}>
-                                    {period}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="session_start"
+                                value={formik.values.session_start}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                className={`${selectClasses} appearance-none pr-10 ${formik.touched.session_start && formik.errors.session_start ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
+                            >
+                                <option value="">Select Month</option>
+                                {createDropdown(createDivider('monthly'), 'january').map((period, monthIndex) => (
+                                    <option key={`session-month-${period}-${monthIndex}`} value={period}>
+                                        {period}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                         {formik.touched.session_start && formik.errors.session_start && (
                             <p className={errorClasses}>{formik.errors.session_start}</p>
                         )}
@@ -408,20 +409,23 @@ const SchoolFormComponent = ({
 
                     <div>
                         <label className={labelClasses}>Type</label>
-                        <select
-                            name="type"
-                            value={formik.values.type}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            className={`${inputClasses} appearance-none ${formik.touched.type && formik.errors.type ? 'border-red-500 focus:ring-red-500' : ''}`}
-                        >
-                            <option value="">Select Type</option>
-                            {Object.keys(config.schoolType).map(item => (
-                                <option key={item} value={item}>
-                                    {config.schoolType[item]}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="type"
+                                value={formik.values.type}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                className={`${selectClasses} appearance-none pr-10 ${formik.touched.type && formik.errors.type ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
+                            >
+                                <option value="">Select Type</option>
+                                {Object.keys(config.schoolType).map((item, typeIndex) => (
+                                    <option key={`school-type-${item}-${typeIndex}`} value={item}>
+                                        {config.schoolType[item]}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                         {formik.touched.type && formik.errors.type && (
                             <p className={errorClasses}>{formik.errors.type}</p>
                         )}
@@ -429,20 +433,23 @@ const SchoolFormComponent = ({
 
                     <div>
                         <label className={labelClasses}>Sub Type</label>
-                        <select
-                            name="sub_type"
-                            value={formik.values.sub_type}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            className={`${inputClasses} appearance-none ${formik.touched.sub_type && formik.errors.sub_type ? 'border-red-500 focus:ring-red-500' : ''}`}
-                        >
-                            <option value="">Select Sub Type</option>
-                            {Object.keys(config.subSchoolType).map(item => (
-                                <option key={item} value={item}>
-                                    {config.subSchoolType[item]}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="sub_type"
+                                value={formik.values.sub_type}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                className={`${selectClasses} appearance-none pr-10 ${formik.touched.sub_type && formik.errors.sub_type ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
+                            >
+                                <option value="">Select Sub Type</option>
+                                {Object.keys(config.subSchoolType).map((item, subTypeIndex) => (
+                                    <option key={`sub-type-${item}-${subTypeIndex}`} value={item}>
+                                        {config.subSchoolType[item]}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                         {formik.touched.sub_type && formik.errors.sub_type && (
                             <p className={errorClasses}>{formik.errors.sub_type}</p>
                         )}
@@ -450,19 +457,22 @@ const SchoolFormComponent = ({
 
                     <div>
                         <label className={labelClasses}>Status</label>
-                        <select
-                            name="status"
-                            value={formik.values.status}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            className={`${inputClasses} appearance-none`}
-                        >
-                            {Object.keys(config.status).map(item => (
-                                <option key={item} value={item}>
-                                    {config.status[item]}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                name="status"
+                                value={formik.values.status}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                className={`${selectClasses} appearance-none pr-10`}
+                            >
+                                {Object.keys(config.status).map((item, statusIndex) => (
+                                    <option key={`status-${item}-${statusIndex}`} value={item}>
+                                        {config.status[item]}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                     </div>
 
                     <div>
@@ -473,7 +483,7 @@ const SchoolFormComponent = ({
                             value={formik.values.area}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.area && formik.errors.area ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.area && formik.errors.area ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Enter area"
                         />
                         {formik.touched.area && formik.errors.area && (
@@ -489,7 +499,7 @@ const SchoolFormComponent = ({
                             value={formik.values.capacity}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.capacity && formik.errors.capacity ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.capacity && formik.errors.capacity ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="Total capacity"
                         />
                         {formik.touched.capacity && formik.errors.capacity && (
@@ -505,7 +515,7 @@ const SchoolFormComponent = ({
                             value={formik.values.founding_year}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            className={`${inputClasses} ${formik.touched.founding_year && formik.errors.founding_year ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`${inputClasses} ${formik.touched.founding_year && formik.errors.founding_year ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                             placeholder="YYYY"
                         />
                         {formik.touched.founding_year && formik.errors.founding_year && (
@@ -514,25 +524,23 @@ const SchoolFormComponent = ({
                     </div>
                 </div>
 
-                <div className="mt-6">
-                    <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors w-fit border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-[#222]">
+                    <label className="flex items-center space-x-3 cursor-pointer p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-[#202020] transition-colors w-fit border border-slate-200/60 dark:border-[#2a2a2a]">
                         <div className="relative flex items-center justify-center">
                             <input
                                 type="checkbox"
                                 name="is_boarding"
                                 checked={formik.values.is_boarding}
                                 onChange={(e) => formik.setFieldValue("is_boarding", e.target.checked)}
-                                className="w-5 h-5 cursor-pointer appearance-none border-2 border-slate-300 dark:border-slate-600 rounded-md checked:bg-blue-500 checked:border-blue-500 transition-all"
+                                className="w-4 h-4 cursor-pointer appearance-none border border-slate-300 dark:border-slate-600 rounded checked:bg-blue-600 checked:border-blue-600 transition-all"
                             />
-                            <svg className={`w-3.5 h-3.5 absolute text-white pointer-events-none transition-opacity duration-200 ${formik.values.is_boarding ? 'opacity-100' : 'opacity-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <Check className={`w-3 h-3 absolute text-white pointer-events-none transition-opacity duration-200 ${formik.values.is_boarding ? 'opacity-100' : 'opacity-0'}`} />
                         </div>
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Is Boarding</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Is Boarding School</span>
                     </label>
 
                     {formik.values.is_boarding && (
-                        <div className="mt-4 md:w-1/4">
+                        <div className="mt-4 max-w-sm">
                             <label className={labelClasses}>Boarding Capacity</label>
                             <input
                                 type="number"
@@ -540,7 +548,7 @@ const SchoolFormComponent = ({
                                 value={formik.values.boarding_capacity}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
-                                className={`${inputClasses} ${formik.touched.boarding_capacity && formik.errors.boarding_capacity ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                className={`${inputClasses} ${formik.touched.boarding_capacity && formik.errors.boarding_capacity ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                                 placeholder="Capacity"
                             />
                             {formik.touched.boarding_capacity && formik.errors.boarding_capacity && (
@@ -551,46 +559,64 @@ const SchoolFormComponent = ({
                 </div>
             </div>
 
-            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+            <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+                <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-[#222]">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                         Class & Section Details
                     </h3>
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Curriculum, Fees & Subject Allocations</span>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6">
                     {formik.values.classes.map((field, index) => {
                         let key = index + 1;
                         return (
-                            <div key={key} className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30 relative">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div key={`class-row-${key}-${formik.values.classes[index] || index}`} className="p-5 border border-slate-200/80 dark:border-[#282828] rounded-2xl bg-slate-50/70 dark:bg-[#181818]/60 relative shadow-2xs">
+                                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/60 dark:border-[#262626]">
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/70 dark:border-blue-900/50 rounded-lg">
+                                            Class #{index + 1}
+                                        </span>
+                                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                            {allClasses?.find(c => c.class_id === formik.values.classes[index])?.class_name || "Configuration"}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                                     <div>
                                         <label className={labelClasses}>Class*</label>
-                                        <select
-                                            name={`classes.${key}`}
-                                            value={formik.values.classes[index]}
-                                            onChange={(e) => {
-                                                const subArr = [...formik.values.classes];
-                                                subArr[index] = parseInt(e.target.value);
-                                                formik.setFieldValue("classes", subArr);
-                                                if (!updatedValues) {
-                                                    if (formik.values.sections) {
-                                                        formik.setFieldValue("sections", []);
+                                        <div className="relative">
+                                            <select
+                                                name={`classes.${key}`}
+                                                value={formik.values.classes[index]}
+                                                onChange={(e) => {
+                                                    const subArr = [...formik.values.classes];
+                                                    subArr[index] = parseInt(e.target.value);
+                                                    formik.setFieldValue("classes", subArr);
+                                                    if (!updatedValues) {
+                                                        // Bug #2 fix: only reset sections & subjects for the changed class index
+                                                        const sectArr = [...(formik.values.sections || [])];
+                                                        sectArr[index] = [];
+                                                        formik.setFieldValue("sections", sectArr);
+
+                                                        const subList = [...(formik.values.subjects || [[]])];
+                                                        subList[index] = [];
+                                                        formik.setFieldValue("subjects", subList);
                                                     }
-                                                    if (formik.values.subjects) {
-                                                        formik.setFieldValue("subjects", [[]]);
-                                                    }
-                                                }
-                                            }}
-                                            className={`${inputClasses} appearance-none ${formik.touched.classes && formik.errors.classes ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        >
-                                            <option value="">Select Class</option>
-                                            {allClasses?.map(cls => (
-                                                <option key={cls.class_id} value={cls.class_id}>
-                                                    {cls.class_name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                                }}
+                                                className={`${selectClasses} appearance-none pr-10 ${formik.touched.classes && formik.errors.classes ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
+                                            >
+                                                <option value="">Select Class</option>
+                                                {allClasses?.map((cls, clsIndex) => (
+                                                    <option key={`cls-opt-${index}-${cls.class_id || clsIndex}`} value={cls.class_id}>
+                                                        {cls.class_name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
                                         {formik.touched.classes && formik.errors.classes && !formik.values.classes[index] && (
                                             <p className={errorClasses}>{formik.errors.classes}</p>
                                         )}
@@ -607,10 +633,9 @@ const SchoolFormComponent = ({
                                                 feeArr[index] = isNaN(parsedValue) ? '' : parsedValue;
                                                 formik.setFieldValue("classes_fee", feeArr);
                                             }}
-                                            className={`${inputClasses} ${formik.touched.classes_fee && formik.errors.classes_fee ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            className={`${inputClasses} ${formik.touched.classes_fee && formik.errors.classes_fee ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                                             placeholder="Amount"
                                         />
-                                        {/* Simplified validation message for array */}
                                     </div>
 
                                     <div>
@@ -624,27 +649,30 @@ const SchoolFormComponent = ({
                                                 feeArr[index] = isNaN(parsedValue) ? '' : parsedValue;
                                                 formik.setFieldValue("classes_late_fee", feeArr);
                                             }}
-                                            className={`${inputClasses} ${formik.touched.classes_late_fee && formik.errors.classes_late_fee ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            className={`${inputClasses} ${formik.touched.classes_late_fee && formik.errors.classes_late_fee ? 'border-rose-400 ring-1 ring-rose-400' : ''}`}
                                             placeholder="Amount"
                                         />
                                     </div>
 
                                     <div>
                                         <label className={labelClasses}>Late Fee Duration*</label>
-                                        <select
-                                            value={formik.values.classes_late_fee_duration[index] || ''}
-                                            onChange={e => {
-                                                const textArr = [...formik.values.classes_late_fee_duration];
-                                                textArr[index] = e.target.value;
-                                                formik.setFieldValue("classes_late_fee_duration", textArr);
-                                            }}
-                                            className={`${inputClasses} appearance-none`}
-                                        >
-                                            <option value="">Select Duration</option>
-                                            <option value="per_day">Per Day</option>
-                                            <option value="per_week">Per Week</option>
-                                            <option value="per_month">Per Month</option>
-                                        </select>
+                                        <div className="relative">
+                                            <select
+                                                value={formik.values.classes_late_fee_duration[index] || ''}
+                                                onChange={e => {
+                                                    const textArr = [...formik.values.classes_late_fee_duration];
+                                                    textArr[index] = e.target.value;
+                                                    formik.setFieldValue("classes_late_fee_duration", textArr);
+                                                }}
+                                                className={`${selectClasses} appearance-none pr-10`}
+                                            >
+                                                <option value="">Select Duration</option>
+                                                <option value="per_day">Per Day</option>
+                                                <option value="per_week">Per Week</option>
+                                                <option value="per_month">Per Month</option>
+                                            </select>
+                                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
                                     </div>
 
                                     <div>
@@ -680,7 +708,7 @@ const SchoolFormComponent = ({
                                     <div className="lg:col-span-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {formik?.values?.sections[index]?.map((section, sectionIndex) => (
-                                                <div key={key + sectionIndex} className="relative">
+                                                <div key={`section-sub-${key}-${section.section_id || sectionIndex}`} className="relative">
                                                     <label className={labelClasses}>Subjects For Section {section.section_name}</label>
                                                     <MultiSelect
                                                         options={subjectsInRedux || []}
@@ -701,8 +729,8 @@ const SchoolFormComponent = ({
                                         </div>
                                     </div>
                                     
-                                    <div className="lg:col-span-4 mt-2">
-                                        <label className="flex items-center space-x-3 cursor-pointer p-2 w-fit">
+                                    <div className="lg:col-span-4 mt-1">
+                                        <label className="flex items-center space-x-3 cursor-pointer p-2 rounded-xl hover:bg-slate-100/70 dark:hover:bg-[#222] transition-colors w-fit border border-slate-200/60 dark:border-[#2a2a2a]">
                                             <div className="relative flex items-center justify-center">
                                                 <input
                                                     type="checkbox"
@@ -725,65 +753,72 @@ const SchoolFormComponent = ({
                                                         });
                                                         
                                                         if (!value) {
+                                                            // Bug #3 fix: only clear subjects for the CURRENT class index,
+                                                            // not all classes with index > 0.
                                                             const noSubArr = [...formik.values.subjects];
-                                                            noSubArr.map((arr, i) => {
-                                                                if (i > 0)
-                                                                    noSubArr[i] = [];
-                                                            })
+                                                            noSubArr[index] = noSubArr[index] ? [noSubArr[index][0]] : [];
                                                             formik.setFieldValue('subjects', noSubArr);
                                                         }
                                                     }}
-                                                    className="w-5 h-5 cursor-pointer appearance-none border-2 border-slate-300 dark:border-slate-600 rounded-md checked:bg-blue-500 checked:border-blue-500 transition-all"
+                                                    className="w-4 h-4 cursor-pointer appearance-none border border-slate-300 dark:border-slate-600 rounded checked:bg-blue-600 checked:border-blue-600 transition-all"
                                                 />
-                                                <svg className={`w-3.5 h-3.5 absolute text-white pointer-events-none transition-opacity duration-200 ${formik.values.same_subjects[index] ? 'opacity-100' : 'opacity-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                </svg>
+                                                <Check className={`w-3 h-3 absolute text-white pointer-events-none transition-opacity duration-200 ${formik.values.same_subjects[index] ? 'opacity-100' : 'opacity-0'}`} />
                                             </div>
-                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Same Subjects For All Sections</span>
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Same Subjects For All Sections</span>
                                         </label>
                                     </div>
                                 </div>
                             </div>
-                        )
+                        );
                     })}
 
                     {/* Add New Class Form */}
-                    <div className="p-5 border border-dashed border-blue-300 dark:border-blue-800 rounded-2xl bg-blue-50/30 dark:bg-blue-900/10">
-                        <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
+                    <div className="p-5 border border-dashed border-blue-300 dark:border-blue-900/60 rounded-2xl bg-blue-50/20 dark:bg-blue-950/10">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
                             <Plus className="w-4 h-4" /> Add New Class
                         </h4>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                             <div>
                                 <label className={labelClasses}>Class*</label>
-                                <select
-                                    value={""}
-                                    onChange={(e) => {
-                                        if(!e.target.value) return;
-                                        const subArr = [...formik.values.classes];
-                                        subArr[formik.values.classes.length] = parseInt(e.target.value);
-                                        formik.setFieldValue("classes", subArr);
-                                    }}
-                                    className={`${inputClasses} appearance-none`}
-                                >
-                                    <option value="">Select Class to Add</option>
-                                    {allClasses?.filter(cls => !formik.values.classes.includes(cls.class_id))
-                                        .map(cls => (
-                                            <option key={cls.class_id} value={cls.class_id}>
-                                                {cls.class_name}
-                                            </option>
-                                        ))}
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        value={""}
+                                        onChange={(e) => {
+                                            if(!e.target.value) return;
+                                            const subArr = [...formik.values.classes];
+                                            subArr[formik.values.classes.length] = parseInt(e.target.value);
+                                            formik.setFieldValue("classes", subArr);
+                                        }}
+                                        className={`${selectClasses} appearance-none pr-10`}
+                                    >
+                                        <option value="">Select Class to Add</option>
+                                        {allClasses?.filter(cls => !formik.values.classes.includes(cls.class_id))
+                                            .map((cls, clsIndex) => (
+                                                <option key={`add-cls-opt-${cls.class_id || clsIndex}`} value={cls.class_id}>
+                                                    {cls.class_name}
+                                                </option>
+                                            ))}
+                                    </select>
+                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
                             </div>
 
+                            {/* Bug #1 fix: The class dropdown appends to classes[] first, so after it fires,
+                                classes.length is already N+1. These staging fields must use the LAST index
+                                (classes.length - 1) to pair correctly with the newly added class.
+                                We derive newIdx = classes.length (pre-add snapshot) by reading it BEFORE
+                                the class select mutates the array – but since Formik state updates are
+                                batched, we read formik.values.classes.length at render time which still
+                                reflects the pre-add length.  That index is the one these fields must write to. */}
                             <div>
                                 <label className={labelClasses}>Class Fee*</label>
                                 <input
                                     type="number"
-                                    value={formik.values.classes_fee[formik.values.classes.length] || ''}
+                                    value={formik.values.classes_fee[formik.values.classes.length] ?? ''}
                                     onChange={e => {
                                         const subArr = [...formik.values.classes_fee];
-                                        subArr[formik.values.classes_fee.length] = e.target.value;
+                                        subArr[formik.values.classes.length] = e.target.value;
                                         formik.setFieldValue("classes_fee", subArr);
                                     }}
                                     className={inputClasses}
@@ -795,10 +830,10 @@ const SchoolFormComponent = ({
                                 <label className={labelClasses}>Late Fee*</label>
                                 <input
                                     type="number"
-                                    value={formik.values.classes_late_fee[formik.values.classes.length] || ''}
+                                    value={formik.values.classes_late_fee[formik.values.classes.length] ?? ''}
                                     onChange={e => {
                                         const subArr = [...formik.values.classes_late_fee];
-                                        subArr[formik.values.classes_late_fee.length] = e.target.value;
+                                        subArr[formik.values.classes.length] = e.target.value;
                                         formik.setFieldValue("classes_late_fee", subArr);
                                     }}
                                     className={inputClasses}
@@ -808,30 +843,33 @@ const SchoolFormComponent = ({
 
                             <div>
                                 <label className={labelClasses}>Late Fee Duration*</label>
-                                <select
-                                    value={formik.values.classes_late_fee_duration[formik.values.classes.length] || ''}
-                                    onChange={e => {
-                                        const subArr = [...formik.values.classes_late_fee_duration];
-                                        subArr[formik.values.classes_late_fee_duration.length] = e.target.value;
-                                        formik.setFieldValue("classes_late_fee_duration", subArr);
-                                    }}
-                                    className={`${inputClasses} appearance-none`}
-                                >
-                                    <option value="">Select Duration</option>
-                                    <option value="per_day">Per Day</option>
-                                    <option value="per_week">Per Week</option>
-                                    <option value="per_month">Per Month</option>
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        value={formik.values.classes_late_fee_duration[formik.values.classes.length] ?? ''}
+                                        onChange={e => {
+                                            const subArr = [...formik.values.classes_late_fee_duration];
+                                            subArr[formik.values.classes.length] = e.target.value;
+                                            formik.setFieldValue("classes_late_fee_duration", subArr);
+                                        }}
+                                        className={`${selectClasses} appearance-none pr-10`}
+                                    >
+                                        <option value="">Select Duration</option>
+                                        <option value="per_day">Per Day</option>
+                                        <option value="per_week">Per Week</option>
+                                        <option value="per_month">Per Month</option>
+                                    </select>
+                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
                             </div>
 
                             <div>
                                 <label className={labelClasses}>Class Capacity</label>
                                 <input
                                     type="number"
-                                    value={formik.values.classes_capacity[formik.values.classes.length] || ''}
+                                    value={formik.values.classes_capacity[formik.values.classes.length] ?? ''}
                                     onChange={e => {
                                         const subArr = [...formik.values.classes_capacity];
-                                        subArr[formik.values.classes_capacity.length] = e.target.value;
+                                        subArr[formik.values.classes.length] = e.target.value;
                                         formik.setFieldValue("classes_capacity", subArr);
                                     }}
                                     className={inputClasses}

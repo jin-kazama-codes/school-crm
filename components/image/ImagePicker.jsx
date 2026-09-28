@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+﻿/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
@@ -57,9 +57,8 @@ const ImagePicker = ({
         if (onChange) {
             onChange({
                 values: formik.values,
-                validated: formik.isSubmitting
-                    ? Object.keys(formik.errors).length === 0
-                    : false,
+                // Bug #13 fix: formik.isSubmitting is false by the time onSubmit fires.
+                validated: Object.keys(formik.errors).length === 0,
                 dirty: formik.dirty
             });
         }

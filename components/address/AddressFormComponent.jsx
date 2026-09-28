@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+﻿/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
@@ -7,11 +7,10 @@
  * restrictions set forth in your license agreement with School CRM.
 */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-
 import { useFormik } from "formik";
-import { MapPin, Navigation, Map } from "lucide-react";
+import { MapPin, ChevronDown } from "lucide-react";
 
 import './index.css';
 import API from "../../apis";
@@ -65,9 +64,8 @@ const AddressFormComponent = ({
         if (onChange) {
             onChange({
                 values: formik.values,
-                validated: formik.isSubmitting
-                    ? Object.keys(formik.errors).length === 0
-                    : false,
+                // Bug #13 fix: formik.isSubmitting is false by the time onSubmit fires.
+                validated: Object.keys(formik.errors).length === 0,
                 dirty: formik.dirty
             });
         }
@@ -165,7 +163,6 @@ const AddressFormComponent = ({
         }
     }, [formik.values, updatedValues]);
 
-
     useEffect(() => {
         if (cities.length) {
             formik.setFieldValue("city", updatedValues?.city);
@@ -175,7 +172,6 @@ const AddressFormComponent = ({
     useEffect(() => {
         const fetchStateCity = async () => {
             if (formik.values.zipcode && (formik.values.zipcode.toString().length === 6)) {
-
                 try {
                     const res = await getStateCityFromZipCode(formik?.values?.zipcode);
                     const state_id = await getIdByName(res.state, API.StateAPI);
@@ -192,148 +188,161 @@ const AddressFormComponent = ({
         fetchStateCity();
     }, [formik?.values?.zipcode]);
 
-    const inputClass = (touched, error) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all pl-11 ${
-        touched && error 
-        ? 'border-red-500 focus:ring-red-500/50' 
-        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
-    } text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500`;
+    const inputClass = (field) =>
+        `w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all ${
+            formik.touched[field] && formik.errors[field]
+                ? "border-rose-500 focus:ring-rose-500/20 focus:border-rose-500"
+                : "border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500"
+        }`;
 
-    const selectClass = (touched, error) => `w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all pl-11 ${
-        touched && error 
-        ? 'border-red-500 focus:ring-red-500/50' 
-        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/50'
-    } text-slate-800 dark:text-slate-100`;
-
-    const labelClass = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5";
-    const errorClass = "mt-1.5 text-sm text-red-500 font-medium";
-    const fieldsetLegendClass = "flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100 mb-6";
-    const fieldsetClass = "p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 mt-8";
+    const selectClass = (field) =>
+        `w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all cursor-pointer appearance-none ${
+            formik.touched[field] && formik.errors[field]
+                ? "border-rose-500 focus:ring-rose-500/20 focus:border-rose-500"
+                : "border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500"
+        }`;
 
     return (
-        <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 w-full animate-in slide-in-from-bottom-4 duration-500 mt-8">
-            <form ref={refId} className="space-y-6">
+        <form ref={refId} onSubmit={formik.handleSubmit}>
+            {/* Engraved Card Container */}
+            <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-4">
                 
-                <div className={fieldsetClass}>
-                    <h3 className={fieldsetLegendClass}>
-                        <MapPin className="w-6 h-6 text-red-500" />
-                        Address Details
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div className="flex flex-col md:col-span-2">
-                            <label className={labelClass}>Street Address*</label>
-                            <div className="relative">
-                                <MapPin className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    type="text"
-                                    name="street"
-                                    autoComplete="new-street"
-                                    onBlur={formik.handleBlur}
-                                    onChange={formik.handleChange}
-                                    value={formik.values.street}
-                                    className={inputClass(formik.touched.street, formik.errors.street)}
-                                    placeholder="e.g., 123 Main St, Apt 4B"
-                                />
-                            </div>
-                            {formik.touched.street && formik.errors.street && (
-                                <p className={errorClass}>{formik.errors.street}</p>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col md:col-span-2">
-                            <label className={labelClass}>Landmark</label>
-                            <div className="relative">
-                                <Navigation className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    type="text"
-                                    name="landmark"
-                                    autoComplete="new-landmark"
-                                    onBlur={formik.handleBlur}
-                                    onChange={formik.handleChange}
-                                    value={formik.values.landmark}
-                                    className={inputClass(formik.touched.landmark, formik.errors.landmark)}
-                                    placeholder="e.g., Near Central Park"
-                                />
-                            </div>
-                            {formik.touched.landmark && formik.errors.landmark && (
-                                <p className={errorClass}>{formik.errors.landmark}</p>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col">
-                            <label className={labelClass}>Zipcode / Postal Code*</label>
-                            <div className="relative">
-                                <Map className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    type="text"
-                                    name="zipcode"
-                                    autoComplete="new-zipcode"
-                                    onBlur={formik.handleBlur}
-                                    onChange={formik.handleChange}
-                                    value={formik.values.zipcode}
-                                    className={inputClass(formik.touched.zipcode, formik.errors.zipcode)}
-                                    placeholder="e.g., 10001"
-                                />
-                            </div>
-                            {formik.touched.zipcode && formik.errors.zipcode && (
-                                <p className={errorClass}>{formik.errors.zipcode}</p>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col">
-                            <label className={labelClass}>State*</label>
-                            <div className="relative">
-                                <Map className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <select
-                                    name="state"
-                                    value={formik.values.state}
-                                    onChange={event => {
-                                        setStateId(event.target.value);
-                                        formik.setFieldValue("state", event.target.value);
-                                    }}
-                                    className={selectClass(formik.touched.state, formik.errors.state)}
-                                >
-                                    <option value={0} disabled>--Select State--</option>
-                                    {states.map(item => (
-                                        <option value={item.id} key={item.name}>
-                                            {item.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            {formik.touched.state && formik.errors.state && (
-                                <p className={errorClass}>{formik.errors.state}</p>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col">
-                            <label className={labelClass}>City*</label>
-                            <div className="relative">
-                                <Map className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <select
-                                    name="city"
-                                    value={formik.values.city || updatedValues?.city || 0}
-                                    onChange={event => {
-                                        formik.setFieldValue("city", event.target.value);
-                                    }}
-                                    className={selectClass(formik.touched.city, formik.errors.city)}
-                                >
-                                    <option value={0} disabled>--Select City--</option>
-                                    {cities.map(item => (
-                                        <option value={item.id} key={item.name}>
-                                            {item.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            {formik.touched.city && formik.errors.city && (
-                                <p className={errorClass}>{formik.errors.city}</p>
-                            )}
-                        </div>
+                <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-[#222]">
+                    <div className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40">
+                        <MapPin className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            Residential & Mailing Address
+                        </h3>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                            Street details, landmark, and location parameters
+                        </p>
                     </div>
                 </div>
-            </form>
-        </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {/* Street */}
+                    <div className="space-y-1.5 md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Street Address <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="street"
+                            autoComplete="off"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.street}
+                            className={inputClass("street")}
+                            placeholder="e.g., 123 Main Street, Apt 4B"
+                        />
+                        {formik.touched.street && formik.errors.street && (
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.street}</p>
+                        )}
+                    </div>
+
+                    {/* Landmark */}
+                    <div className="space-y-1.5 md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Landmark
+                        </label>
+                        <input
+                            type="text"
+                            name="landmark"
+                            autoComplete="off"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.landmark}
+                            className={inputClass("landmark")}
+                            placeholder="e.g., Near City Library"
+                        />
+                        {formik.touched.landmark && formik.errors.landmark && (
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.landmark}</p>
+                        )}
+                    </div>
+
+                    {/* Zipcode */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Postal Code / Zipcode <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="zipcode"
+                            autoComplete="off"
+                            onBlur={formik.handleBlur}
+                            onChange={formik.handleChange}
+                            value={formik.values.zipcode}
+                            className={inputClass("zipcode")}
+                            placeholder="e.g., 110001"
+                        />
+                        {formik.touched.zipcode && formik.errors.zipcode && (
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.zipcode}</p>
+                        )}
+                    </div>
+
+                    {/* State */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            State <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <select
+                                name="state"
+                                value={formik.values.state}
+                                onBlur={formik.handleBlur}
+                                onChange={event => {
+                                    setStateId(event.target.value);
+                                    formik.setFieldValue("state", event.target.value);
+                                }}
+                                className={selectClass("state")}
+                            >
+                                <option value={0} className="bg-white dark:bg-[#161616]" disabled>Select State</option>
+                                {states.map(item => (
+                                    <option value={item.id} key={item.name} className="bg-white dark:bg-[#161616]">
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                        {formik.touched.state && formik.errors.state && (
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.state}</p>
+                        )}
+                    </div>
+
+                    {/* City */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            City <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <select
+                                name="city"
+                                value={formik.values.city || updatedValues?.city || 0}
+                                onBlur={formik.handleBlur}
+                                onChange={event => {
+                                    formik.setFieldValue("city", event.target.value);
+                                }}
+                                className={selectClass("city")}
+                            >
+                                <option value={0} className="bg-white dark:bg-[#161616]" disabled>Select City</option>
+                                {cities.map(item => (
+                                    <option value={item.id} key={item.name} className="bg-white dark:bg-[#161616]">
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                        {formik.touched.city && formik.errors.city && (
+                            <p className="text-xs text-rose-500 font-medium">{formik.errors.city}</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </form>
     );
 };
 

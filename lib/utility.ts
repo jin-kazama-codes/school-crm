@@ -93,16 +93,19 @@ const Utility = {
    */
   verifyToken: (request: NextRequest): { userId: number } | null => {
     const type = request.headers.get("type");
+    const token = request.headers.get("x-access-token") || null;
 
-    // Only validate token if type is school-admin or school-mobile
-    if (type !== "school-admin" && type !== "school-mobile") {
-      return { userId: 0 }; // passthrough for other types
+    // Bug #12 fix: If no token is present at all, allow pass-through only for
+    // non-school-admin types (e.g. public endpoints like login, verify-token).
+    // If a token IS provided, always validate it regardless of type.
+    if (!token) {
+      // Permit requests with no token only when type is not school-admin/mobile
+      // (these hit public/unauthenticated routes handled in the slug router)
+      if (type !== "school-admin" && type !== "school-mobile") {
+        return { userId: 0 }; // passthrough for public route types
+      }
+      return null; // school-admin/mobile with no token is unauthorized
     }
-
-    const token =
-      request.headers.get("x-access-token") || null;
-
-    if (!token) return null;
 
     try {
       const decoded = jwt.verify(token, secret) as JWTPayload;
