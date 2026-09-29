@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
@@ -17,12 +17,12 @@ import API from "../../apis";
 import addressValidation from "./Validation";
 import { Utility } from "../utility";
 
-const countryId = process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_ID;
+const countryId = process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_ID || 1;
 const initialValues = {
     street: "",
     landmark: "",
     zipcode: "",
-    country: countryId,
+    country: Number(countryId) || 1,
     state: 0,
     city: 0
 };
@@ -108,11 +108,12 @@ const AddressFormComponent = ({
 
     useEffect(() => {
         const getStates = () => {
-            if (formik.values.country || countryId) {
-                API.StateAPI.getStates(formik.values.country || countryId)
+            const cId = formik.values.country || countryId || 1;
+            if (cId && cId !== 0 && cId !== "0" && cId !== "null") {
+                API.StateAPI.getStates(cId)
                     .then(data => {
                         if (data?.status === 'Success') {
-                            setStates(data.data.list);
+                            setStates(data.data?.list || data.data?.rows || []);
                             setCities([]);
                         } else {
                             setStates([]);
@@ -120,8 +121,9 @@ const AddressFormComponent = ({
                             formik.setFieldValue("state", 0);
                         }
                     })
-                    .catch(err => {
-                        throw err;
+                    .catch(() => {
+                        setStates([]);
+                        setCities([]);
                     });
             }
         }
@@ -129,22 +131,27 @@ const AddressFormComponent = ({
     }, [formik.values.country, countryId]);
 
     useEffect(() => {
-        API.CityAPI.getCities(formik.values.state || stateId)
-            .then(cities => {
-                if (cities?.status === 'Success') {
-                    setCities(cities.data.list);
-                    if (zipcodeCity) {
-                        setTimeout(() => {
-                            formik.setFieldValue("city", zipcodeCity);
-                        }, 1000);
+        const sId = formik.values.state || stateId;
+        if (sId && sId !== 0 && sId !== "0" && sId !== "null" && sId !== "undefined") {
+            API.CityAPI.getCities(sId)
+                .then(citiesResponse => {
+                    if (citiesResponse?.status === 'Success') {
+                        setCities(citiesResponse.data?.list || citiesResponse.data?.rows || []);
+                        if (zipcodeCity) {
+                            setTimeout(() => {
+                                formik.setFieldValue("city", zipcodeCity);
+                            }, 1000);
+                        }
+                    } else {
+                        setCities([]);
                     }
-                } else {
+                })
+                .catch(() => {
                     setCities([]);
-                }
-            })
-            .catch(err => {
-                setCities([]);
-            });
+                });
+        } else {
+            setCities([]);
+        }
     }, [formik.values.state, stateId]);
 
     useEffect(() => {
@@ -290,17 +297,19 @@ const AddressFormComponent = ({
                         <div className="relative">
                             <select
                                 name="state"
-                                value={formik.values.state}
+                                value={formik.values.state || 0}
                                 onBlur={formik.handleBlur}
                                 onChange={event => {
-                                    setStateId(event.target.value);
-                                    formik.setFieldValue("state", event.target.value);
+                                    const val = Number(event.target.value) || event.target.value;
+                                    setStateId(val);
+                                    formik.setFieldValue("state", val);
+                                    formik.setFieldValue("city", 0);
                                 }}
                                 className={selectClass("state")}
                             >
                                 <option value={0} className="bg-white dark:bg-[#161616]" disabled>Select State</option>
                                 {states.map(item => (
-                                    <option value={item.id} key={item.name} className="bg-white dark:bg-[#161616]">
+                                    <option value={item.id} key={`state-${item.id}`} className="bg-white dark:bg-[#161616]">
                                         {item.name}
                                     </option>
                                 ))}
@@ -323,13 +332,14 @@ const AddressFormComponent = ({
                                 value={formik.values.city || updatedValues?.city || 0}
                                 onBlur={formik.handleBlur}
                                 onChange={event => {
-                                    formik.setFieldValue("city", event.target.value);
+                                    const val = Number(event.target.value) || event.target.value;
+                                    formik.setFieldValue("city", val);
                                 }}
                                 className={selectClass("city")}
                             >
                                 <option value={0} className="bg-white dark:bg-[#161616]" disabled>Select City</option>
                                 {cities.map(item => (
-                                    <option value={item.id} key={item.name} className="bg-white dark:bg-[#161616]">
+                                    <option value={item.id} key={`city-${item.id}`} className="bg-white dark:bg-[#161616]">
                                         {item.name}
                                     </option>
                                 ))}

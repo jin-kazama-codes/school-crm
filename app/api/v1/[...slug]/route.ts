@@ -62,6 +62,10 @@ const MODEL_MAPPING: Record<string, { model: string; searchFields: string[] }> =
   "state": { model: "state", searchFields: ["name"] },
   "countries": { model: "country", searchFields: ["name", "country_code", "phone_code"] },
   "country": { model: "country", searchFields: ["name", "country_code", "phone_code"] },
+  "address": { model: "address", searchFields: ["street", "landmark", "zipcode"] },
+  "addresses": { model: "address", searchFields: ["street", "landmark", "zipcode"] },
+  "image": { model: "image", searchFields: ["image_src"] },
+  "images": { model: "image", searchFields: ["image_src"] },
 };
 
 async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
@@ -76,6 +80,136 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
     const payload = Utility.verifyTokenString(authHeader as string);
     if (!payload) return NextResponse.json(Utility.formatResponse(401, "Unauthorized"), { status: 401 });
     return NextResponse.json(Utility.formatResponse(200, "Verified"), { status: 200 });
+  }
+
+  // Countries list
+  if (endpoint === "get-countries" || endpoint === "countries") {
+    try {
+      const countries = await prisma.country.findMany({
+        orderBy: { id: "asc" }
+      });
+      return NextResponse.json(Utility.formatResponse(200, { list: countries, rows: countries, count: countries.length }), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // States list (by country parent_id, or all states)
+  if (endpoint.startsWith("get-states/") || endpoint === "get-states" || endpoint === "get-all-states" || endpoint === "states" || endpoint === "all-states") {
+    try {
+      let parentId = params[1] || "";
+      if (endpoint.startsWith("get-states/")) {
+        parentId = endpoint.replace("get-states/", "");
+      }
+      
+      if (parentId && parentId !== "null" && parentId !== "undefined" && parentId !== "0" && parentId !== "all") {
+        const states = await prisma.state.findMany({
+          where: { country_id: String(parentId) },
+          orderBy: { name: "asc" }
+        });
+        return NextResponse.json(Utility.formatResponse(200, { list: states, rows: states, count: states.length }), { status: 200 });
+      } else if (parentId === "null" || parentId === "undefined" || parentId === "0") {
+        return NextResponse.json(Utility.formatResponse(200, { list: [], rows: [], count: 0 }), { status: 200 });
+      } else {
+        const states = await prisma.state.findMany({
+          orderBy: { name: "asc" }
+        });
+        return NextResponse.json(Utility.formatResponse(200, { list: states, rows: states, count: states.length }), { status: 200 });
+      }
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // State ID by name
+  if (endpoint.startsWith("get-state-by-name/")) {
+    try {
+      const name = decodeURIComponent(endpoint.replace("get-state-by-name/", "")).trim();
+      const state = await prisma.state.findFirst({
+        where: { name: { equals: name, mode: "insensitive" } }
+      });
+      return NextResponse.json(Utility.formatResponse(200, state ? state.id : null), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Cities list (by state parent_id, or all cities)
+  if (endpoint.startsWith("get-cities/") || endpoint === "get-cities" || endpoint === "get-all-cities" || endpoint === "cities" || endpoint === "all-cities") {
+    try {
+      let parentId = params[1] || "";
+      if (endpoint.startsWith("get-cities/")) {
+        parentId = endpoint.replace("get-cities/", "");
+      }
+
+      if (parentId && parentId !== "null" && parentId !== "undefined" && parentId !== "0" && parentId !== "all") {
+        const cities = await prisma.city.findMany({
+          where: { state_id: String(parentId) },
+          orderBy: { name: "asc" }
+        });
+        return NextResponse.json(Utility.formatResponse(200, { list: cities, rows: cities, count: cities.length }), { status: 200 });
+      } else if (parentId === "null" || parentId === "undefined" || parentId === "0") {
+        return NextResponse.json(Utility.formatResponse(200, { list: [], rows: [], count: 0 }), { status: 200 });
+      } else {
+        const cities = await prisma.city.findMany({
+          orderBy: { name: "asc" }
+        });
+        return NextResponse.json(Utility.formatResponse(200, { list: cities, rows: cities, count: cities.length }), { status: 200 });
+      }
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // City ID by name
+  if (endpoint.startsWith("get-city-by-name/")) {
+    try {
+      const name = decodeURIComponent(endpoint.replace("get-city-by-name/", "")).trim();
+      const city = await prisma.city.findFirst({
+        where: { name: { equals: name, mode: "insensitive" } }
+      });
+      return NextResponse.json(Utility.formatResponse(200, city ? city.id : null), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Address by parent and parent_id (e.g., get-address/student/265)
+  if (endpoint.startsWith("get-address/")) {
+    try {
+      const parts = endpoint.split("/");
+      const parent = parts[1];
+      const parentId = parts[2];
+      if (!parentId || parentId === "null" || parentId === "undefined" || parentId === "0") {
+        return NextResponse.json(Utility.formatResponse(200, null), { status: 200 });
+      }
+      const address = await prisma.address.findFirst({
+        where: { parent: parent as any, parent_id: parseInt(parentId, 10) },
+        orderBy: { id: "desc" }
+      });
+      return NextResponse.json(Utility.formatResponse(200, address || null), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Image by parent and parent_id (e.g., get-image/student/265)
+  if (endpoint.startsWith("get-image/")) {
+    try {
+      const parts = endpoint.split("/");
+      const parent = parts[1];
+      const parentId = parts[2];
+      if (!parentId || parentId === "null" || parentId === "undefined" || parentId === "0") {
+        return NextResponse.json(Utility.formatResponse(200, null), { status: 200 });
+      }
+      const image = await prisma.image.findFirst({
+        where: { parent: parent as any, parent_id: parseInt(parentId, 10) },
+        orderBy: [{ priority: "asc" }, { id: "desc" }]
+      });
+      return NextResponse.json(Utility.formatResponse(200, image || null), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
   }
 
   // Dashboard counts
@@ -839,6 +973,61 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         const count     = Number(rows[0]?.count || 0);
         const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
         return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Enriched or filtered student listing
+  if (
+    endpoint === "get-students" ||
+    endpoint === "get-student" ||
+    endpoint === "students" ||
+    endpoint === "student"
+  ) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const page = parseInt(searchParams.get("page") || "0", 10);
+      const size = parseInt(searchParams.get("size") || "10", 10);
+      const search = (searchParams.get("search") || "").trim();
+      const classId = searchParams.get("classId") || searchParams.get("class_id") || searchParams.get("class");
+      const sectionId = searchParams.get("sectionId") || searchParams.get("section_id") || searchParams.get("section");
+      const parentId = searchParams.get("parentId") || searchParams.get("parent_id");
+
+      const { limit, offset } = Utility.getPagination(page, size);
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = searchParams.get("school_id")
+        ? parseInt(searchParams.get("school_id")!, 10)
+        : (schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : undefined);
+
+      const whereCondition: Record<string, unknown> = {};
+      if (schoolId) whereCondition.school_id = schoolId;
+      if (classId) whereCondition.class = parseInt(classId, 10);
+      if (sectionId) whereCondition.section = parseInt(sectionId, 10);
+      if (parentId) whereCondition.parent_id = parseInt(parentId, 10);
+      if (search) {
+        whereCondition.OR = [
+          { firstname: { contains: search, mode: "insensitive" } },
+          { lastname: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { status: { startsWith: search } },
+        ];
+      }
+
+      const [rows, count] = await Promise.all([
+        prisma.student.findMany({
+          where: whereCondition,
+          orderBy: { updated_at: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        prisma.student.count({ where: whereCondition }),
+      ]);
+
+      if (count > 0) {
+        return NextResponse.json(Utility.formatResponse(200, { count, rows }), { status: 200 });
       }
       return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
     } catch (err) {

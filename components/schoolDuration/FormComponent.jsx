@@ -169,14 +169,15 @@ const FormComponent = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex items-start justify-center">
             <div
-                className="rounded-2xl border border-slate-200/90 dark:border-[#262626] overflow-hidden shadow-2xl relative bg-white dark:bg-[#101010] animate-in fade-in duration-300"
+                className="w-full max-w-7xl rounded-2xl border border-slate-200/90 dark:border-[#262626] overflow-hidden shadow-2xl relative bg-white dark:bg-[#101010] animate-in fade-in duration-300"
                 style={{
                     backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "center",
                     backgroundSize: "cover",
+                    backgroundAttachment: "fixed"
                 }}
             >
                 {/* Header */}
@@ -211,7 +212,7 @@ const FormComponent = () => {
                 </div>
 
                 {/* Body */}
-                <div className="p-6">
+                <div className="p-6 space-y-6">
                     <SchoolDurationFormComponent
                         onChange={(data) => {
                             handleFormChange(data, 'schoolDuration');
@@ -226,8 +227,8 @@ const FormComponent = () => {
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex items-center justify-between gap-3">
-                    <div>
+                <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
                         {title !== "Update" && (
                             <button
                                 type="reset"

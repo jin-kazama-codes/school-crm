@@ -326,6 +326,13 @@ const ServerPaginationGrid = ({
         return filterStr || tableSearch.trim();
     }, [columnFilters, tableSearch]);
 
+    const conditionStr = useMemo(() => JSON.stringify(condition ?? null), [condition]);
+
+    // Reset page to 0 when condition changes
+    useEffect(() => {
+        setPaginationModel(prev => prev.page === 0 ? prev : { ...prev, page: 0 });
+    }, [conditionStr]);
+
     // ── Sync Pagination with Server via getQuery ─────────────────────────────
     useEffect(() => {
         if (activeSearchQuery) {
@@ -347,7 +354,7 @@ const ServerPaginationGrid = ({
                 getQuery(searchFlag, searchFlag, action, api, condition);
             }
         }
-    }, [selected, paginationModel.page, paginationModel.pageSize, searchFlag?.searching, activeSearchQuery]);
+    }, [selected, paginationModel.page, paginationModel.pageSize, searchFlag?.searching, activeSearchQuery, conditionStr]);
 
     // Reset pagination when selected entity changes
     useEffect(() => {

@@ -79,6 +79,25 @@ export async function genericList(
   const schoolFilter = getSchoolFilter(request, modelName);
   const whereCondition: Record<string, unknown> = { ...schoolFilter };
 
+  // Parse extra filter parameters from query string
+  searchParams.forEach((value, key) => {
+    if (["page", "size", "search"].includes(key)) return;
+    if (value === undefined || value === null || value === "") return;
+
+    let field = key;
+    if (key === "classId" || key === "class_id") field = "class";
+    if (key === "sectionId" || key === "section_id") field = "section";
+    if (key === "parentId") field = "parent_id";
+
+    if (/^\d+$/.test(value)) {
+      whereCondition[field] = parseInt(value, 10);
+    } else if (value === "true" || value === "false") {
+      whereCondition[field] = value === "true";
+    } else {
+      whereCondition[field] = value;
+    }
+  });
+
   if (search && searchFields.length > 0) {
     whereCondition.OR = searchFields.map((f) => ({
       [f]: { contains: search, mode: "insensitive" },

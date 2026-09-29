@@ -77,6 +77,27 @@ export const Utility = () => {
 
     const capitalizeEveryWord = capitalizeEachWord;
 
+    const BLOOD_GROUP_MAP = {
+        'A_POS': 'A+', 'A_NEG': 'A-',
+        'B_POS': 'B+', 'B_NEG': 'B-',
+        'AB_POS': 'AB+', 'AB_NEG': 'AB-',
+        'O_POS': 'O+', 'O_NEG': 'O-',
+        'A_pos': 'A+', 'A_neg': 'A-',
+        'B_pos': 'B+', 'B_neg': 'B-',
+        'AB_pos': 'AB+', 'AB_neg': 'AB-',
+        'O_pos': 'O+', 'O_neg': 'O-',
+        'a_pos': 'A+', 'a_neg': 'A-',
+        'b_pos': 'B+', 'b_neg': 'B-',
+        'ab_pos': 'AB+', 'ab_neg': 'AB-',
+        'o_pos': 'O+', 'o_neg': 'O-'
+    };
+
+    const formatBloodGroup = (bg) => {
+        if (!bg) return '-';
+        const key = String(bg).trim();
+        return BLOOD_GROUP_MAP[key] || BLOOD_GROUP_MAP[key.toUpperCase()] || bg;
+    };
+
     /** Determines the divider based on the duration type.
      * @param {string} duration - The type of duration (monthly, quarterly, half-yearly).
      * @returns {number} The divider value.
@@ -737,6 +758,7 @@ export const Utility = () => {
         fetchAndSetTeacherData,
         findById,
         findMultipleById,
+        formatBloodGroup,
         formatDate,
         formatImageName,
         formateName,

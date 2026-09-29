@@ -26,7 +26,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
 
     const dispatch = useDispatch();
     const navigateTo = useNavigate();
-    const { appendSuffix, findById, fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate } = Utility();
+    const { appendSuffix, findById, fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate, formatBloodGroup } = Utility();
 
     const handleActionEdit = (id) => {
         navigateTo(`/student/update/${id}`, { state: { id: id } });
@@ -92,7 +92,20 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 150
+            minWidth: 140,
+            renderCell: ({ row: { blood_group } }) => {
+                const formatted = formatBloodGroup(blood_group);
+                if (!blood_group || formatted === '-') {
+                    return <span className="text-slate-400 font-medium">-</span>;
+                }
+                return (
+                    <div className="flex justify-center items-center w-full h-full">
+                        <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-900/50 shadow-2xs">
+                            {formatted}
+                        </span>
+                    </div>
+                );
+            }
         },
         {
             field: "dob",

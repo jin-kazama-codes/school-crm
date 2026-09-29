@@ -35,12 +35,12 @@ export const useCommon = () => {
                 if (res.status === 'Success') {
                     dispatch(action({ listData: res.data, loading: false }));
                 } else if (res.status === 'Error') {
-                    dispatch(action({ listData: [], loading: false }));
+                    dispatch(action({ listData: { count: 0, rows: [] }, loading: false }));
                 }
             })
             .catch(err => {
                 console.error("An error occurred: ", err);
-                dispatch(action({ listData: [], loading: false }));
+                dispatch(action({ listData: { count: 0, rows: [] }, loading: false }));
             });
     }, [selected]);
 

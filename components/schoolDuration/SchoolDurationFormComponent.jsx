@@ -115,346 +115,341 @@ const SchoolDurationFormComponent = ({
   };
 
   return (
-    <form ref={refId} onSubmit={formik.handleSubmit}>
-      {/* Main Engraved Card Container */}
-      <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-6">
-        
-        {/* Section 1: Period & Batch Structure */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-[#222]">
-            <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                Period & Batch Structure
-              </h3>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Define session batch, period counts, halves, and recess intervals
-              </p>
-            </div>
+    <form ref={refId} onSubmit={formik.handleSubmit} className="space-y-6">
+      {/* Card 1: Period & Batch Structure */}
+      <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-4">
+        <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-[#222]">
+          <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40">
+            <Layers className="w-4 h-4" />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Batch */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Batch <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  name="batch"
-                  value={formik.values.batch}
-                  onBlur={formik.handleBlur}
-                  onChange={formik.handleChange}
-                  className={selectClass("batch")}
-                >
-                  <option value="" className="bg-white dark:bg-[#161616]" disabled>Select Batch</option>
-                  <option value="junior" className="bg-white dark:bg-[#161616]">Junior</option>
-                  <option value="senior" className="bg-white dark:bg-[#161616]">Senior</option>
-                  <option value="both" className="bg-white dark:bg-[#161616]">Both</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-              {formik.touched.batch && formik.errors.batch && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.batch}</p>
-              )}
-            </div>
-
-            {/* Total Periods */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Total Periods <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="period"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.period}
-                placeholder="e.g., 8"
-                className={inputClass("period")}
-              />
-              {formik.touched.period && formik.errors.period && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.period}</p>
-              )}
-            </div>
-
-            {/* Number of Halves */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Number of Halves <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="halves"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.halves}
-                placeholder="e.g., 2"
-                className={inputClass("halves")}
-              />
-              {formik.touched.halves && formik.errors.halves && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.halves}</p>
-              )}
-            </div>
-
-            {/* Recess Duration */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Recess Duration (mins) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="recess_time"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.recess_time}
-                placeholder="e.g., 30"
-                className={inputClass("recess_time")}
-              />
-              {formik.touched.recess_time && formik.errors.recess_time && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.recess_time}</p>
-              )}
-            </div>
-
-            {/* 1st Half Period Duration */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                1st Half Period (mins) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="first_half_period_duration"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.first_half_period_duration}
-                placeholder="e.g., 40"
-                className={inputClass("first_half_period_duration")}
-              />
-              {formik.touched.first_half_period_duration && formik.errors.first_half_period_duration && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.first_half_period_duration}</p>
-              )}
-            </div>
-
-            {/* 2nd Half Period Duration */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                2nd Half Period (mins) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="second_half_period_duration"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.second_half_period_duration}
-                placeholder="e.g., 35"
-                className={inputClass("second_half_period_duration")}
-              />
-              {formik.touched.second_half_period_duration && formik.errors.second_half_period_duration && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.second_half_period_duration}</p>
-              )}
-            </div>
-
-            {/* Cutoff Time */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Cutoff Time (mins)
-              </label>
-              <input
-                type="number"
-                name="cutoff_time"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.cutoff_time}
-                placeholder="e.g., 15"
-                className={inputClass("cutoff_time")}
-              />
-              {formik.touched.cutoff_time && formik.errors.cutoff_time && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.cutoff_time}</p>
-              )}
-            </div>
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              Period & Batch Structure
+            </h3>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              Define session batch, period counts, halves, and recess intervals
+            </p>
           </div>
         </div>
 
-        {/* Section 2: Employee Timings */}
-        <div className="space-y-4 pt-2">
-          <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-[#222]">
-            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40">
-              <Users className="w-4 h-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Batch */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Batch <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <select
+                name="batch"
+                value={formik.values.batch}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                className={selectClass("batch")}
+              >
+                <option value="" className="bg-white dark:bg-[#161616]" disabled>Select Batch</option>
+                <option value="junior" className="bg-white dark:bg-[#161616]">Junior</option>
+                <option value="senior" className="bg-white dark:bg-[#161616]">Senior</option>
+                <option value="both" className="bg-white dark:bg-[#161616]">Both</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                Employee Timings
-              </h3>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Staff check-in and check-out schedule
-              </p>
-            </div>
+            {formik.touched.batch && formik.errors.batch && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.batch}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Employee Entry Time */}
+          {/* Total Periods */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Total Periods <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="period"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.period}
+              placeholder="e.g., 8"
+              className={inputClass("period")}
+            />
+            {formik.touched.period && formik.errors.period && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.period}</p>
+            )}
+          </div>
+
+          {/* Number of Halves */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Number of Halves <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="halves"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.halves}
+              placeholder="e.g., 2"
+              className={inputClass("halves")}
+            />
+            {formik.touched.halves && formik.errors.halves && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.halves}</p>
+            )}
+          </div>
+
+          {/* Recess Duration */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Recess Duration (mins) <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="recess_time"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.recess_time}
+              placeholder="e.g., 30"
+              className={inputClass("recess_time")}
+            />
+            {formik.touched.recess_time && formik.errors.recess_time && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.recess_time}</p>
+            )}
+          </div>
+
+          {/* 1st Half Period Duration */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              1st Half Period (mins) <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="first_half_period_duration"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.first_half_period_duration}
+              placeholder="e.g., 40"
+              className={inputClass("first_half_period_duration")}
+            />
+            {formik.touched.first_half_period_duration && formik.errors.first_half_period_duration && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.first_half_period_duration}</p>
+            )}
+          </div>
+
+          {/* 2nd Half Period Duration */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              2nd Half Period (mins) <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="second_half_period_duration"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.second_half_period_duration}
+              placeholder="e.g., 35"
+              className={inputClass("second_half_period_duration")}
+            />
+            {formik.touched.second_half_period_duration && formik.errors.second_half_period_duration && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.second_half_period_duration}</p>
+            )}
+          </div>
+
+          {/* Cutoff Time */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Cutoff Time (mins)
+            </label>
+            <input
+              type="number"
+              name="cutoff_time"
+              onBlur={formik.handleBlur}
+              onChange={formik.handleChange}
+              value={formik.values.cutoff_time}
+              placeholder="e.g., 15"
+              className={inputClass("cutoff_time")}
+            />
+            {formik.touched.cutoff_time && formik.errors.cutoff_time && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.cutoff_time}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Card 2: Employee Timings */}
+      <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-4">
+        <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-[#222]">
+          <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40">
+            <Users className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              Employee Timings
+            </h3>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              Staff check-in and check-out schedule
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Employee Entry Time */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Employee Entry Time
+            </label>
+            <input
+              type="time"
+              name="employee_entry_time"
+              value={getTimeValue(formik.values.employee_entry_time)}
+              onChange={(e) => handleTimeChange(e, "employee_entry_time")}
+              onBlur={formik.handleBlur}
+              className={inputClass("employee_entry_time")}
+            />
+            {formik.touched.employee_entry_time && formik.errors.employee_entry_time && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.employee_entry_time}</p>
+            )}
+          </div>
+
+          {/* Employee Exit Time */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Employee Exit Time
+            </label>
+            <input
+              type="time"
+              name="employee_exit_time"
+              value={getTimeValue(formik.values.employee_exit_time)}
+              onChange={(e) => handleTimeChange(e, "employee_exit_time")}
+              onBlur={formik.handleBlur}
+              className={inputClass("employee_exit_time")}
+            />
+            {formik.touched.employee_exit_time && formik.errors.employee_exit_time && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.employee_exit_time}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Card 3: School Timings & Shifts */}
+      <div className="bg-white/95 dark:bg-[#161616]/90 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-slate-200/90 dark:border-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] space-y-4">
+        <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-[#222]">
+          <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
+            <Building className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              School Timings & Shifts
+            </h3>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              Configure morning/evening shift bells and school hours
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Shift Mode */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Shift Mode <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <select
+                name="shifts"
+                value={formik.values.shifts}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                className={selectClass("shifts")}
+              >
+                <option value="morning" className="bg-white dark:bg-[#161616]">Morning Only</option>
+                <option value="evening" className="bg-white dark:bg-[#161616]">Evening Only</option>
+                <option value="both" className="bg-white dark:bg-[#161616]">Both Shifts</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.shifts && formik.errors.shifts && (
+              <p className="text-xs text-rose-500 font-medium">{formik.errors.shifts}</p>
+            )}
+          </div>
+
+          {/* Morning Opening Time */}
+          {formik.values.shifts !== "evening" && (
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Employee Entry Time
+                Morning Opening Time <span className="text-rose-500">*</span>
               </label>
               <input
                 type="time"
-                name="employee_entry_time"
-                value={getTimeValue(formik.values.employee_entry_time)}
-                onChange={(e) => handleTimeChange(e, "employee_entry_time")}
+                name="opening_time"
+                value={getTimeValue(formik.values.opening_time)}
+                onChange={(e) => handleTimeChange(e, "opening_time")}
                 onBlur={formik.handleBlur}
-                className={inputClass("employee_entry_time")}
+                className={inputClass("opening_time")}
               />
-              {formik.touched.employee_entry_time && formik.errors.employee_entry_time && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.employee_entry_time}</p>
+              {formik.touched.opening_time && formik.errors.opening_time && (
+                <p className="text-xs text-rose-500 font-medium">{formik.errors.opening_time}</p>
               )}
             </div>
+          )}
 
-            {/* Employee Exit Time */}
+          {/* Morning Closing Time */}
+          {formik.values.shifts !== "evening" && (
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Employee Exit Time
+                Morning Closing Time <span className="text-rose-500">*</span>
               </label>
               <input
                 type="time"
-                name="employee_exit_time"
-                value={getTimeValue(formik.values.employee_exit_time)}
-                onChange={(e) => handleTimeChange(e, "employee_exit_time")}
+                name="closing_time"
+                value={getTimeValue(formik.values.closing_time)}
+                onChange={(e) => handleTimeChange(e, "closing_time")}
                 onBlur={formik.handleBlur}
-                className={inputClass("employee_exit_time")}
+                className={inputClass("closing_time")}
               />
-              {formik.touched.employee_exit_time && formik.errors.employee_exit_time && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.employee_exit_time}</p>
+              {formik.touched.closing_time && formik.errors.closing_time && (
+                <p className="text-xs text-rose-500 font-medium">{formik.errors.closing_time}</p>
               )}
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Section 3: School Timings & Shifts */}
-        <div className="space-y-4 pt-2">
-          <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-[#222]">
-            <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
-              <Building className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                School Timings & Shifts
-              </h3>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Configure morning/evening shift bells and school hours
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Shift Mode */}
+          {/* Evening Opening Time */}
+          {formik.values.shifts !== "morning" && (
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Shift Mode <span className="text-rose-500">*</span>
+                Evening Opening Time
               </label>
-              <div className="relative">
-                <select
-                  name="shifts"
-                  value={formik.values.shifts}
-                  onBlur={formik.handleBlur}
-                  onChange={formik.handleChange}
-                  className={selectClass("shifts")}
-                >
-                  <option value="morning" className="bg-white dark:bg-[#161616]">Morning Only</option>
-                  <option value="evening" className="bg-white dark:bg-[#161616]">Evening Only</option>
-                  <option value="both" className="bg-white dark:bg-[#161616]">Both Shifts</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-              {formik.touched.shifts && formik.errors.shifts && (
-                <p className="text-xs text-rose-500 font-medium">{formik.errors.shifts}</p>
+              <input
+                type="time"
+                name="eve_opening_time"
+                value={getTimeValue(formik.values.eve_opening_time)}
+                onChange={(e) => handleTimeChange(e, "eve_opening_time")}
+                onBlur={formik.handleBlur}
+                className={inputClass("eve_opening_time")}
+              />
+              {formik.touched.eve_opening_time && formik.errors.eve_opening_time && (
+                <p className="text-xs text-rose-500 font-medium">{formik.errors.eve_opening_time}</p>
               )}
             </div>
+          )}
 
-            {/* Morning Opening Time */}
-            {formik.values.shifts !== "evening" && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Morning Opening Time <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  name="opening_time"
-                  value={getTimeValue(formik.values.opening_time)}
-                  onChange={(e) => handleTimeChange(e, "opening_time")}
-                  onBlur={formik.handleBlur}
-                  className={inputClass("opening_time")}
-                />
-                {formik.touched.opening_time && formik.errors.opening_time && (
-                  <p className="text-xs text-rose-500 font-medium">{formik.errors.opening_time}</p>
-                )}
-              </div>
-            )}
-
-            {/* Morning Closing Time */}
-            {formik.values.shifts !== "evening" && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Morning Closing Time <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  name="closing_time"
-                  value={getTimeValue(formik.values.closing_time)}
-                  onChange={(e) => handleTimeChange(e, "closing_time")}
-                  onBlur={formik.handleBlur}
-                  className={inputClass("closing_time")}
-                />
-                {formik.touched.closing_time && formik.errors.closing_time && (
-                  <p className="text-xs text-rose-500 font-medium">{formik.errors.closing_time}</p>
-                )}
-              </div>
-            )}
-
-            {/* Evening Opening Time */}
-            {formik.values.shifts !== "morning" && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Evening Opening Time
-                </label>
-                <input
-                  type="time"
-                  name="eve_opening_time"
-                  value={getTimeValue(formik.values.eve_opening_time)}
-                  onChange={(e) => handleTimeChange(e, "eve_opening_time")}
-                  onBlur={formik.handleBlur}
-                  className={inputClass("eve_opening_time")}
-                />
-                {formik.touched.eve_opening_time && formik.errors.eve_opening_time && (
-                  <p className="text-xs text-rose-500 font-medium">{formik.errors.eve_opening_time}</p>
-                )}
-              </div>
-            )}
-
-            {/* Evening Closing Time */}
-            {formik.values.shifts !== "morning" && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Evening Closing Time
-                </label>
-                <input
-                  type="time"
-                  name="eve_closing_time"
-                  value={getTimeValue(formik.values.eve_closing_time)}
-                  onChange={(e) => handleTimeChange(e, "eve_closing_time")}
-                  onBlur={formik.handleBlur}
-                  className={inputClass("eve_closing_time")}
-                />
-                {formik.touched.eve_closing_time && formik.errors.eve_closing_time && (
-                  <p className="text-xs text-rose-500 font-medium">{formik.errors.eve_closing_time}</p>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Evening Closing Time */}
+          {formik.values.shifts !== "morning" && (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Evening Closing Time
+              </label>
+              <input
+                type="time"
+                name="eve_closing_time"
+                value={getTimeValue(formik.values.eve_closing_time)}
+                onChange={(e) => handleTimeChange(e, "eve_closing_time")}
+                onBlur={formik.handleBlur}
+                className={inputClass("eve_closing_time")}
+              />
+              {formik.touched.eve_closing_time && formik.errors.eve_closing_time && (
+                <p className="text-xs text-rose-500 font-medium">{formik.errors.eve_closing_time}</p>
+              )}
+            </div>
+          )}
         </div>
-
       </div>
     </form>
   );

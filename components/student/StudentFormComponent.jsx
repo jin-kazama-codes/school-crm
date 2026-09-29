@@ -1,9 +1,9 @@
-﻿/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
  * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
+ * restricted rights software. The use, reproduction, or disclosure of this software is subject to
  * restrictions set forth in your license agreement with School CRM.
  */
 
@@ -12,6 +12,7 @@ import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
 import dayjs from "dayjs";
+import { ChevronDown, Bus, Award, User, Users, HeartHandshake, ShieldCheck } from "lucide-react";
 
 import API from "../../apis";
 import Toast from "../common/Toast";
@@ -120,9 +121,8 @@ const StudentFormComponent = ({
     if (onChange) {
       onChange({
         values: formik.values,
-        // Bug #13 fix: formik.isSubmitting is false by the time onSubmit fires.
-                validated: Object.keys(formik.errors).length === 0,
-        dirty: formik.dirty
+        validated: Object.keys(formik.errors).length === 0,
+        dirty: formik.dirty,
       });
     }
   };
@@ -136,7 +136,7 @@ const StudentFormComponent = ({
             dispatch,
             true,
             "warning",
-            `Can not appoint Head ${formik.values.gender}`
+            `Cannot appoint Head ${formik.values.gender}`
           );
         }
       })
@@ -243,7 +243,7 @@ const StudentFormComponent = ({
 
   const formatDateForInput = (dateValue) => {
     if (!dateValue) return "";
-    return dayjs(dateValue).format('YYYY-MM-DD');
+    return dayjs(dateValue).format("YYYY-MM-DD");
   };
 
   const handleDateChange = (field, e) => {
@@ -253,109 +253,138 @@ const StudentFormComponent = ({
 
   const handleSubjectsChange = (e) => {
     const selectedOptions = Array.from(e.target.selectedOptions);
-    const selectedValues = selectedOptions.map(option => {
-        return (schoolSubjects?.listData || []).find(sub => sub.id == option.value);
-    }).filter(Boolean);
+    const selectedValues = selectedOptions
+      .map((option) => {
+        return (schoolSubjects?.listData || []).find(
+          (sub) => sub.id == option.value
+        );
+      })
+      .filter(Boolean);
     formik.setFieldValue("subjects", selectedValues);
   };
 
-  const inputClass = (fieldName) =>
-    `w-full px-4 py-2.5 bg-white dark:bg-[#1e1e1e] border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
-      formik.touched[fieldName] && formik.errors[fieldName]
-        ? 'border-red-400 focus:ring-red-500/40 bg-red-50/30 dark:bg-red-900/10'
-        : 'border-slate-200 dark:border-slate-700 focus:ring-emerald-500/40 hover:border-slate-300 dark:hover:border-slate-600'
-    }`;
-
-  const selectClass = (fieldName) =>
-    `${inputClass(fieldName)} appearance-none cursor-pointer`;
-
-  const labelClass = "block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5";
-  const errorClass = "mt-1 text-xs text-red-500 font-medium";
-
-  const SectionHeader = ({ icon, title, subtitle }) => (
-    <div className="col-span-1 md:col-span-2 flex items-center gap-3 pt-2 pb-1">
-      <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-base">
-        {icon}
-      </div>
-      <div>
-        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 tracking-tight">{title}</h3>
-        {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500">{subtitle}</p>}
-      </div>
-      <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800 ml-2" />
-    </div>
-  );
+  const inputClasses =
+    "w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#121212] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-400/20 focus:border-emerald-500 dark:focus:border-emerald-400 transition-all outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500";
+  
+  const selectClasses =
+    "w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#121212] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-400/20 focus:border-emerald-500 dark:focus:border-emerald-400 transition-all outline-none text-slate-900 dark:text-slate-100 cursor-pointer appearance-none";
+  
+  const labelClasses =
+    "block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5";
+  
+  const errorClasses = "text-rose-500 text-xs mt-1 ml-0.5 font-medium";
 
   return (
-    <div className="p-6 md:p-8">
-      <form ref={refId} onSubmit={formik.handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <form ref={refId} onSubmit={formik.handleSubmit} className="space-y-6">
+      
+      {/* ── CARD 1: Basic Information ────────────────────────────────────────── */}
+      <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+        <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-[#222]">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Basic Information
+          </h3>
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+            Student Profile & Identity Details
+          </span>
+        </div>
 
-          {/* ── Section: Personal Information ─────────────────────────── */}
-          <SectionHeader icon="👤" title="Personal Information" subtitle="Basic student identity details" />
-
-          <div className="col-span-1">
-            <label className={labelClass}>Session*</label>
-            <select
-              name="session"
-              value={formik.values.session}
-              onChange={(e) => formik.setFieldValue("session", e.target.value)}
-              onBlur={formik.handleBlur}
-              className={inputClass("session")}
-            >
-              <option value="" disabled>Select Session</option>
-              {createSession().map((session) => (
-                <option value={session} key={session}>{session}</option>
-              ))}
-            </select>
-            {formik.touched.session && formik.errors.session && <p className={errorClass}>{formik.errors.session}</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Session */}
+          <div>
+            <label className={labelClasses}>Session*</label>
+            <div className="relative">
+              <select
+                name="session"
+                value={formik.values.session}
+                onChange={(e) => formik.setFieldValue("session", e.target.value)}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.session && formik.errors.session
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="" disabled>Select Session</option>
+                {createSession().map((session) => (
+                  <option value={session} key={session}>
+                    {session}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.session && formik.errors.session && (
+              <p className={errorClasses}>{formik.errors.session}</p>
+            )}
           </div>
 
           {/* First Name */}
-          <div className="col-span-1">
-            <label className={labelClass}>Firstname*</label>
+          <div>
+            <label className={labelClasses}>Firstname*</label>
             <input
               type="text"
               name="firstname"
+              placeholder="Enter first name"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.firstname}
-              className={inputClass("firstname")}
+              className={`${inputClasses} ${
+                formik.touched.firstname && formik.errors.firstname
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.firstname && formik.errors.firstname && <p className={errorClass}>{formik.errors.firstname}</p>}
+            {formik.touched.firstname && formik.errors.firstname && (
+              <p className={errorClasses}>{formik.errors.firstname}</p>
+            )}
           </div>
 
           {/* Last Name */}
-          <div className="col-span-1">
-            <label className={labelClass}>Lastname*</label>
+          <div>
+            <label className={labelClasses}>Lastname*</label>
             <input
               type="text"
               name="lastname"
+              placeholder="Enter last name"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.lastname}
-              className={inputClass("lastname")}
+              className={`${inputClasses} ${
+                formik.touched.lastname && formik.errors.lastname
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.lastname && formik.errors.lastname && <p className={errorClass}>{formik.errors.lastname}</p>}
+            {formik.touched.lastname && formik.errors.lastname && (
+              <p className={errorClasses}>{formik.errors.lastname}</p>
+            )}
           </div>
 
           {/* Contact Number */}
-          <div className="col-span-1">
-            <label className={labelClass}>Contact Number*</label>
+          <div>
+            <label className={labelClasses}>Contact Number*</label>
             <input
               type="text"
               name="contact_no"
-              placeholder="e.g. 9876543210"
+              placeholder="Primary contact number"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.contact_no}
-              className={inputClass("contact_no")}
+              className={`${inputClasses} ${
+                formik.touched.contact_no && formik.errors.contact_no
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.contact_no && formik.errors.contact_no && <p className={errorClass}>{formik.errors.contact_no}</p>}
+            {formik.touched.contact_no && formik.errors.contact_no && (
+              <p className={errorClasses}>{formik.errors.contact_no}</p>
+            )}
           </div>
 
           {/* Email */}
-          <div className="col-span-1">
-            <label className={labelClass}>Email</label>
+          <div className="lg:col-span-2">
+            <label className={labelClasses}>Email</label>
             <input
               type="email"
               name="email"
@@ -363,14 +392,20 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.email}
-              className={inputClass("email")}
+              className={`${inputClasses} ${
+                formik.touched.email && formik.errors.email
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.email && formik.errors.email && <p className={errorClass}>{formik.errors.email}</p>}
+            {formik.touched.email && formik.errors.email && (
+              <p className={errorClasses}>{formik.errors.email}</p>
+            )}
           </div>
 
           {/* Aadhaar Number */}
-          <div className="col-span-1 md:col-span-2">
-            <label className={labelClass}>Aadhaar Number*</label>
+          <div>
+            <label className={labelClasses}>Aadhaar Number*</label>
             <input
               type="text"
               name="aadhaar_no"
@@ -378,340 +413,540 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.aadhaar_no}
-              className={inputClass("aadhaar_no")}
+              className={`${inputClasses} ${
+                formik.touched.aadhaar_no && formik.errors.aadhaar_no
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.aadhaar_no && formik.errors.aadhaar_no && <p className={errorClass}>{formik.errors.aadhaar_no}</p>}
+            {formik.touched.aadhaar_no && formik.errors.aadhaar_no && (
+              <p className={errorClasses}>{formik.errors.aadhaar_no}</p>
+            )}
+          </div>
+
+          {/* Gender */}
+          <div>
+            <label className={labelClasses}>Gender</label>
+            <div className="relative">
+              <select
+                ref={genderRef}
+                name="gender"
+                value={formik.values.gender}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.gender && formik.errors.gender
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="" disabled>Select Gender</option>
+                {Object.keys(config.gender).map((item) => (
+                  <option key={item} value={item}>
+                    {config.gender[item]}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.gender && formik.errors.gender && (
+              <p className={errorClasses}>{formik.errors.gender}</p>
+            )}
           </div>
 
           {/* Is Specially Abled */}
-          <div className="col-span-1 flex items-center">
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors w-full">
+          <div className="lg:col-span-4 pt-1">
+            <label className="flex items-center gap-3.5 p-3.5 rounded-xl border border-slate-200 dark:border-[#2e2e2e] bg-slate-50/50 dark:bg-[#141414] hover:bg-slate-100/50 dark:hover:bg-[#1a1a1a] transition-all cursor-pointer shadow-2xs">
               <input
                 type="checkbox"
                 name="is_specially_abled"
                 checked={formik.values.is_specially_abled}
-                onChange={(e) => formik.setFieldValue("is_specially_abled", e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                onChange={(e) =>
+                  formik.setFieldValue("is_specially_abled", e.target.checked)
+                }
+                className="w-4 h-4 rounded text-emerald-600 accent-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
               <div>
-                <span className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Specially Abled</span>
-                <p className="text-xs text-slate-400">Check if applicable</p>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                  Specially Abled Student
+                </span>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  Check if candidate requires special educational or accessibility accommodations
+                </p>
               </div>
             </label>
           </div>
+        </div>
+      </div>
 
-          {/* Gender */}
-          <div className="col-span-1">
-            <label className={labelClass}>Gender</label>
-            <select
-              ref={genderRef}
-              name="gender"
-              value={formik.values.gender}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className={selectClass("gender")}
-            >
-              <option value="" disabled>Select Gender</option>
-              {Object.keys(config.gender).map((item) => (
-                <option key={item} value={item}>{config.gender[item]}</option>
-              ))}
-            </select>
-            {formik.touched.gender && formik.errors.gender && <p className={errorClass}>{formik.errors.gender}</p>}
-          </div>
+      {/* ── CARD 2: Academic Details ────────────────────────────────────────── */}
+      <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+        <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-[#222]">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            Academic Details
+          </h3>
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+            Class, Section, Subjects & Enrollment
+          </span>
+        </div>
 
-          {/* ── Section: Academic Details ──────────────────────────────── */}
-          <SectionHeader icon="🎓" title="Academic Details" subtitle="Class, section and enrollment info" />
-
-          {userId && (
-            <div className="col-span-1 md:col-span-2">
-              <label className={labelClass}>
-                {updatedValues?.gender === "male" ? "Head Boy" : updatedValues?.gender === "female" ? "Head Girl" : "Head of School"}
-              </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Class */}
+          <div>
+            <label className={labelClasses}>Class*</label>
+            <div className="relative">
               <select
-                name="head"
-                value={formik.values.head}
+                name="class"
+                value={formik.values.class}
                 onChange={(e) => {
-                  if (formik.values.gender) {
-                    formik.setFieldValue("head", e.target.value);
-                    if (e.target.value == 1) { validateHead(); }
-                  } else {
-                    toastAndNavigate(dispatch, true, "info", "Please Select Gender");
-                  }
+                  formik.setFieldValue("class", e.target.value);
+                  if (formik.values.section) formik.setFieldValue("section", "");
+                  if (formik.values.subjects) formik.setFieldValue("subjects", []);
                 }}
                 onBlur={formik.handleBlur}
-                className={selectClass("head")}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.class && formik.errors.class
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
               >
-                {Object.keys(config.head).map((item) => (
-                  <option key={item} value={item}>{config.head[item]}</option>
+                <option value="" disabled>Select Class</option>
+                {schoolClasses?.listData?.map((cls) => (
+                  <option value={cls.class_id} key={cls.class_id}>
+                    {cls.class_name}
+                  </option>
                 ))}
               </select>
-              {formik.touched.head && formik.errors.head && <p className={errorClass}>{formik.errors.head}</p>}
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
-          )}
+            {formik.touched.class && formik.errors.class && (
+              <p className={errorClasses}>{formik.errors.class}</p>
+            )}
+          </div>
 
-          {/* DOB */}
-          <div className="col-span-1">
-            <label className={labelClass}>Date Of Birth*</label>
+          {/* Section */}
+          <div>
+            <label className={labelClasses}>Section*</label>
+            <div className="relative">
+              <select
+                name="section"
+                value={formik.values.section}
+                onChange={(e) => {
+                  formik.setFieldValue("section", e.target.value);
+                  if (formik.values.subjects) formik.setFieldValue("subjects", []);
+                }}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.section && formik.errors.section
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="" disabled>Select Section</option>
+                {schoolSections?.listData?.map((section) => (
+                  <option value={section.section_id} key={section.section_id}>
+                    {section.section_name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.section && formik.errors.section && (
+              <p className={errorClasses}>{formik.errors.section}</p>
+            )}
+          </div>
+
+          {/* Date Of Birth */}
+          <div>
+            <label className={labelClasses}>Date Of Birth*</label>
             <input
               type="date"
               name="dob"
               onBlur={formik.handleBlur}
               onChange={(e) => handleDateChange("dob", e)}
               value={formatDateForInput(formik.values.dob)}
-              className={inputClass("dob")}
+              className={`${inputClasses} ${
+                formik.touched.dob && formik.errors.dob
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.dob && formik.errors.dob && <p className={errorClass}>{formik.errors.dob}</p>}
+            {formik.touched.dob && formik.errors.dob && (
+              <p className={errorClasses}>{formik.errors.dob}</p>
+            )}
           </div>
 
           {/* Admission Date */}
-          <div className="col-span-1">
-            <label className={labelClass}>Admission Date*</label>
+          <div>
+            <label className={labelClasses}>Admission Date*</label>
             <input
               type="date"
               name="admission_date"
               onBlur={formik.handleBlur}
               onChange={(e) => handleDateChange("admission_date", e)}
               value={formatDateForInput(formik.values.admission_date)}
-              className={inputClass("admission_date")}
+              className={`${inputClasses} ${
+                formik.touched.admission_date && formik.errors.admission_date
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.admission_date && formik.errors.admission_date && <p className={errorClass}>{formik.errors.admission_date}</p>}
+            {formik.touched.admission_date && formik.errors.admission_date && (
+              <p className={errorClasses}>{formik.errors.admission_date}</p>
+            )}
           </div>
 
           {/* Admission Type */}
-          <div className="col-span-1">
-            <label className={labelClass}>Admission Type*</label>
-            <select
-              name="admission_type"
-              value={formik.values.admission_type}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className={selectClass("admission_type")}
-            >
-              {Object.keys(config.admission_type).map((item) => (
-                <option key={item} value={item}>{config.admission_type[item]}</option>
-              ))}
-            </select>
-            {formik.touched.admission_type && formik.errors.admission_type && <p className={errorClass}>{formik.errors.admission_type}</p>}
+          <div>
+            <label className={labelClasses}>Admission Type*</label>
+            <div className="relative">
+              <select
+                name="admission_type"
+                value={formik.values.admission_type}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.admission_type && formik.errors.admission_type
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                {Object.keys(config.admission_type).map((item) => (
+                  <option key={item} value={item}>
+                    {config.admission_type[item]}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.admission_type && formik.errors.admission_type && (
+              <p className={errorClasses}>{formik.errors.admission_type}</p>
+            )}
           </div>
 
-          {/* Class */}
-          <div className="col-span-1">
-            <label className={labelClass}>Class*</label>
-            <select
-              name="class"
-              value={formik.values.class}
-              onChange={(e) => {
-                formik.setFieldValue("class", e.target.value);
-                if (formik.values.section) formik.setFieldValue("section", "");
-                if (formik.values.subjects) formik.setFieldValue("subjects", []);
-              }}
-              onBlur={formik.handleBlur}
-              className={selectClass("class")}
-            >
-              <option value="" disabled>Select Class</option>
-              {schoolClasses?.listData?.map((cls) => (
-                <option value={cls.class_id} key={cls.class_id}>{cls.class_name}</option>
-              ))}
-            </select>
-            {formik.touched.class && formik.errors.class && <p className={errorClass}>{formik.errors.class}</p>}
-          </div>
+          {/* Head Position (Edit Mode Only) */}
+          {userId && (
+            <div>
+              <label className={labelClasses}>
+                {updatedValues?.gender === "male"
+                  ? "Head Boy"
+                  : updatedValues?.gender === "female"
+                  ? "Head Girl"
+                  : "Head of School"}
+              </label>
+              <div className="relative">
+                <select
+                  name="head"
+                  value={formik.values.head}
+                  onChange={(e) => {
+                    if (formik.values.gender) {
+                      formik.setFieldValue("head", e.target.value);
+                      if (e.target.value == 1) {
+                        validateHead();
+                      }
+                    } else {
+                      toastAndNavigate(dispatch, true, "info", "Please Select Gender");
+                    }
+                  }}
+                  onBlur={formik.handleBlur}
+                  className={`${selectClasses} pr-9 ${
+                    formik.touched.head && formik.errors.head
+                      ? "border-rose-400 ring-1 ring-rose-400"
+                      : ""
+                  }`}
+                >
+                  {Object.keys(config.head).map((item) => (
+                    <option key={item} value={item}>
+                      {config.head[item]}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              {formik.touched.head && formik.errors.head && (
+                <p className={errorClasses}>{formik.errors.head}</p>
+              )}
+            </div>
+          )}
 
-          {/* Section */}
-          <div className="col-span-1">
-            <label className={labelClass}>Section*</label>
-            <select
-              name="section"
-              value={formik.values.section}
-              onChange={(e) => {
-                formik.setFieldValue("section", e.target.value);
-                if (formik.values.subjects) formik.setFieldValue("subjects", []);
-              }}
-              onBlur={formik.handleBlur}
-              className={selectClass("section")}
-            >
-              <option value="" disabled>Select Section</option>
-              {schoolSections?.listData?.map((section) => (
-                <option value={section.section_id} key={section.section_id}>{section.section_name}</option>
-              ))}
-            </select>
-            {formik.touched.section && formik.errors.section && <p className={errorClass}>{formik.errors.section}</p>}
-          </div>
-
-          {/* Subjects */}
-          <div className="col-span-1 md:col-span-2">
-            <label className={labelClass}>Subjects*</label>
+          {/* Subjects (Multiple Select) */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4">
+            <label className={labelClasses}>Enrolled Subjects*</label>
             <select
               multiple
               name="subjects"
-              value={formik.values.subjects.map(s => s.id)}
+              value={formik.values.subjects.map((s) => s.id)}
               onChange={handleSubjectsChange}
               onBlur={formik.handleBlur}
-              className={`${inputClass("subjects")} h-28`}
+              className={`${inputClasses} h-28 custom-scrollbar`}
             >
               {schoolSubjects?.listData?.map((sub) => (
-                <option value={sub.id} key={sub.id}>{sub.name}</option>
+                <option value={sub.id} key={sub.id} className="py-1 px-1.5 rounded">
+                  {sub.name}
+                </option>
               ))}
             </select>
-            {formik.touched.subjects && formik.errors.subjects && <p className={errorClass}>{formik.errors.subjects}</p>}
-            <p className="text-xs text-slate-400 mt-1">💡 Hold Ctrl (or ⌘) to select multiple subjects</p>
+            {formik.touched.subjects && formik.errors.subjects && (
+              <p className={errorClasses}>{formik.errors.subjects}</p>
+            )}
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+              💡 Hold Ctrl (or ⌘ on Mac) to select multiple subjects assigned to this class section
+            </p>
           </div>
+        </div>
+      </div>
 
-          {/* ── Section: Additional Details ────────────────────────────── */}
-          <SectionHeader icon="📋" title="Additional Details" subtitle="Blood group, house, status and more" />
+      {/* ── CARD 3: Additional & Transportation Details ──────────────────────── */}
+      <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+        <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-[#222]">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+            Additional & Transportation Details
+          </h3>
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+            Blood Group, House, Bus Facility & Fee Waiver
+          </span>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Blood Group */}
-          <div className="col-span-1">
-            <label className={labelClass}>Blood Group</label>
-            <select
-              name="blood_group"
-              value={formik.values.blood_group}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className={selectClass("blood_group")}
-            >
-              <option value="" disabled>Select Blood Group</option>
-              {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
-                <option value={bg} key={bg}>{bg}</option>
-              ))}
-            </select>
-            {formik.touched.blood_group && formik.errors.blood_group && <p className={errorClass}>{formik.errors.blood_group}</p>}
+          <div>
+            <label className={labelClasses}>Blood Group</label>
+            <div className="relative">
+              <select
+                name="blood_group"
+                value={formik.values.blood_group}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.blood_group && formik.errors.blood_group
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="" disabled>Select Blood Group</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                  <option value={bg} key={bg}>
+                    {bg}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.blood_group && formik.errors.blood_group && (
+              <p className={errorClasses}>{formik.errors.blood_group}</p>
+            )}
           </div>
 
           {/* Birth Mark */}
-          <div className="col-span-1">
-            <label className={labelClass}>Birth Mark</label>
+          <div>
+            <label className={labelClasses}>Birth Mark</label>
             <input
               type="text"
               name="birth_mark"
+              placeholder="Identification mark"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.birth_mark}
-              className={inputClass("birth_mark")}
+              className={`${inputClasses} ${
+                formik.touched.birth_mark && formik.errors.birth_mark
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.birth_mark && formik.errors.birth_mark && <p className={errorClass}>{formik.errors.birth_mark}</p>}
+            {formik.touched.birth_mark && formik.errors.birth_mark && (
+              <p className={errorClasses}>{formik.errors.birth_mark}</p>
+            )}
           </div>
 
           {/* Religion */}
-          <div className="col-span-1">
-            <label className={labelClass}>Religion</label>
+          <div>
+            <label className={labelClasses}>Religion</label>
             <input
               type="text"
               name="religion"
+              placeholder="e.g. Hindu, Muslim, Christian"
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.religion}
-              className={inputClass("religion")}
+              className={`${inputClasses} ${
+                formik.touched.religion && formik.errors.religion
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+              }`}
             />
-            {formik.touched.religion && formik.errors.religion && <p className={errorClass}>{formik.errors.religion}</p>}
+            {formik.touched.religion && formik.errors.religion && (
+              <p className={errorClasses}>{formik.errors.religion}</p>
+            )}
           </div>
 
           {/* Nationality */}
-          <div className="col-span-1">
-            <label className={labelClass}>Nationality</label>
-            <select
-              name="nationality"
-              value={formik.values.nationality}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className={selectClass("nationality")}
-            >
-              <option value="indian">Indian</option>
-              <option value="nri">NRI</option>
-            </select>
-            {formik.touched.nationality && formik.errors.nationality && <p className={errorClass}>{formik.errors.nationality}</p>}
+          <div>
+            <label className={labelClasses}>Nationality</label>
+            <div className="relative">
+              <select
+                name="nationality"
+                value={formik.values.nationality}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.nationality && formik.errors.nationality
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="indian">Indian</option>
+                <option value="nri">NRI</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.nationality && formik.errors.nationality && (
+              <p className={errorClasses}>{formik.errors.nationality}</p>
+            )}
           </div>
 
           {/* Caste Group */}
-          <div className="col-span-1">
-            <label className={labelClass}>Caste Group</label>
-            <select
-              name="caste_group"
-              value={formik.values.caste_group}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className={selectClass("caste_group")}
-            >
-              <option value="" disabled>Select Caste</option>
-              <option value="general">General</option>
-              <option value="obc">OBC</option>
-              <option value="sc">SC</option>
-              <option value="st">ST</option>
-            </select>
-            {formik.touched.caste_group && formik.errors.caste_group && <p className={errorClass}>{formik.errors.caste_group}</p>}
+          <div>
+            <label className={labelClasses}>Caste Group</label>
+            <div className="relative">
+              <select
+                name="caste_group"
+                value={formik.values.caste_group}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.caste_group && formik.errors.caste_group
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="" disabled>Select Caste</option>
+                <option value="general">General</option>
+                <option value="obc">OBC</option>
+                <option value="sc">SC</option>
+                <option value="st">ST</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.caste_group && formik.errors.caste_group && (
+              <p className={errorClasses}>{formik.errors.caste_group}</p>
+            )}
           </div>
 
           {/* Student House */}
-          <div className="col-span-1">
-            <label className={labelClass}>Student House</label>
-            <select
-              name="house"
-              value={formik.values.house || ""}
-              onChange={(e) => formik.setFieldValue("house", e.target.value)}
-              onBlur={formik.handleBlur}
-              className={selectClass("house")}
-            >
-              <option value="" disabled>Select House</option>
-              {!listingSchoolHouses?.listData?.rows?.length ? (
-                <option disabled>No House Created</option>
-              ) : (
-                listingSchoolHouses.listData.rows.map(item => (
-                  <option value={item.id} key={item.id}>{item.name}</option>
-                ))
-              )}
-            </select>
-            {formik.touched.house && formik.errors.house && <p className={errorClass}>{formik.errors.house}</p>}
+          <div>
+            <label className={labelClasses}>Student House</label>
+            <div className="relative">
+              <select
+                name="house"
+                value={formik.values.house || ""}
+                onChange={(e) => formik.setFieldValue("house", e.target.value)}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.house && formik.errors.house
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="" disabled>Select House</option>
+                {!listingSchoolHouses?.listData?.rows?.length ? (
+                  <option disabled>No House Created</option>
+                ) : (
+                  listingSchoolHouses.listData.rows.map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {item.name}
+                    </option>
+                  ))
+                )}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.house && formik.errors.house && (
+              <p className={errorClasses}>{formik.errors.house}</p>
+            )}
           </div>
 
           {/* Status */}
-          <div className="col-span-1">
-            <label className={labelClass}>Status</label>
-            <select
-              name="status"
-              value={formik.values.status}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className={selectClass("status")}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            {formik.touched.status && formik.errors.status && <p className={errorClass}>{formik.errors.status}</p>}
+          <div>
+            <label className={labelClasses}>Status</label>
+            <div className="relative">
+              <select
+                name="status"
+                value={formik.values.status}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                className={`${selectClasses} pr-9 ${
+                  formik.touched.status && formik.errors.status
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            {formik.touched.status && formik.errors.status && (
+              <p className={errorClasses}>{formik.errors.status}</p>
+            )}
           </div>
 
-          {/* Bus Checkbox and Selector */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-4 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 flex flex-col md:flex-row items-center gap-6">
+          {/* Empty spacer for grid alignment */}
+          <div className="hidden lg:block"></div>
+
+          {/* Bus Checkbox and Selector Strip */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 p-4 rounded-xl border border-slate-200 dark:border-[#2e2e2e] bg-slate-50/50 dark:bg-[#141414] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
             <label className="flex items-center gap-3 cursor-pointer shrink-0">
               <input
                 type="checkbox"
                 name="is_taking_bus"
                 checked={formik.values.is_taking_bus}
-                onChange={(e) => formik.setFieldValue("is_taking_bus", e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                onChange={(e) =>
+                  formik.setFieldValue("is_taking_bus", e.target.checked)
+                }
+                className="w-4 h-4 rounded text-emerald-600 accent-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
-              <span className="font-medium text-slate-700 dark:text-slate-300">Bus Required</span>
+              <div>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                  <Bus className="w-3.5 h-3.5 text-blue-500" />
+                  Bus Facility Required
+                </span>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  Assign school transportation route
+                </p>
+              </div>
             </label>
             {formik.values.is_taking_bus && (
-              <div className="w-full md:w-64">
-                <label className={labelClass}>Bus Number</label>
+              <div className="w-full sm:w-48 relative shrink-0">
                 <select
                   name="bus"
                   value={formik.values.bus || ""}
                   onChange={(e) => formik.setFieldValue("bus", e.target.value)}
                   onBlur={formik.handleBlur}
-                  className={inputClass("bus")}
+                  className={`${selectClasses} text-xs py-2 pr-8 ${
+                    formik.touched.bus && formik.errors.bus
+                      ? "border-rose-400 ring-1 ring-rose-400"
+                      : ""
+                  }`}
                 >
                   <option value="" disabled>Select Bus</option>
                   {allBuses?.listData?.rows?.map((item) => (
-                    <option value={item.id} key={item.id}>{item.registration_no}</option>
+                    <option value={item.id} key={item.id}>
+                      {item.registration_no}
+                    </option>
                   ))}
                 </select>
-                {formik.touched.bus && formik.errors.bus && <p className={errorClass}>{formik.errors.bus}</p>}
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                {formik.touched.bus && formik.errors.bus && (
+                  <p className={errorClasses}>{formik.errors.bus}</p>
+                )}
               </div>
             )}
           </div>
 
-          {/* Fee Waiver Checkbox and Selectors */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-4 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 flex flex-col md:flex-row items-center gap-6">
+          {/* Fee Waiver Checkbox and Selectors Strip */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 p-4 rounded-xl border border-slate-200 dark:border-[#2e2e2e] bg-slate-50/50 dark:bg-[#141414] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
             <label className="flex items-center gap-3 cursor-pointer shrink-0">
               <input
                 type="checkbox"
@@ -724,186 +959,288 @@ const StudentFormComponent = ({
                     formik.setFieldValue("waived_fees", "");
                   }
                 }}
-                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="w-4 h-4 rounded text-emerald-600 accent-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
-              <span className="font-medium text-slate-700 dark:text-slate-300">Is Fee Waiver</span>
+              <div>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-amber-500" />
+                  Fee Waiver / Concession
+                </span>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  Scholarship or fee discount grant
+                </p>
+              </div>
             </label>
             {formik.values.is_fee_waiver && (
-              <div className="w-full md:w-48">
-                <label className={labelClass}>Fee Waiver Type</label>
-                <select
-                  name="fee_waiver_type"
-                  value={formik.values.fee_waiver_type}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={inputClass("fee_waiver_type")}
-                >
-                  <option value="" disabled>Select Type</option>
-                  <option value="partial">Partial</option>
-                  <option value="full">Full</option>
-                </select>
-                {formik.touched.fee_waiver_type && formik.errors.fee_waiver_type && <p className={errorClass}>{formik.errors.fee_waiver_type}</p>}
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <div className="w-full sm:w-36 relative">
+                  <select
+                    name="fee_waiver_type"
+                    value={formik.values.fee_waiver_type}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className={`${selectClasses} text-xs py-2 pr-8 ${
+                      formik.touched.fee_waiver_type && formik.errors.fee_waiver_type
+                        ? "border-rose-400 ring-1 ring-rose-400"
+                        : ""
+                    }`}
+                  >
+                    <option value="" disabled>Select Type</option>
+                    <option value="partial">Partial</option>
+                    <option value="full">Full</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                {formik.values.fee_waiver_type === "partial" && (
+                  <div className="w-full sm:w-36">
+                    <input
+                      type="text"
+                      name="waived_fees"
+                      placeholder="Amount (₹)"
+                      onBlur={formik.handleBlur}
+                      onChange={formik.handleChange}
+                      value={formik.values.waived_fees}
+                      className={`${inputClasses} text-xs py-2 ${
+                        formik.touched.waived_fees && formik.errors.waived_fees
+                          ? "border-rose-400 ring-1 ring-rose-400"
+                          : ""
+                      }`}
+                    />
+                  </div>
+                )}
               </div>
             )}
-            {formik.values.fee_waiver_type === "partial" && formik.values.is_fee_waiver && (
-              <div className="w-full md:w-64">
-                <label className={labelClass}>Waived Fees (in rupees)</label>
-                <input
-                  type="text"
-                  name="waived_fees"
-                  onBlur={formik.handleBlur}
-                  onChange={formik.handleChange}
-                  value={formik.values.waived_fees}
-                  className={inputClass("waived_fees")}
-                />
-                {formik.touched.waived_fees && formik.errors.waived_fees && <p className={errorClass}>{formik.errors.waived_fees}</p>}
-              </div>
-            )}
           </div>
-
-          {/* Mother's Details */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-4 mt-4">
-            <fieldset className="border-2 border-emerald-500/30 rounded-2xl p-6 bg-emerald-50/30 dark:bg-emerald-900/10">
-              <legend className="text-emerald-700 dark:text-emerald-400 font-bold px-3 text-lg">Mother's Details</legend>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className={labelClass}>Mother's Name*</label>
-                  <input
-                    type="text"
-                    name="mother_name"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.mother_name}
-                    className={inputClass("mother_name")}
-                  />
-                  {formik.touched.mother_name && formik.errors.mother_name && <p className={errorClass}>{formik.errors.mother_name}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Mother Contact Number*</label>
-                  <input
-                    type="number"
-                    name="mother_contact_no"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.mother_contact_no}
-                    className={inputClass("mother_contact_no")}
-                  />
-                  {formik.touched.mother_contact_no && formik.errors.mother_contact_no && <p className={errorClass}>{formik.errors.mother_contact_no}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Mother Aadhar*</label>
-                  <input
-                    type="number"
-                    name="mother_aadhar"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.mother_aadhar}
-                    className={inputClass("mother_aadhar")}
-                  />
-                  {formik.touched.mother_aadhar && formik.errors.mother_aadhar && <p className={errorClass}>{formik.errors.mother_aadhar}</p>}
-                </div>
-              </div>
-            </fieldset>
-          </div>
-
-          {/* Father's Details */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-4">
-            <fieldset className="border-2 border-blue-500/30 rounded-2xl p-6 bg-blue-50/30 dark:bg-blue-900/10">
-              <legend className="text-blue-700 dark:text-blue-400 font-bold px-3 text-lg">Father's Details</legend>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className={labelClass}>Father's Name*</label>
-                  <input
-                    type="text"
-                    name="father_name"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.father_name}
-                    className={inputClass("father_name")}
-                  />
-                  {formik.touched.father_name && formik.errors.father_name && <p className={errorClass}>{formik.errors.father_name}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Father's Contact Number*</label>
-                  <input
-                    type="number"
-                    name="father_contact_no"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.father_contact_no}
-                    className={inputClass("father_contact_no")}
-                  />
-                  {formik.touched.father_contact_no && formik.errors.father_contact_no && <p className={errorClass}>{formik.errors.father_contact_no}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Father's Aadhar*</label>
-                  <input
-                    type="number"
-                    name="father_aadhar"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.father_aadhar}
-                    className={inputClass("father_aadhar")}
-                  />
-                  {formik.touched.father_aadhar && formik.errors.father_aadhar && <p className={errorClass}>{formik.errors.father_aadhar}</p>}
-                </div>
-              </div>
-            </fieldset>
-          </div>
-
-          {/* Guardian's Details */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-4">
-            <fieldset className="border-2 border-purple-500/30 rounded-2xl p-6 bg-purple-50/30 dark:bg-purple-900/10">
-              <legend className="text-purple-700 dark:text-purple-400 font-bold px-3 text-lg">Guardian's Details (if any)</legend>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className={labelClass}>Guardian's Name</label>
-                  <input
-                    type="text"
-                    name="guardian_name"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.guardian_name}
-                    className={inputClass("guardian_name")}
-                  />
-                  {formik.touched.guardian_name && formik.errors.guardian_name && <p className={errorClass}>{formik.errors.guardian_name}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Guardian's Contact Number</label>
-                  <input
-                    type="number"
-                    name="guardian_contact_no"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.guardian_contact_no}
-                    className={inputClass("guardian_contact_no")}
-                  />
-                  {formik.touched.guardian_contact_no && formik.errors.guardian_contact_no && <p className={errorClass}>{formik.errors.guardian_contact_no}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Guardian's Aadhar</label>
-                  <input
-                    type="number"
-                    name="guardian_aadhar"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.guardian_aadhar}
-                    className={inputClass("guardian_aadhar")}
-                  />
-                  {formik.touched.guardian_aadhar && formik.errors.guardian_aadhar && <p className={errorClass}>{formik.errors.guardian_aadhar}</p>}
-                </div>
-              </div>
-            </fieldset>
-          </div>
-
         </div>
-      </form>
+      </div>
+
+      {/* ── CARD 4: Parent & Guardian Details ─────────────────────────────────── */}
+      <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200 space-y-6">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#222]">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+            Parent & Guardian Records
+          </h3>
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+            Family Contacts & Verification Records
+          </span>
+        </div>
+
+        {/* Mother's Details */}
+        <div className="p-4 md:p-5 rounded-xl border border-slate-200/80 dark:border-[#282828] bg-slate-50/40 dark:bg-[#131313] space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-[#222]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              Mother's Information
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+              <label className={labelClasses}>Mother's Name*</label>
+              <input
+                type="text"
+                name="mother_name"
+                placeholder="Enter mother's name"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.mother_name}
+                className={`${inputClasses} ${
+                  formik.touched.mother_name && formik.errors.mother_name
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.mother_name && formik.errors.mother_name && (
+                <p className={errorClasses}>{formik.errors.mother_name}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClasses}>Mother Contact Number*</label>
+              <input
+                type="number"
+                name="mother_contact_no"
+                placeholder="10-digit mobile number"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.mother_contact_no}
+                className={`${inputClasses} ${
+                  formik.touched.mother_contact_no && formik.errors.mother_contact_no
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.mother_contact_no && formik.errors.mother_contact_no && (
+                <p className={errorClasses}>{formik.errors.mother_contact_no}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClasses}>Mother Aadhar*</label>
+              <input
+                type="number"
+                name="mother_aadhar"
+                placeholder="12-digit Aadhaar number"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.mother_aadhar}
+                className={`${inputClasses} ${
+                  formik.touched.mother_aadhar && formik.errors.mother_aadhar
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.mother_aadhar && formik.errors.mother_aadhar && (
+                <p className={errorClasses}>{formik.errors.mother_aadhar}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Father's Details */}
+        <div className="p-4 md:p-5 rounded-xl border border-slate-200/80 dark:border-[#282828] bg-slate-50/40 dark:bg-[#131313] space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-[#222]">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              Father's Information
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+              <label className={labelClasses}>Father's Name*</label>
+              <input
+                type="text"
+                name="father_name"
+                placeholder="Enter father's name"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.father_name}
+                className={`${inputClasses} ${
+                  formik.touched.father_name && formik.errors.father_name
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.father_name && formik.errors.father_name && (
+                <p className={errorClasses}>{formik.errors.father_name}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClasses}>Father's Contact Number*</label>
+              <input
+                type="number"
+                name="father_contact_no"
+                placeholder="10-digit mobile number"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.father_contact_no}
+                className={`${inputClasses} ${
+                  formik.touched.father_contact_no && formik.errors.father_contact_no
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.father_contact_no && formik.errors.father_contact_no && (
+                <p className={errorClasses}>{formik.errors.father_contact_no}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClasses}>Father's Aadhar*</label>
+              <input
+                type="number"
+                name="father_aadhar"
+                placeholder="12-digit Aadhaar number"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.father_aadhar}
+                className={`${inputClasses} ${
+                  formik.touched.father_aadhar && formik.errors.father_aadhar
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.father_aadhar && formik.errors.father_aadhar && (
+                <p className={errorClasses}>{formik.errors.father_aadhar}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Guardian's Details */}
+        <div className="p-4 md:p-5 rounded-xl border border-slate-200/80 dark:border-[#282828] bg-slate-50/40 dark:bg-[#131313] space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-[#222]">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              Guardian's Details (Optional)
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+              <label className={labelClasses}>Guardian's Name</label>
+              <input
+                type="text"
+                name="guardian_name"
+                placeholder="Enter guardian's name"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.guardian_name}
+                className={`${inputClasses} ${
+                  formik.touched.guardian_name && formik.errors.guardian_name
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.guardian_name && formik.errors.guardian_name && (
+                <p className={errorClasses}>{formik.errors.guardian_name}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClasses}>Guardian's Contact Number</label>
+              <input
+                type="number"
+                name="guardian_contact_no"
+                placeholder="10-digit mobile number"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.guardian_contact_no}
+                className={`${inputClasses} ${
+                  formik.touched.guardian_contact_no && formik.errors.guardian_contact_no
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.guardian_contact_no && formik.errors.guardian_contact_no && (
+                <p className={errorClasses}>{formik.errors.guardian_contact_no}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClasses}>Guardian's Aadhar</label>
+              <input
+                type="number"
+                name="guardian_aadhar"
+                placeholder="12-digit Aadhaar number"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.guardian_aadhar}
+                className={`${inputClasses} ${
+                  formik.touched.guardian_aadhar && formik.errors.guardian_aadhar
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                }`}
+              />
+              {formik.touched.guardian_aadhar && formik.errors.guardian_aadhar && (
+                <p className={errorClasses}>{formik.errors.guardian_aadhar}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
       <Toast
         alerting={toastInfo.toastAlert}
         severity={toastInfo.toastSeverity}
         message={toastInfo.toastMessage}
       />
-    </div>
+    </form>
   );
 };
 

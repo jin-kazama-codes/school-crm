@@ -7,11 +7,13 @@
  */
 
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { Formik } from "formik";
 import * as Yup from 'yup';
+import { X, Key, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 
 import API from "../../apis";
 import Loader from "../common/Loader";
@@ -55,6 +57,10 @@ const ChangePwModal = ({ openDialog, setOpenDialog }) => {
     };
 
     const [loading, setLoading] = useState(false);
+    const [showOldPw, setShowOldPw] = useState(false);
+    const [showNewPw, setShowNewPw] = useState(false);
+    const [showConfirmPw, setShowConfirmPw] = useState(false);
+
     const oldPasswordRef = useRef(null);
     const navigateTo = useNavigate();
     const dispatch = useDispatch();
@@ -94,27 +100,48 @@ const ChangePwModal = ({ openDialog, setOpenDialog }) => {
         }
     };
 
-    if (!openDialog) return null;
+    if (!openDialog || typeof document === "undefined") return null;
 
-    const inputClasses = "w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500";
-    const labelClasses = "block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2";
-    const errorClasses = "text-red-500 text-xs mt-1 ml-1 font-medium";
+    const inputClasses = "w-full pl-10 pr-10 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all";
+    const labelClasses = "block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5";
+    const errorClasses = "text-rose-500 text-xs mt-1 ml-0.5 font-medium";
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div 
-                className="w-full max-w-2xl bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                className="w-full max-w-xl bg-white dark:bg-[#141414] rounded-3xl shadow-2xl border border-slate-100 dark:border-[#222] overflow-hidden animate-in zoom-in-95 duration-200 relative"
                 style={{
-                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${formBg?.src || formBg})`,
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "center",
                     backgroundSize: "cover"
                 }}
             >
-                <div className="p-6 md:p-8">
-                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 text-center mb-8">
-                        Change Password
-                    </h2>
+                {/* Close Button */}
+                <button
+                    type="button"
+                    onClick={handleDialogClose}
+                    className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] transition-colors cursor-pointer z-10"
+                    title="Close Dialog"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
+                <div className="p-6 sm:p-8 space-y-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-3.5 pb-5 border-b border-slate-200/80 dark:border-slate-800">
+                        <div className="p-3 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-xs">
+                            <Key className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 dark:text-white leading-tight">
+                                Change Password
+                            </h2>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                Ensure your account stays protected with a strong password
+                            </p>
+                        </div>
+                    </div>
 
                     <Formik
                         initialValues={initialValues}
@@ -131,74 +158,114 @@ const ChangePwModal = ({ openDialog, setOpenDialog }) => {
                             handleChange,
                             handleSubmit
                         }) => (
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="md:col-span-2">
-                                        <label className={labelClasses}>Old Password*</label>
-                                        <input
-                                            type="password"
-                                            name="oldPassword"
-                                            ref={oldPasswordRef}
-                                            value={values.oldPassword}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            className={`${inputClasses} ${touched.oldPassword && errors.oldPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                            placeholder="Enter old password"
-                                        />
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <div className="space-y-4">
+                                    {/* Old Password */}
+                                    <div>
+                                        <label className={labelClasses}>Current Password*</label>
+                                        <div className="relative">
+                                            <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            <input
+                                                type={showOldPw ? "text" : "password"}
+                                                name="oldPassword"
+                                                ref={oldPasswordRef}
+                                                value={values.oldPassword}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                className={`${inputClasses} ${touched.oldPassword && errors.oldPassword ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500'}`}
+                                                placeholder="Enter current password"
+                                                autoComplete="current-password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowOldPw(!showOldPw)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5"
+                                                tabIndex={-1}
+                                            >
+                                                {showOldPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                         {touched.oldPassword && errors.oldPassword && (
                                             <p className={errorClasses}>{errors.oldPassword}</p>
                                         )}
                                     </div>
 
-                                    <div>
-                                        <label className={labelClasses}>New Password*</label>
-                                        <input
-                                            type="password"
-                                            name="newPassword"
-                                            value={values.newPassword}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            className={`${inputClasses} ${touched.newPassword && errors.newPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                            placeholder="Enter new password"
-                                        />
-                                        {touched.newPassword && errors.newPassword && (
-                                            <p className={errorClasses}>{errors.newPassword}</p>
-                                        )}
-                                    </div>
+                                    {/* New Password */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className={labelClasses}>New Password*</label>
+                                            <div className="relative">
+                                                <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                <input
+                                                    type={showNewPw ? "text" : "password"}
+                                                    name="newPassword"
+                                                    value={values.newPassword}
+                                                    onChange={handleChange}
+                                                    onBlur={handleBlur}
+                                                    className={`${inputClasses} ${touched.newPassword && errors.newPassword ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500'}`}
+                                                    placeholder="Enter new password"
+                                                    autoComplete="new-password"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowNewPw(!showNewPw)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5"
+                                                    tabIndex={-1}
+                                                >
+                                                    {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            </div>
+                                            {touched.newPassword && errors.newPassword && (
+                                                <p className={errorClasses}>{errors.newPassword}</p>
+                                            )}
+                                        </div>
 
-                                    <div>
-                                        <label className={labelClasses}>Confirm New Password*</label>
-                                        <input
-                                            type="password"
-                                            name="confirmNewPassword"
-                                            value={values.confirmNewPassword}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            className={`${inputClasses} ${touched.confirmNewPassword && errors.confirmNewPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                            placeholder="Confirm new password"
-                                        />
-                                        {touched.confirmNewPassword && errors.confirmNewPassword && (
-                                            <p className={errorClasses}>{errors.confirmNewPassword}</p>
-                                        )}
+                                        <div>
+                                            <label className={labelClasses}>Confirm Password*</label>
+                                            <div className="relative">
+                                                <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                <input
+                                                    type={showConfirmPw ? "text" : "password"}
+                                                    name="confirmNewPassword"
+                                                    value={values.confirmNewPassword}
+                                                    onChange={handleChange}
+                                                    onBlur={handleBlur}
+                                                    className={`${inputClasses} ${touched.confirmNewPassword && errors.confirmNewPassword ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-slate-300 dark:border-[#333] focus:ring-emerald-500/20 focus:border-emerald-500'}`}
+                                                    placeholder="Confirm new password"
+                                                    autoComplete="new-password"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPw(!showConfirmPw)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5"
+                                                    tabIndex={-1}
+                                                >
+                                                    {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            </div>
+                                            {touched.confirmNewPassword && errors.confirmNewPassword && (
+                                                <p className={errorClasses}>{errors.confirmNewPassword}</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <hr className="border-slate-200 dark:border-slate-700/50 my-6" />
-
-                                <div className="flex justify-end gap-4">
+                                {/* Footer Actions */}
+                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200/80 dark:border-slate-800">
                                     <button
                                         type="button"
                                         onClick={handleDialogClose}
-                                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
+                                        className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={!dirty || isSubmitting}
-                                        className="flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40"
+                                        className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                     >
-                                        Submit
+                                        <Key className="w-3.5 h-3.5" />
+                                        Update Password
                                     </button>
                                 </div>
                             </form>
@@ -214,7 +281,8 @@ const ChangePwModal = ({ openDialog, setOpenDialog }) => {
                 severity={toastInfo.toastSeverity}
                 message={toastInfo.toastMessage}
             />
-        </div>
+        </div>,
+        document.body
     );
 };
 

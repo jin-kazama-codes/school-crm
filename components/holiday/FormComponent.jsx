@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import { RotateCcw, X as XIcon, Save } from "lucide-react";
+import { RotateCcw, Save, ArrowLeft, Calendar } from "lucide-react";
 
 import API from "../../apis";
 import Loader from "../common/Loader";
@@ -142,83 +142,121 @@ const FormComponent = () => {
     };
 
     return (
-        <div 
-            className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300 min-h-[70vh]"
-            style={{
-                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${formBg?.src || formBg})`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-                backgroundSize: "cover",
-                backgroundAttachment: "fixed"
-            }}
-        >
-            <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md border-b border-white/20 dark:border-white/5 p-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize">
-                    {`${title} ${selected}`}
-                </h2>
-            </div>
-
-            <div className="p-4 md:p-6 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
-                <HolidayFormComponent
-                    onChange={(data) => {
-                        handleFormChange(data, 'holiday');
-                    }}
-                    refId={holidayFormRef}
-                    setDirty={setDirty}
-                    reset={reset}
-                    setReset={setReset}
-                    userId={id}
-                    updatedValues={updatedValues?.holidayData}
-                />
-
-                <div className="flex flex-wrap justify-end gap-4 p-6 pt-0">
-                    {title !== "Update" && (
-                        <button 
-                            type="reset" 
-                            disabled={!dirty || submitted}
-                            onClick={() => {
-                                if (window.confirm("Do You Really Want To Reset?")) {
-                                    setReset(true);
-                                }
-                            }}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
-                        >
-                            <RotateCcw className="w-5 h-5" />
-                            Reset
-                        </button>
-                    )}
-                    
-                    <button 
-                        onClick={() => navigateTo(`/holiday/listing/${getLocalStorage('class') || ''}`)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
-                    >
-                        <XIcon className="w-5 h-5" />
-                        Cancel
-                    </button>
-                    
-                    <button 
-                        type="submit" 
-                        onClick={() => handleSubmit()} 
-                        disabled={!dirty}
-                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex items-start justify-center">
+            <div 
+                className="w-full max-w-7xl rounded-2xl border border-slate-200/90 dark:border-[#262626] overflow-hidden shadow-2xl relative bg-white dark:bg-[#101010]"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                    backgroundAttachment: "fixed"
+                }}
+            >
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-b border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${
                             title === "Update" 
-                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
-                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
-                        }`}
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
+                                : "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50"
+                        }`}>
+                            <Calendar className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                                {`${title} ${selected || "Holiday"}`}
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {title === "Update" 
+                                    ? "Modify academic closure dates, event categories, and notifications" 
+                                    : "Schedule a new school holiday, vacation break, or closure period"}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <button
+                        type="button"
+                        onClick={() => navigateTo(`/holiday/listing/${getLocalStorage('class') || ''}`)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
                     >
-                        <Save className="w-5 h-5" />
-                        {title === "Update" ? "Update Holiday" : "Submit"}
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        Back to List
                     </button>
                 </div>
+
+                {/* Form Main Body */}
+                <div className="p-6 space-y-6">
+                    <HolidayFormComponent
+                        onChange={(data) => {
+                            handleFormChange(data, 'holiday');
+                        }}
+                        refId={holidayFormRef}
+                        setDirty={setDirty}
+                        reset={reset}
+                        setReset={setReset}
+                        userId={id}
+                        updatedValues={updatedValues?.holidayData}
+                    />
+                </div>
+
+                {/* Action Footer */}
+                <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        {title !== "Update" && (
+                            <button 
+                                type="reset" 
+                                disabled={!dirty || submitted}
+                                onClick={() => {
+                                    if (window.confirm("Do you really want to reset this form?")) {
+                                        setReset(true);
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Reset Form
+                            </button>
+                        )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2.5">
+                        <button 
+                            type="button"
+                            onClick={() => navigateTo(`/holiday/listing/${getLocalStorage('class') || ''}`)}
+                            className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+                        >
+                            Cancel
+                        </button>
+                        
+                        <button 
+                            type="submit" 
+                            onClick={() => handleSubmit()} 
+                            disabled={!dirty || submitted}
+                            className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                title === "Update" 
+                                    ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30" 
+                                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
+                            }`}
+                        >
+                            <Save className="w-4 h-4" />
+                            {title === "Update" ? "Update Holiday" : "Save Holiday"}
+                        </button>
+                    </div>
+                </div>
+
+                <Toast 
+                    alerting={toastInfo.toastAlert}
+                    severity={toastInfo.toastSeverity}
+                    message={toastInfo.toastMessage}
+                />
+
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
+                        <Loader />
+                    </div>
+                )}
             </div>
-
-            <Toast 
-                alerting={toastInfo.toastAlert}
-                severity={toastInfo.toastSeverity}
-                message={toastInfo.toastMessage}
-            />
-
-            {loading && <Loader />}
         </div>
     );
 };

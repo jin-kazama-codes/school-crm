@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import { RotateCcw, X as XIcon, Save } from "lucide-react";
+import { RotateCcw, Save, ArrowLeft, UserCheck } from "lucide-react";
 
 import API from "../../apis";
 import AddressFormComponent from "../address/AddressFormComponent";
@@ -66,12 +66,11 @@ const FormComponent = () => {
     getLocalStorage,
     getIdsFromObject,
     generateNormalPassword,
-    isObjEmpty,
     toastAndNavigate,
     formateName
   } = Utility();
 
-  //after page refresh the id in router state becomes undefined, so getting teacher id from url params
+  // after page refresh the id in router state becomes undefined, so getting teacher id from url params
   let id = state?.id || userParams?.id;
 
   const schoolInformation = getLocalStorage("auth");
@@ -79,18 +78,19 @@ const FormComponent = () => {
   useEffect(() => {
     const selectedMenu = getLocalStorage("menu");
     if (selectedMenu?.selected) {
-        dispatch(setMenuItem(selectedMenu.selected));
+      dispatch(setMenuItem(selectedMenu.selected));
     }
   }, []);
-
 
   const updateTeacherAndAddress = useCallback(async formData => {
     setLoading(true);
     const paths = [];
     const dataFields = [];
 
-    const username = await formateName(formData.teacherData.values?.firstname.toLowerCase() +
-      (formData.teacherData.values?.lastname ? `${formData.teacherData.values?.lastname.toLowerCase()}` : ""));
+    const username = await formateName(
+      formData.teacherData.values?.firstname.toLowerCase() +
+      (formData.teacherData.values?.lastname ? `${formData.teacherData.values?.lastname.toLowerCase()}` : "")
+    );
 
     try {
       if (formData.teacherData.dirty) {
@@ -109,10 +109,7 @@ const FormComponent = () => {
         paths.push("/update-address");
         dataFields.push(formData.addressData.values);
       }
-      const responses = await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
-      // if (responses) {
-      //   updateImageAndClassData(formData);
-      // }
+      await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
       updateImageAndClassData(formData);
     } catch (err) {
       setLoading(false);
@@ -173,7 +170,7 @@ const FormComponent = () => {
                   parent_id: formData.teacherData.values.id,
                   parent: "teacher",
                   type: "normal"
-                })
+                });
               }
             });
         });
@@ -277,7 +274,7 @@ const FormComponent = () => {
             school_id: user.data.school_id,
             parent_id: user.data.id,
             parent: 'user'
-          })
+          });
 
           API.TeacherAPI.createTeacher({
             ...formData.teacherData.values,
@@ -321,9 +318,9 @@ const FormComponent = () => {
                           parent_id: teacher.data.id,
                           parent: "teacher",
                           type: "normal"
-                        })
+                        });
                       }
-                    })
+                    });
                 });
               }
 
@@ -377,7 +374,7 @@ const FormComponent = () => {
     }
   }, [allSubjects?.listData?.length]);
 
-  //Create/Update/Populate teacher
+  // Create/Update/Populate teacher
   useEffect(() => {
     if (id && !submitted && allSubjects?.listData) {
       setTitle("Update");
@@ -410,126 +407,175 @@ const FormComponent = () => {
   };
 
   return (
-    <div 
-        className="m-4 md:m-8 rounded-[26px] border border-slate-200 dark:border-[#2a2a2a] overflow-hidden shadow-2xl relative animate-in fade-in duration-300 min-h-[70vh]"
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex items-start justify-center">
+      <div 
+        className="w-full max-w-7xl rounded-2xl border border-slate-200/90 dark:border-[#262626] overflow-hidden shadow-2xl relative bg-white dark:bg-[#101010]"
         style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${formBg?.src || formBg})`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "cover",
-            backgroundAttachment: "fixed"
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(${formBg?.src || formBg})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+          backgroundAttachment: "fixed"
         }}
-    >
-        <div className="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md border-b border-white/20 dark:border-white/5 p-6 sticky top-0 z-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight capitalize">
-                {`${title} ${selected}`}
-            </h2>
+      >
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-b border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${
+              title === "Update" 
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
+                : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50"
+            }`}>
+              <UserCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                {`${title} ${selected || "Teacher"}`}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {title === "Update" 
+                  ? "Modify teacher records, qualifications, class allocations, and media assets" 
+                  : "Register a new teacher profile with qualifications, teaching allocations, and media"}
+              </p>
+            </div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={() => navigateTo(`/${(selected || "teacher").toLowerCase()}/listing`)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to List
+          </button>
         </div>
 
-        <div className="p-4 md:p-6 bg-white/50 dark:bg-black/50 backdrop-blur-sm space-y-6">
-            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                <TeacherFormComponent
-                    onChange={(data) => {
-                        handleFormChange(data, "teacher");
-                    }}
-                    refId={teacherFormRef}
-                    setDirty={setDirty}
-                    reset={reset}
-                    setReset={setReset}
-                    classData={classData}
-                    setClassData={setClassData}
-                    allSections={allSections?.listData}
-                    allSubjects={allSubjects?.listData}
-                    updatedValues={updatedValues?.teacherData}
-                />
+        {/* Form Main Body */}
+        <div className="p-6 space-y-6">
+            
+            {/* Teacher Details Form */}
+            <TeacherFormComponent
+              onChange={(data) => {
+                handleFormChange(data, "teacher");
+              }}
+              refId={teacherFormRef}
+              setDirty={setDirty}
+              reset={reset}
+              setReset={setReset}
+              classData={classData}
+              setClassData={setClassData}
+              allSections={allSections?.listData}
+              allSubjects={allSubjects?.listData}
+              updatedValues={updatedValues?.teacherData}
+            />
+
+            {/* Address Form Container */}
+            <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+              <AddressFormComponent
+                onChange={(data) => {
+                  handleFormChange(data, "address");
+                }}
+                refId={addressFormRef}
+                update={id ? true : false}
+                setDirty={setDirty}
+                reset={reset}
+                setReset={setReset}
+                updatedValues={updatedValues?.addressData}
+              />
             </div>
 
-            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                <AddressFormComponent
-                    onChange={(data) => {
-                        handleFormChange(data, "address");
-                    }}
-                    refId={addressFormRef}
-                    update={id ? true : false}
-                    setDirty={setDirty}
-                    reset={reset}
-                    setReset={setReset}
-                    updatedValues={updatedValues?.addressData}
-                />
+            {/* Teacher Photo Card */}
+            <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-[#222]">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Teacher Photo
+                </h3>
+                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                  Faculty profile & ID verification image
+                </span>
+              </div>
+              <ImagePicker
+                key="image"
+                onChange={(data) => {
+                  handleFormChange(data, "image");
+                }}
+                refId={imageFormRef}
+                reset={reset}
+                setReset={setReset}
+                setDirty={setDirty}
+                preview={preview}
+                setPreview={setPreview}
+                deletedImage={deletedImage}
+                setDeletedImage={setDeletedImage}
+                updatedImage={updatedImage}
+                setUpdatedImage={setUpdatedImage}
+                imageType="Teacher"
+                ENV={ENV}
+                validation={true}
+              />
             </div>
 
-            <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-                <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Teacher Image</h3>
-                <ImagePicker
-                    key="image"
-                    onChange={(data) => {
-                        handleFormChange(data, "image");
-                    }}
-                    refId={imageFormRef}
-                    reset={reset}
-                    setReset={setReset}
-                    setDirty={setDirty}
-                    preview={preview}
-                    setPreview={setPreview}
-                    deletedImage={deletedImage}
-                    setDeletedImage={setDeletedImage}
-                    updatedImage={updatedImage} //these are updated Values
-                    setUpdatedImage={setUpdatedImage}
-                    imageType="Teacher"
-                    ENV={ENV}
-                    validation={true}
-                />
-            </div>
+          </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-4 p-6 bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border-t border-slate-200 dark:border-slate-800 rounded-b-2xl">
-                {title !== "Update" && (
-                    <button 
-                        type="reset" 
-                        disabled={!dirty || submitted}
-                        onClick={() => {
-                            if (window.confirm("Do You Really Want To Reset?")) {
-                                setReset(true);
-                            }
-                        }}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
-                    >
-                        <RotateCcw className="w-5 h-5" />
-                        Reset
-                    </button>
-                )}
-                
+          {/* Action Footer */}
+          <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#222] bg-white/80 dark:bg-[#101010]/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {title !== "Update" && (
                 <button 
-                    onClick={() => navigateTo(`/${selected.toLowerCase()}/listing`)}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
+                  type="reset" 
+                  disabled={!dirty || submitted}
+                  onClick={() => {
+                    if (window.confirm("Do you really want to reset this form?")) {
+                      setReset(true);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
-                    <XIcon className="w-5 h-5" />
-                    Cancel
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset Form
                 </button>
-                
-                <button 
-                    type="submit" 
-                    onClick={() => handleSubmit()} 
-                    disabled={!dirty}
-                    className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
-                        title === "Update" 
-                        ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
-                        : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
-                    }`}
-                >
-                    <Save className="w-5 h-5" />
-                    {title === "Update" ? "Update Teacher" : "Submit"}
-                </button>
+              )}
             </div>
-        </div>
+            
+            <div className="flex items-center gap-2.5">
+              <button 
+                type="button"
+                onClick={() => navigateTo(`/${(selected || "teacher").toLowerCase()}/listing`)}
+                className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+              >
+                Cancel
+              </button>
+              
+              <button 
+                type="submit" 
+                onClick={() => handleSubmit()} 
+                disabled={!dirty || submitted}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                  title === "Update" 
+                    ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30" 
+                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
+                }`}
+              >
+                <Save className="w-4 h-4" />
+                {title === "Update" ? "Update Teacher" : "Save Teacher"}
+              </button>
+            </div>
+          </div>
 
-        <Toast 
+          <Toast 
             alerting={toastInfo.toastAlert}
             severity={toastInfo.toastSeverity}
             message={toastInfo.toastMessage}
-        />
+          />
 
-        {loading && <Loader />}
-    </div>
+          {loading && (
+            <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
+              <Loader />
+            </div>
+          )}
+        </div>
+      </div>
   );
 };
 

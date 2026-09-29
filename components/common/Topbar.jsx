@@ -19,11 +19,13 @@ import {
   LogOut,
   Key,
   Building2,
-  ChevronDown
+  ChevronDown,
+  User
 } from "lucide-react";
 
 import API from "../../apis";
 import ChangePwModal from "../models/ChangePwModal";
+import ProfileModal from "../models/ProfileModal";
 import { setAllSchools } from "../../redux/actions/SchoolAction";
 import { ColorModeContext } from "../../theme";
 import { Utility } from "../utility";
@@ -32,6 +34,7 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [schoolMenuOpen, setSchoolMenuOpen] = useState(false);
   const [changePwModalOpen, setChangePwModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [schoolName, setSchoolName] = useState("");
   const [schoolObj, setSchoolObj] = useState({});
   const allSchools = useSelector((state) => state.allSchools);
@@ -305,6 +308,18 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
                     type="button"
                     onClick={() => {
                       setProfileMenuOpen(false);
+                      setProfileModalOpen(true);
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-[#1a1a1a] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                  >
+                    <User className="w-4 h-4 text-emerald-500" />
+                    <span>View Profile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileMenuOpen(false);
                       setChangePwModalOpen(true);
                     }}
                     className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-[#1a1a1a] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
@@ -332,6 +347,12 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
           </div>
         </div>
       </header>
+
+      <ProfileModal
+        openDialog={profileModalOpen}
+        setOpenDialog={setProfileModalOpen}
+        onOpenChangePassword={() => setChangePwModalOpen(true)}
+      />
 
       <ChangePwModal
         openDialog={changePwModalOpen}
