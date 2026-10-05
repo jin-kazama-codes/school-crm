@@ -202,11 +202,17 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
       if (!parentId || parentId === "null" || parentId === "undefined" || parentId === "0") {
         return NextResponse.json(Utility.formatResponse(200, null), { status: 200 });
       }
-      const image = await prisma.image.findFirst({
-        where: { parent: parent as any, parent_id: parseInt(parentId, 10) },
-        orderBy: [{ priority: "asc" }, { id: "desc" }]
-      });
-      return NextResponse.json(Utility.formatResponse(200, image || null), { status: 200 });
+      const images = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT id, school_id, parent::text, parent_id, priority, type::text, image_src, created_at, updated_at, created_by, updated_by
+         FROM "public"."image"
+         WHERE "parent" = CAST($1::text AS "public"."ImageParent") AND "parent_id" = $2
+         ORDER BY priority ASC, id DESC
+         LIMIT 1`,
+        parent,
+        parseInt(parentId, 10)
+      );
+      const image = images[0] || null;
+      return NextResponse.json(Utility.formatResponse(200, image), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
     }
@@ -307,10 +313,70 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         return NextResponse.json(Utility.formatResponse(400, "Invalid table"), { status: 400 });
       }
       const model = (prisma as any)[modelName];
+      if (!model) {
+        return NextResponse.json(Utility.formatResponse(400, "Invalid model"), { status: 400 });
+      }
       const data = await model.findUnique({ where: { id: parseInt(id) } });
       if (!data) {
         return NextResponse.json(Utility.formatResponse(404, "Data Not Found"), { status: 404 });
       }
+
+      if (table === "student" && data) {
+        // 1. Resolve House Name
+        if (data.house) {
+          const houseId = parseInt(String(data.house), 10);
+          if (!isNaN(houseId)) {
+            const houseRecord = await prisma.school_house.findUnique({
+              where: { id: houseId },
+              select: { name: true, color_code: true },
+            });
+            if (houseRecord) {
+              data.house_name = houseRecord.name;
+              data.house_color = houseRecord.color_code;
+            }
+          }
+        }
+
+        // 2. Resolve Subjects if string of IDs or fallback to school_class_data
+        let subjectIdsList: number[] = [];
+        if (typeof data.subjects === "string" && data.subjects.trim()) {
+          subjectIdsList = data.subjects
+            .split(",")
+            .map((s: string) => parseInt(s.trim(), 10))
+            .filter((n: number) => !isNaN(n));
+        } else if (Array.isArray(data.subjects)) {
+          subjectIdsList = data.subjects
+            .map((s: any) => (typeof s === "object" ? (s.id ?? s.subject_id) : parseInt(String(s), 10)))
+            .filter((n: number) => !isNaN(n));
+        }
+
+        if (subjectIdsList.length === 0 && data.class && data.section) {
+          const classSectionData = await prisma.school_class_data.findFirst({
+            where: {
+              class_id: data.class,
+              section_id: data.section,
+              ...(data.school_id ? { school_id: data.school_id } : {}),
+            },
+            select: { subject_ids: true },
+          });
+          if (classSectionData?.subject_ids) {
+            subjectIdsList = classSectionData.subject_ids
+              .split(",")
+              .map((s: string) => parseInt(s.trim(), 10))
+              .filter((n: number) => !isNaN(n));
+          }
+        }
+
+        if (subjectIdsList.length > 0) {
+          const subjects = await prisma.subject.findMany({
+            where: { id: { in: subjectIdsList } },
+            select: { id: true, name: true },
+          });
+          data.resolved_subjects = subjects;
+          data.subjects_display = subjects.map((s: any) => s.name).join(", ");
+        }
+      }
+
       return NextResponse.json(Utility.formatResponse(200, data), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
@@ -1047,6 +1113,26 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
   return NextResponse.json(Utility.formatResponse(404, `Endpoint ${endpoint} not found`), { status: 404 });
 }
 
+function getAuthUserId(req: NextRequest): number {
+  try {
+    const rawToken = req.headers.get("x-access-token") || req.headers.get("authorization") || "";
+    const cleanToken = rawToken.startsWith("Bearer ") ? rawToken.slice(7) : rawToken;
+    if (cleanToken) {
+      const payload = Utility.verifyTokenString(cleanToken);
+      if (payload && (payload as any).id) {
+        const id = parseInt(String((payload as any).id), 10);
+        if (!isNaN(id) && id > 0) return id;
+      }
+    }
+    const verified = Utility.verifyToken(req);
+    if (verified && verified.userId && verified.userId > 0) {
+      return verified.userId;
+    }
+  } catch (err) {
+    console.error("Error extracting auth userId:", err);
+  }
+  return 1;
+}
 
 async function handlePost(req: NextRequest, endpoint: string) {
   // Login Endpoint
@@ -1234,10 +1320,8 @@ async function handlePost(req: NextRequest, endpoint: string) {
     const entityKey = endpoint.replace("create-", "");
     const mapping = MODEL_MAPPING[entityKey];
     if (mapping) {
-      const authHeader = req.headers.get("x-access-token") || req.headers.get("authorization");
-      const payload = Utility.verifyTokenString(authHeader as string);
-      const userId = payload ? (payload as any).id : 1;
-      return genericCreate(req, mapping.model, userId);
+      const userId = getAuthUserId(req);
+      return genericCreate(req, mapping.model, userId, true);
     }
   }
 
@@ -1250,9 +1334,7 @@ async function handlePatch(req: NextRequest, endpoint: string) {
     const entityKey = endpoint.replace("update-", "");
     const mapping = MODEL_MAPPING[entityKey];
     if (mapping) {
-      const authHeader = req.headers.get("x-access-token") || req.headers.get("authorization");
-      const payload = Utility.verifyTokenString(authHeader as string);
-      const userId = payload ? (payload as any).id : 1;
+      const userId = getAuthUserId(req);
       return genericUpdate(req, mapping.model, userId);
     }
   }
@@ -1261,6 +1343,38 @@ async function handlePatch(req: NextRequest, endpoint: string) {
 }
 
 async function handleDelete(req: NextRequest, endpoint: string) {
+  // Delete image endpoint
+  if (endpoint === "delete-image" || endpoint.startsWith("delete-image/")) {
+    try {
+      const body = await req.json().catch(() => ({}));
+      const parts = endpoint.split("/");
+      const parentId = parseInt(String(body?.parent_id || parts[2] || ""), 10);
+      if (isNaN(parentId)) {
+        return NextResponse.json(Utility.formatResponse(400, "Invalid parent_id"), { status: 400 });
+      }
+
+      const rawParent = body?.parent || parts[1];
+      const parents: string[] = Array.isArray(rawParent)
+        ? rawParent
+        : rawParent
+        ? [rawParent]
+        : [];
+
+      if (parents.length > 0) {
+        for (const p of parents) {
+          await prisma.$executeRawUnsafe(
+            `DELETE FROM "public"."image" WHERE "parent" = CAST($1::text AS "public"."ImageParent") AND "parent_id" = $2`,
+            p,
+            parentId
+          );
+        }
+      }
+      return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
   // Delete from marksheet mapping
   if (endpoint === "delete-from-marksheet-mapping") {
     try {

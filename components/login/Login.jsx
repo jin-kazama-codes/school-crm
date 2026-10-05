@@ -18,6 +18,7 @@ import Toast from "../common/Toast"
 import SignInLoader from "../common/SignInLoader"
 import { Utility } from "../utility"
 import ForgetPassword from "./ForgetPw"
+import { loginSchema } from "./Validation"
 
 import bgImg from "../assets/newbg12.jpeg";
 
@@ -66,7 +67,12 @@ const Login = () => {
   useEffect(() => {
     if (formData.school_code || (formData.email && formData.password)) {
       setLoading(true)
-      API.UserAPI.login(formData)
+      const sanitizedData = {
+        school_code: formData.school_code ? String(formData.school_code).trim() : "",
+        email: formData.email ? String(formData.email).trim().toLowerCase() : "",
+        password: formData.password ? String(formData.password).trim() : "",
+      }
+      API.UserAPI.login(sanitizedData)
         .then(({ data: response }) => {
           setLoading(false)
           if (
@@ -84,7 +90,8 @@ const Login = () => {
           } else {
             const authInfo = {
               id: response.data.id,
-              school_code: formData.school_code,
+              school_id: response.data.school_id,
+              school_code: sanitizedData.school_code,
               token: response.data.token,
               role: response.data.role,
               designation: response.data.designation,
@@ -159,7 +166,15 @@ const Login = () => {
 
             <Formik
               innerRef={formikRef}
-              onSubmit={(values) => setFormData(values)}
+              validationSchema={loginSchema}
+              onSubmit={(values) => {
+                const trimmedValues = {
+                  school_code: values.school_code ? values.school_code.trim() : "",
+                  email: values.email ? values.email.trim().toLowerCase() : "",
+                  password: values.password ? values.password.trim() : "",
+                };
+                setFormData(trimmedValues);
+              }}
               initialValues={initialValues}
             >
               {({
@@ -169,6 +184,7 @@ const Login = () => {
                 dirty,
                 handleBlur,
                 handleChange,
+                setFieldValue,
                 handleSubmit
               }) => (
                 <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
@@ -178,7 +194,10 @@ const Login = () => {
                       name="school_code"
                       type="text"
                       placeholder="School Code"
-                      onBlur={handleBlur}
+                      onBlur={(e) => {
+                        setFieldValue("school_code", e.target.value.trim());
+                        handleBlur(e);
+                      }}
                       onChange={handleChange}
                       value={values.school_code}
                       className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${touched.school_code && errors.school_code
@@ -191,15 +210,17 @@ const Login = () => {
                     )}
                   </div>
 
-                  {/* Username */}
+                  {/* Email */}
                   <div className="space-y-1">
                     <input
-                      required
                       name="email"
-                      type="text"
-                      placeholder="Username / Email"
-                      autoComplete="username"
-                      onBlur={handleBlur}
+                      type="email"
+                      placeholder="Email"
+                      autoComplete="email"
+                      onBlur={(e) => {
+                        setFieldValue("email", e.target.value.trim());
+                        handleBlur(e);
+                      }}
                       onChange={handleChange}
                       value={values.email}
                       className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${touched.email && errors.email
@@ -216,12 +237,14 @@ const Login = () => {
                   <div className="space-y-1">
                     <div className="relative">
                       <input
-                        required
                         name="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         autoComplete="current-password"
-                        onBlur={handleBlur}
+                        onBlur={(e) => {
+                          setFieldValue("password", e.target.value.trim());
+                          handleBlur(e);
+                        }}
                         onChange={handleChange}
                         value={values.password}
                         className={`w-full px-4 py-3 pr-12 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${touched.password && errors.password
@@ -246,14 +269,14 @@ const Login = () => {
                     <button
                       type="button"
                       onClick={flipCard}
-                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 transition-colors"
+                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 transition-colors cursor-pointer"
                     >
                       Forgot Password?
                     </button>
                   </div>
 
                   <button
-                    disabled={!dirty || loading}
+                    disabled={loading}
                     type="submit"
                     className="w-full py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
                   >

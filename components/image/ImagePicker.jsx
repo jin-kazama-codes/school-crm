@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
@@ -50,7 +50,12 @@ const ImagePicker = ({
     React.useImperativeHandle(refId, () => ({
         Submit: async () => {
             await formik.submitForm();
-        }
+            return formik.errors;
+        },
+        validate: async () => {
+            return await formik.validateForm();
+        },
+        formik
     }));
 
     const watchForm = () => {
@@ -73,11 +78,15 @@ const ImagePicker = ({
     }, [reset]);
 
 
+    const hasOldImage = Array.isArray(updatedImage)
+        ? updatedImage.length > 0
+        : Boolean(updatedImage && typeof updatedImage === 'object' && updatedImage.image_src);
+
     useEffect(() => {
-        if (updatedImage?.length) {
-            setInitialState(updatedImage);
+        if (hasOldImage) {
+            setInitialState(Array.isArray(updatedImage) ? updatedImage : [updatedImage]);
         }
-    }, [updatedImage?.length]);
+    }, [updatedImage, hasOldImage]);
 
     const showPicker = !formik.values[`${image}`]?.length || multiple;
 
@@ -86,7 +95,7 @@ const ImagePicker = ({
             <form 
                 ref={refId} 
                 encType="multipart/form-data" 
-                className={`mb-6 ${multiple || (showPicker && !updatedImage?.length) ? "block" : "hidden"}`}
+                className={`mb-6 ${multiple || (showPicker && !hasOldImage) ? "block" : "hidden"}`}
             >
                 <div className="relative group">
                     <label 

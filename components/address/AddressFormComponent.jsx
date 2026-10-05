@@ -47,6 +47,15 @@ const AddressFormComponent = ({
 
     const { getStateCityFromZipCode } = Utility();
 
+    const renderRequiredLabel = (text) => (
+        <span>
+            {text.replace(/[*]|(?:\*\s*\(Mandatory\))/g, "").trim()}{" "}
+            <span className="text-[#e05353] dark:text-[#f87171] text-[11px] font-medium tracking-[0.2px] normal-case ml-0.5">
+                * (Mandatory)
+            </span>
+        </span>
+    );
+
     const formik = useFormik({
         initialValues: initialState,
         validationSchema: addressValidation,
@@ -56,8 +65,27 @@ const AddressFormComponent = ({
 
     React.useImperativeHandle(refId, () => ({
         Submit: async () => {
+            const errors = await formik.validateForm();
+            formik.setTouched(
+                Object.keys(formik.values).reduce((acc, key) => {
+                    acc[key] = true;
+                    return acc;
+                }, {})
+            );
             await formik.submitForm();
-        }
+            return errors;
+        },
+        validate: async () => {
+            const errors = await formik.validateForm();
+            formik.setTouched(
+                Object.keys(formik.values).reduce((acc, key) => {
+                    acc[key] = true;
+                    return acc;
+                }, {})
+            );
+            return errors;
+        },
+        formik
     }));
 
     const watchForm = () => {
@@ -102,7 +130,16 @@ const AddressFormComponent = ({
 
     useEffect(() => {
         if (updatedValues) {
-            setInitialState(updatedValues);
+            setInitialState({
+                ...initialValues,
+                ...updatedValues,
+                street: updatedValues.street ?? "",
+                landmark: updatedValues.landmark ?? "",
+                zipcode: updatedValues.zipcode ?? "",
+                country: Number(updatedValues.country) || Number(countryId) || 1,
+                state: Number(updatedValues.state) || 0,
+                city: Number(updatedValues.city) || 0,
+            });
         }
     }, [updatedValues]);
 
@@ -232,7 +269,7 @@ const AddressFormComponent = ({
                     {/* Street */}
                     <div className="space-y-1.5 md:col-span-2">
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                            Street Address <span className="text-rose-500">*</span>
+                            {renderRequiredLabel("Street Address")}
                         </label>
                         <input
                             type="text"
@@ -272,7 +309,7 @@ const AddressFormComponent = ({
                     {/* Zipcode */}
                     <div className="space-y-1.5">
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                            Postal Code / Zipcode <span className="text-rose-500">*</span>
+                            {renderRequiredLabel("Postal Code / Zipcode")}
                         </label>
                         <input
                             type="text"
@@ -292,7 +329,7 @@ const AddressFormComponent = ({
                     {/* State */}
                     <div className="space-y-1.5">
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                            State <span className="text-rose-500">*</span>
+                            {renderRequiredLabel("State")}
                         </label>
                         <div className="relative">
                             <select
@@ -324,7 +361,7 @@ const AddressFormComponent = ({
                     {/* City */}
                     <div className="space-y-1.5">
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                            City <span className="text-rose-500">*</span>
+                            {renderRequiredLabel("City")}
                         </label>
                         <div className="relative">
                             <select

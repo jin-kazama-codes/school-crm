@@ -1,32 +1,24 @@
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
-*/
-
 import * as yup from "yup";
 
-const checkoutSchema = yup.object({
+const checkoutSchema = yup.object().shape({
     street: yup.string()
-        .min(4, 'Too Short!')
-        .max(80, 'Too Long!')
-        .matches(/^[a-zA-Z].*[a-zA-Z.,\-_=+\s]*$/, 'Invalid Street Name Detected')
+        .trim()
+        .min(3, 'Street Address must be at least 3 characters')
+        .max(120, 'Street Address is too long')
         .required("This Field is Required"),
     landmark: yup.string()
-        .min(4, 'Too Short!')
-        .max(80, 'Too Long!')
-        .matches(/[a-z]/, 'Invalid Landmark Detected'),
+        .trim()
+        .nullable(),
     zipcode: yup.string()
-        .min(4, 'Too Short!')
-        .max(20, 'Too Long!')
-        .matches(/[0-9]/, 'Invalid Zipcode Detected')
-        .required("This Field is Required"),
-    state: yup.number()
-        .required("This Field is Required"),
-    city: yup.number()
+        .trim()
         .required("This Field is Required")
+        .matches(/^\d{6}$/, "Postal Code must be a valid 6-digit PIN code"),
+    state: yup.mixed()
+        .required("This Field is Required")
+        .test("valid-state", "This Field is Required", val => val !== 0 && val !== "0" && Boolean(val)),
+    city: yup.mixed()
+        .required("This Field is Required")
+        .test("valid-city", "This Field is Required", val => val !== 0 && val !== "0" && Boolean(val))
 });
 
 export default checkoutSchema;

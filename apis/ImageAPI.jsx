@@ -69,31 +69,33 @@ export const ImageAPI = {
         });
     },
 
-    /** Upload image to the folder created by nodejs
+    /** Upload image to Supabase Storage
      */
-    uploadImage: async (data, cancel = false) => {
+    uploadImageToSupabase: async (data, cancel = false) => {
+        let payload = data;
+        if (data && !(data instanceof FormData)) {
+            const fd = new FormData();
+            if (data.image) fd.append("image", data.image);
+            if (data.folder) fd.append("folder", data.folder);
+            if (data.imageName) fd.append("imageName", data.imageName);
+            payload = fd;
+        }
         return await api.request({
             url: `/upload-image`,
             headers: {
                 "Content-Type": "multipart/form-data",
-                "x-access-token": getLocalStorage("auth").token
+                "x-access-token": getLocalStorage("auth")?.token
             },
             method: "POST",
-            data: data,
-            signal: cancel && cancelApiObject.uploadImage ? cancelApiObject.uploadImage.handleRequestCancellation().signal : undefined
+            data: payload,
+            signal: cancel && cancelApiObject.uploadImageToSupabase ? cancelApiObject.uploadImageToSupabase.handleRequestCancellation().signal : undefined
         });
     },
     uploadImageToS3: async (data, cancel = false) => {
-        return await api.request({
-            url: `/upload-image-s3`,
-            headers: {
-                "Content-Type": "multipart/form-data",
-                "x-access-token": getLocalStorage("auth").token
-            },
-            method: "POST",
-            data: data,
-            signal: cancel && cancelApiObject.uploadImageToS3 ? cancelApiObject.uploadImageToS3.handleRequestCancellation().signal : undefined
-        });
+        return ImageAPI.uploadImageToSupabase(data, cancel);
+    },
+    uploadImage: async (data, cancel = false) => {
+        return ImageAPI.uploadImageToSupabase(data, cancel);
     }
 };
 

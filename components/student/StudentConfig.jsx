@@ -53,21 +53,40 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
 
     const columns = [
         {
-            field: "fullname",
-            headerName: "Name",
+            field: "roll_no",
+            headerName: "Roll No",
             headerAlign: "center",
             align: "center",
-            flex: 1,
+            flex: 0.7,
+            minWidth: 90,
+            renderCell: ({ row }) => {
+                const roll = row.roll_no ?? row.enrollment_no;
+                if (!roll) return <span className="text-slate-400 font-medium">-</span>;
+                return (
+                    <div className="flex justify-center items-center w-full h-full">
+                        <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                            #{roll}
+                        </span>
+                    </div>
+                );
+            }
+        },
+        {
+            field: "fullname",
+            headerName: "Student Name",
+            headerAlign: "center",
+            align: "center",
+            flex: 1.2,
             minWidth: 150,
-            valueGetter: (value, row) => `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname)|| ''}`
+            valueGetter: (value, row) => `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname)|| ''}`.trim()
         },
         {
             field: "class",
             headerName: "Class",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 150,
+            flex: 0.9,
+            minWidth: 110,
             renderCell: (params) => {
                 let className;
                 let sectionName;
@@ -80,8 +99,42 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
                     sectionName = findById(params?.row?.section, schoolSections?.listData)?.section_name;
                 } 
                 return (
-                    <div>
-                        {className ? appendSuffix(className) : '/'} {sectionName}
+                    <div className="font-semibold text-slate-700 dark:text-slate-200">
+                        {className ? appendSuffix(className) : '-'} {sectionName ? `(${sectionName})` : ''}
+                    </div>
+                );
+            }
+        },
+        {
+            field: "admission_date",
+            headerName: "Admission Date",
+            headerAlign: "center",
+            align: "center",
+            flex: 1,
+            minWidth: 130,
+            renderCell: ({ row: { admission_date } }) => {
+                if (!admission_date) return <span className="text-slate-400 font-medium">-</span>;
+                return (
+                    <div className="flex justify-center items-center w-full h-full text-slate-600 dark:text-slate-300 font-medium text-xs">
+                        {formatDate(admission_date)}
+                    </div>
+                );
+            }
+        },
+        {
+            field: "contact_no",
+            headerName: "Contact No",
+            headerAlign: "center",
+            align: "center",
+            flex: 1,
+            minWidth: 120,
+            renderCell: ({ row }) => {
+                const rawContact = row.contact_no || row.father_contact_no || row.mother_contact_no;
+                if (!rawContact) return <span className="text-slate-400 font-medium">-</span>;
+                const contact = String(rawContact).split('.')[0];
+                return (
+                    <div className="flex justify-center items-center w-full h-full font-mono text-xs text-slate-600 dark:text-slate-300">
+                        {contact}
                     </div>
                 );
             }
@@ -91,8 +144,8 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
             headerName: "Blood Group",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 140,
+            flex: 0.8,
+            minWidth: 100,
             renderCell: ({ row: { blood_group } }) => {
                 const formatted = formatBloodGroup(blood_group);
                 if (!blood_group || formatted === '-') {
@@ -108,27 +161,18 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
             }
         },
         {
-            field: "dob",
-            headerName: "Date of Birth",
-            headerAlign: "center",
-            align: "center",
-            flex: 1,
-            minWidth: 150,
-            valueFormatter: (value) => `${formatDate(value)}`
-        },
-        {
             field: "status",
             headerName: "Status",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 150,
+            flex: 0.8,
+            minWidth: 100,
             renderCell: ({ row: { status } }) => {
                 const isActive = status === "active";
                 return (
                     <div className="flex justify-center items-center w-full h-full">
                         <div
-                            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase shadow-sm ${
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wider uppercase shadow-xs ${
                                 isActive 
                                     ? "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" 
                                     : "bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30"
@@ -145,15 +189,15 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
             headerName: "Action",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 100,
+            flex: 0.8,
+            minWidth: 90,
             renderCell: ({ row: { id } }) => {
                 return (
-                    <div className="flex justify-center items-center gap-2 w-full h-full">
+                    <div className="flex justify-center items-center gap-1.5 w-full h-full">
                         {rolePriority !== 1 && (
                             <button
                                 onClick={() => handleActionEdit(id)}
-                                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                                className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
                                 title="Edit"
                             >
                                 <Pencil className="w-4 h-4" />
@@ -161,7 +205,7 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
                         )}
                         <button
                             onClick={() => handleActionShow(id)}
-                            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50 cursor-pointer"
+                            className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50 cursor-pointer"
                             title="Preview"
                         >
                             <Eye className="w-4 h-4" />

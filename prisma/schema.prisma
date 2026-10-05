@@ -60,6 +60,7 @@ enum ImageType {
   display
   banner
   normal
+  parent
 }
 
 enum AttendanceParent {

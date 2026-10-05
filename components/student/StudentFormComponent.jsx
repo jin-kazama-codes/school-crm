@@ -113,8 +113,27 @@ const StudentFormComponent = ({
 
   React.useImperativeHandle(refId, () => ({
     Submit: async () => {
+      const errors = await formik.validateForm();
+      formik.setTouched(
+        Object.keys(formik.values).reduce((acc, key) => {
+          acc[key] = true;
+          return acc;
+        }, {})
+      );
       await formik.submitForm();
+      return errors;
     },
+    validate: async () => {
+      const errors = await formik.validateForm();
+      formik.setTouched(
+        Object.keys(formik.values).reduce((acc, key) => {
+          acc[key] = true;
+          return acc;
+        }, {})
+      );
+      return errors;
+    },
+    formik,
   }));
 
   const watchForm = () => {
@@ -148,8 +167,8 @@ const StudentFormComponent = ({
   const getAndSetSubjects = () => {
     const sectionSubjects = classData?.filter(
       (obj) =>
-        obj.class_id === formik.values.class &&
-        obj.section_id === formik.values?.section
+        (obj.class_id ?? obj.id) == formik.values.class &&
+        (obj.section_id ?? obj.id) == formik.values?.section
     );
     const selectedSubjects = sectionSubjects
       ? getValuesFromArray(sectionSubjects[0]?.subject_ids, allSubjects)
@@ -159,9 +178,14 @@ const StudentFormComponent = ({
 
   const getAndSetSections = () => {
     const classSections =
-      classData?.filter((obj) => obj.class_id === formik.values.class) || [];
+      classData?.filter(
+        (obj) => (obj.class_id ?? obj.id) == formik.values.class
+      ) || [];
     const selectedSections = classSections.map(
-      ({ section_id, section_name }) => ({ section_id, section_name })
+      ({ section_id, section_name, id, name }) => ({
+        section_id: section_id ?? id,
+        section_name: section_name ?? name,
+      })
     );
     dispatch(setSchoolSections(selectedSections));
   };
@@ -181,7 +205,43 @@ const StudentFormComponent = ({
 
   useEffect(() => {
     if (updatedValues) {
-      setInitialState(updatedValues);
+      const normalized = { ...initialValues, ...updatedValues };
+      if (normalized.blood_group) {
+        const bgMap = { A_POS: "A+", A_NEG: "A-", B_POS: "B+", B_NEG: "B-", AB_POS: "AB+", AB_NEG: "AB-", O_POS: "O+", O_NEG: "O-" };
+        normalized.blood_group = bgMap[normalized.blood_group] || normalized.blood_group;
+      }
+      [
+        "mother_contact_no",
+        "mother_aadhar",
+        "father_contact_no",
+        "father_aadhar",
+        "guardian_contact_no",
+        "guardian_aadhar",
+        "contact_no",
+        "aadhaar_no",
+      ].forEach((field) => {
+        if (normalized[field] !== undefined && normalized[field] !== null) {
+          normalized[field] = String(normalized[field]).split(".")[0];
+        }
+      });
+
+      // Replace all null / undefined properties so formik inputs are always controlled strings/booleans/arrays
+      Object.keys(initialValues).forEach((key) => {
+        if (key === "dob" || key === "admission_date") {
+          return;
+        }
+        if (typeof initialValues[key] === "boolean") {
+          normalized[key] = Boolean(normalized[key]);
+        } else if (Array.isArray(initialValues[key])) {
+          normalized[key] = Array.isArray(normalized[key]) ? normalized[key] : [];
+        } else if (typeof initialValues[key] === "number") {
+          normalized[key] = Number(normalized[key]) || 0;
+        } else {
+          normalized[key] = normalized[key] !== null && normalized[key] !== undefined ? String(normalized[key]) : "";
+        }
+      });
+
+      setInitialState(normalized);
     }
   }, [updatedValues]);
 
@@ -202,7 +262,8 @@ const StudentFormComponent = ({
       getLocalStorage("schoolInfo") &&
       (!schoolSubjects?.listData?.length ||
         !schoolClasses?.listData?.length ||
-        !schoolSections?.listData?.length)
+        !schoolSections?.listData?.length ||
+        !classData?.length)
     ) {
       fetchAndSetSchoolData(
         dispatch,
@@ -211,7 +272,7 @@ const StudentFormComponent = ({
         setClassData
       );
     }
-  }, []);
+  }, [classData?.length]);
 
   useEffect(() => {
     if (formik.values) {
@@ -230,16 +291,16 @@ const StudentFormComponent = ({
   }, [getLocalStorage("class")]);
 
   useEffect(() => {
-    if (formik.values.section) {
+    if (formik.values.section && classData?.length) {
       getAndSetSubjects();
     }
-  }, [formik.values?.section]);
+  }, [formik.values?.section, classData]);
 
   useEffect(() => {
-    if (formik.values.class) {
+    if (formik.values.class && classData?.length) {
       getAndSetSections();
     }
-  }, [formik.values?.class, classData?.length]);
+  }, [formik.values?.class, classData]);
 
   const formatDateForInput = (dateValue) => {
     if (!dateValue) return "";
@@ -263,20 +324,29 @@ const StudentFormComponent = ({
     formik.setFieldValue("subjects", selectedValues);
   };
 
+  const renderRequiredLabel = (text) => (
+    <span>
+      {text.replace(/[*]|(?:\*\s*\(Mandatory\))/g, "").trim()}{" "}
+      <span className="text-[#e05353] dark:text-[#f87171] text-[11px] font-medium tracking-[0.2px] normal-case ml-0.5">
+        * (Mandatory)
+      </span>
+    </span>
+  );
+
   const inputClasses =
     "w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#121212] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-400/20 focus:border-emerald-500 dark:focus:border-emerald-400 transition-all outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500";
-  
+
   const selectClasses =
     "w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#121212] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-400/20 focus:border-emerald-500 dark:focus:border-emerald-400 transition-all outline-none text-slate-900 dark:text-slate-100 cursor-pointer appearance-none";
-  
+
   const labelClasses =
     "block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5";
-  
+
   const errorClasses = "text-rose-500 text-xs mt-1 ml-0.5 font-medium";
 
   return (
     <form ref={refId} onSubmit={formik.handleSubmit} className="space-y-6">
-      
+
       {/* ── CARD 1: Basic Information ────────────────────────────────────────── */}
       <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
         <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-[#222]">
@@ -292,18 +362,17 @@ const StudentFormComponent = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Session */}
           <div>
-            <label className={labelClasses}>Session*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Session")}</label>
             <div className="relative">
               <select
                 name="session"
                 value={formik.values.session}
                 onChange={(e) => formik.setFieldValue("session", e.target.value)}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.session && formik.errors.session
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.session && formik.errors.session
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="" disabled>Select Session</option>
                 {createSession().map((session) => (
@@ -321,7 +390,7 @@ const StudentFormComponent = ({
 
           {/* First Name */}
           <div>
-            <label className={labelClasses}>Firstname*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Firstname")}</label>
             <input
               type="text"
               name="firstname"
@@ -329,11 +398,10 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.firstname}
-              className={`${inputClasses} ${
-                formik.touched.firstname && formik.errors.firstname
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.firstname && formik.errors.firstname
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.firstname && formik.errors.firstname && (
               <p className={errorClasses}>{formik.errors.firstname}</p>
@@ -342,7 +410,7 @@ const StudentFormComponent = ({
 
           {/* Last Name */}
           <div>
-            <label className={labelClasses}>Lastname*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Lastname")}</label>
             <input
               type="text"
               name="lastname"
@@ -350,11 +418,10 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.lastname}
-              className={`${inputClasses} ${
-                formik.touched.lastname && formik.errors.lastname
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.lastname && formik.errors.lastname
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.lastname && formik.errors.lastname && (
               <p className={errorClasses}>{formik.errors.lastname}</p>
@@ -363,7 +430,7 @@ const StudentFormComponent = ({
 
           {/* Contact Number */}
           <div>
-            <label className={labelClasses}>Contact Number*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Contact Number")}</label>
             <input
               type="text"
               name="contact_no"
@@ -371,11 +438,10 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.contact_no}
-              className={`${inputClasses} ${
-                formik.touched.contact_no && formik.errors.contact_no
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.contact_no && formik.errors.contact_no
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.contact_no && formik.errors.contact_no && (
               <p className={errorClasses}>{formik.errors.contact_no}</p>
@@ -384,7 +450,7 @@ const StudentFormComponent = ({
 
           {/* Email */}
           <div className="lg:col-span-2">
-            <label className={labelClasses}>Email</label>
+            <label className={labelClasses}>{renderRequiredLabel("Email")}</label>
             <input
               type="email"
               name="email"
@@ -392,11 +458,10 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.email}
-              className={`${inputClasses} ${
-                formik.touched.email && formik.errors.email
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.email && formik.errors.email
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.email && formik.errors.email && (
               <p className={errorClasses}>{formik.errors.email}</p>
@@ -405,7 +470,7 @@ const StudentFormComponent = ({
 
           {/* Aadhaar Number */}
           <div>
-            <label className={labelClasses}>Aadhaar Number*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Aadhaar Number")}</label>
             <input
               type="text"
               name="aadhaar_no"
@@ -413,11 +478,10 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.aadhaar_no}
-              className={`${inputClasses} ${
-                formik.touched.aadhaar_no && formik.errors.aadhaar_no
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.aadhaar_no && formik.errors.aadhaar_no
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.aadhaar_no && formik.errors.aadhaar_no && (
               <p className={errorClasses}>{formik.errors.aadhaar_no}</p>
@@ -434,11 +498,10 @@ const StudentFormComponent = ({
                 value={formik.values.gender}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.gender && formik.errors.gender
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.gender && formik.errors.gender
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="" disabled>Select Gender</option>
                 {Object.keys(config.gender).map((item) => (
@@ -494,7 +557,7 @@ const StudentFormComponent = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Class */}
           <div>
-            <label className={labelClasses}>Class*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Class")}</label>
             <div className="relative">
               <select
                 name="class"
@@ -505,11 +568,10 @@ const StudentFormComponent = ({
                   if (formik.values.subjects) formik.setFieldValue("subjects", []);
                 }}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.class && formik.errors.class
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.class && formik.errors.class
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="" disabled>Select Class</option>
                 {schoolClasses?.listData?.map((cls) => (
@@ -527,7 +589,7 @@ const StudentFormComponent = ({
 
           {/* Section */}
           <div>
-            <label className={labelClasses}>Section*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Section")}</label>
             <div className="relative">
               <select
                 name="section"
@@ -537,11 +599,10 @@ const StudentFormComponent = ({
                   if (formik.values.subjects) formik.setFieldValue("subjects", []);
                 }}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.section && formik.errors.section
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.section && formik.errors.section
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="" disabled>Select Section</option>
                 {schoolSections?.listData?.map((section) => (
@@ -559,18 +620,18 @@ const StudentFormComponent = ({
 
           {/* Date Of Birth */}
           <div>
-            <label className={labelClasses}>Date Of Birth*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Date Of Birth")}</label>
             <input
               type="date"
               name="dob"
+              max={dayjs().subtract(10, "year").format("YYYY-MM-DD")}
               onBlur={formik.handleBlur}
               onChange={(e) => handleDateChange("dob", e)}
               value={formatDateForInput(formik.values.dob)}
-              className={`${inputClasses} ${
-                formik.touched.dob && formik.errors.dob
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.dob && formik.errors.dob
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.dob && formik.errors.dob && (
               <p className={errorClasses}>{formik.errors.dob}</p>
@@ -579,18 +640,18 @@ const StudentFormComponent = ({
 
           {/* Admission Date */}
           <div>
-            <label className={labelClasses}>Admission Date*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Admission Date")}</label>
             <input
               type="date"
               name="admission_date"
+              max={dayjs().format("YYYY-MM-DD")}
               onBlur={formik.handleBlur}
               onChange={(e) => handleDateChange("admission_date", e)}
               value={formatDateForInput(formik.values.admission_date)}
-              className={`${inputClasses} ${
-                formik.touched.admission_date && formik.errors.admission_date
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.admission_date && formik.errors.admission_date
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.admission_date && formik.errors.admission_date && (
               <p className={errorClasses}>{formik.errors.admission_date}</p>
@@ -599,18 +660,17 @@ const StudentFormComponent = ({
 
           {/* Admission Type */}
           <div>
-            <label className={labelClasses}>Admission Type*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Admission Type")}</label>
             <div className="relative">
               <select
                 name="admission_type"
                 value={formik.values.admission_type}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.admission_type && formik.errors.admission_type
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.admission_type && formik.errors.admission_type
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 {Object.keys(config.admission_type).map((item) => (
                   <option key={item} value={item}>
@@ -632,8 +692,8 @@ const StudentFormComponent = ({
                 {updatedValues?.gender === "male"
                   ? "Head Boy"
                   : updatedValues?.gender === "female"
-                  ? "Head Girl"
-                  : "Head of School"}
+                    ? "Head Girl"
+                    : "Head of School"}
               </label>
               <div className="relative">
                 <select
@@ -650,11 +710,10 @@ const StudentFormComponent = ({
                     }
                   }}
                   onBlur={formik.handleBlur}
-                  className={`${selectClasses} pr-9 ${
-                    formik.touched.head && formik.errors.head
-                      ? "border-rose-400 ring-1 ring-rose-400"
-                      : ""
-                  }`}
+                  className={`${selectClasses} pr-9 ${formik.touched.head && formik.errors.head
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                    }`}
                 >
                   {Object.keys(config.head).map((item) => (
                     <option key={item} value={item}>
@@ -672,7 +731,7 @@ const StudentFormComponent = ({
 
           {/* Subjects (Multiple Select) */}
           <div className="col-span-1 md:col-span-2 lg:col-span-4">
-            <label className={labelClasses}>Enrolled Subjects*</label>
+            <label className={labelClasses}>{renderRequiredLabel("Enrolled Subjects")}</label>
             <select
               multiple
               name="subjects"
@@ -719,11 +778,10 @@ const StudentFormComponent = ({
                 value={formik.values.blood_group}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.blood_group && formik.errors.blood_group
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.blood_group && formik.errors.blood_group
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="" disabled>Select Blood Group</option>
                 {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
@@ -749,11 +807,10 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.birth_mark}
-              className={`${inputClasses} ${
-                formik.touched.birth_mark && formik.errors.birth_mark
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.birth_mark && formik.errors.birth_mark
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.birth_mark && formik.errors.birth_mark && (
               <p className={errorClasses}>{formik.errors.birth_mark}</p>
@@ -770,11 +827,10 @@ const StudentFormComponent = ({
               onBlur={formik.handleBlur}
               onChange={formik.handleChange}
               value={formik.values.religion}
-              className={`${inputClasses} ${
-                formik.touched.religion && formik.errors.religion
-                  ? "border-rose-400 ring-1 ring-rose-400"
-                  : ""
-              }`}
+              className={`${inputClasses} ${formik.touched.religion && formik.errors.religion
+                ? "border-rose-400 ring-1 ring-rose-400"
+                : ""
+                }`}
             />
             {formik.touched.religion && formik.errors.religion && (
               <p className={errorClasses}>{formik.errors.religion}</p>
@@ -790,11 +846,10 @@ const StudentFormComponent = ({
                 value={formik.values.nationality}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.nationality && formik.errors.nationality
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.nationality && formik.errors.nationality
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="indian">Indian</option>
                 <option value="nri">NRI</option>
@@ -815,11 +870,10 @@ const StudentFormComponent = ({
                 value={formik.values.caste_group}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.caste_group && formik.errors.caste_group
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.caste_group && formik.errors.caste_group
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="" disabled>Select Caste</option>
                 <option value="general">General</option>
@@ -843,11 +897,10 @@ const StudentFormComponent = ({
                 value={formik.values.house || ""}
                 onChange={(e) => formik.setFieldValue("house", e.target.value)}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.house && formik.errors.house
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.house && formik.errors.house
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="" disabled>Select House</option>
                 {!listingSchoolHouses?.listData?.rows?.length ? (
@@ -876,11 +929,10 @@ const StudentFormComponent = ({
                 value={formik.values.status}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`${selectClasses} pr-9 ${
-                  formik.touched.status && formik.errors.status
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${selectClasses} pr-9 ${formik.touched.status && formik.errors.status
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -924,11 +976,10 @@ const StudentFormComponent = ({
                   value={formik.values.bus || ""}
                   onChange={(e) => formik.setFieldValue("bus", e.target.value)}
                   onBlur={formik.handleBlur}
-                  className={`${selectClasses} text-xs py-2 pr-8 ${
-                    formik.touched.bus && formik.errors.bus
-                      ? "border-rose-400 ring-1 ring-rose-400"
-                      : ""
-                  }`}
+                  className={`${selectClasses} text-xs py-2 pr-8 ${formik.touched.bus && formik.errors.bus
+                    ? "border-rose-400 ring-1 ring-rose-400"
+                    : ""
+                    }`}
                 >
                   <option value="" disabled>Select Bus</option>
                   {allBuses?.listData?.rows?.map((item) => (
@@ -979,11 +1030,10 @@ const StudentFormComponent = ({
                     value={formik.values.fee_waiver_type}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className={`${selectClasses} text-xs py-2 pr-8 ${
-                      formik.touched.fee_waiver_type && formik.errors.fee_waiver_type
-                        ? "border-rose-400 ring-1 ring-rose-400"
-                        : ""
-                    }`}
+                    className={`${selectClasses} text-xs py-2 pr-8 ${formik.touched.fee_waiver_type && formik.errors.fee_waiver_type
+                      ? "border-rose-400 ring-1 ring-rose-400"
+                      : ""
+                      }`}
                   >
                     <option value="" disabled>Select Type</option>
                     <option value="partial">Partial</option>
@@ -1000,11 +1050,10 @@ const StudentFormComponent = ({
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.waived_fees}
-                      className={`${inputClasses} text-xs py-2 ${
-                        formik.touched.waived_fees && formik.errors.waived_fees
-                          ? "border-rose-400 ring-1 ring-rose-400"
-                          : ""
-                      }`}
+                      className={`${inputClasses} text-xs py-2 ${formik.touched.waived_fees && formik.errors.waived_fees
+                        ? "border-rose-400 ring-1 ring-rose-400"
+                        : ""
+                        }`}
                     />
                   </div>
                 )}
@@ -1036,7 +1085,7 @@ const StudentFormComponent = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label className={labelClasses}>Mother's Name*</label>
+              <label className={labelClasses}>{renderRequiredLabel("Mother's Name")}</label>
               <input
                 type="text"
                 name="mother_name"
@@ -1044,49 +1093,48 @@ const StudentFormComponent = ({
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.mother_name}
-                className={`${inputClasses} ${
-                  formik.touched.mother_name && formik.errors.mother_name
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.mother_name && formik.errors.mother_name
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.mother_name && formik.errors.mother_name && (
                 <p className={errorClasses}>{formik.errors.mother_name}</p>
               )}
             </div>
             <div>
-              <label className={labelClasses}>Mother Contact Number*</label>
+              <label className={labelClasses}>{renderRequiredLabel("Mother Contact Number")}</label>
               <input
-                type="number"
+                type="text"
                 name="mother_contact_no"
+                maxLength={10}
                 placeholder="10-digit mobile number"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.mother_contact_no}
-                className={`${inputClasses} ${
-                  formik.touched.mother_contact_no && formik.errors.mother_contact_no
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.mother_contact_no && formik.errors.mother_contact_no
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.mother_contact_no && formik.errors.mother_contact_no && (
                 <p className={errorClasses}>{formik.errors.mother_contact_no}</p>
               )}
             </div>
             <div>
-              <label className={labelClasses}>Mother Aadhar*</label>
+              <label className={labelClasses}>{renderRequiredLabel("Mother Aadhar")}</label>
               <input
-                type="number"
+                type="text"
                 name="mother_aadhar"
+                maxLength={12}
                 placeholder="12-digit Aadhaar number"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.mother_aadhar}
-                className={`${inputClasses} ${
-                  formik.touched.mother_aadhar && formik.errors.mother_aadhar
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.mother_aadhar && formik.errors.mother_aadhar
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.mother_aadhar && formik.errors.mother_aadhar && (
                 <p className={errorClasses}>{formik.errors.mother_aadhar}</p>
@@ -1105,7 +1153,7 @@ const StudentFormComponent = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label className={labelClasses}>Father's Name*</label>
+              <label className={labelClasses}>{renderRequiredLabel("Father's Name")}</label>
               <input
                 type="text"
                 name="father_name"
@@ -1113,49 +1161,48 @@ const StudentFormComponent = ({
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.father_name}
-                className={`${inputClasses} ${
-                  formik.touched.father_name && formik.errors.father_name
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.father_name && formik.errors.father_name
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.father_name && formik.errors.father_name && (
                 <p className={errorClasses}>{formik.errors.father_name}</p>
               )}
             </div>
             <div>
-              <label className={labelClasses}>Father's Contact Number*</label>
+              <label className={labelClasses}>{renderRequiredLabel("Father's Contact Number")}</label>
               <input
-                type="number"
+                type="text"
                 name="father_contact_no"
+                maxLength={10}
                 placeholder="10-digit mobile number"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.father_contact_no}
-                className={`${inputClasses} ${
-                  formik.touched.father_contact_no && formik.errors.father_contact_no
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.father_contact_no && formik.errors.father_contact_no
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.father_contact_no && formik.errors.father_contact_no && (
                 <p className={errorClasses}>{formik.errors.father_contact_no}</p>
               )}
             </div>
             <div>
-              <label className={labelClasses}>Father's Aadhar*</label>
+              <label className={labelClasses}>{renderRequiredLabel("Father's Aadhar")}</label>
               <input
-                type="number"
+                type="text"
                 name="father_aadhar"
+                maxLength={12}
                 placeholder="12-digit Aadhaar number"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.father_aadhar}
-                className={`${inputClasses} ${
-                  formik.touched.father_aadhar && formik.errors.father_aadhar
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.father_aadhar && formik.errors.father_aadhar
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.father_aadhar && formik.errors.father_aadhar && (
                 <p className={errorClasses}>{formik.errors.father_aadhar}</p>
@@ -1182,11 +1229,10 @@ const StudentFormComponent = ({
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.guardian_name}
-                className={`${inputClasses} ${
-                  formik.touched.guardian_name && formik.errors.guardian_name
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.guardian_name && formik.errors.guardian_name
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.guardian_name && formik.errors.guardian_name && (
                 <p className={errorClasses}>{formik.errors.guardian_name}</p>
@@ -1195,17 +1241,17 @@ const StudentFormComponent = ({
             <div>
               <label className={labelClasses}>Guardian's Contact Number</label>
               <input
-                type="number"
+                type="text"
                 name="guardian_contact_no"
+                maxLength={10}
                 placeholder="10-digit mobile number"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.guardian_contact_no}
-                className={`${inputClasses} ${
-                  formik.touched.guardian_contact_no && formik.errors.guardian_contact_no
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.guardian_contact_no && formik.errors.guardian_contact_no
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.guardian_contact_no && formik.errors.guardian_contact_no && (
                 <p className={errorClasses}>{formik.errors.guardian_contact_no}</p>
@@ -1214,17 +1260,17 @@ const StudentFormComponent = ({
             <div>
               <label className={labelClasses}>Guardian's Aadhar</label>
               <input
-                type="number"
+                type="text"
                 name="guardian_aadhar"
+                maxLength={12}
                 placeholder="12-digit Aadhaar number"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.guardian_aadhar}
-                className={`${inputClasses} ${
-                  formik.touched.guardian_aadhar && formik.errors.guardian_aadhar
-                    ? "border-rose-400 ring-1 ring-rose-400"
-                    : ""
-                }`}
+                className={`${inputClasses} ${formik.touched.guardian_aadhar && formik.errors.guardian_aadhar
+                  ? "border-rose-400 ring-1 ring-rose-400"
+                  : ""
+                  }`}
               />
               {formik.touched.guardian_aadhar && formik.errors.guardian_aadhar && (
                 <p className={errorClasses}>{formik.errors.guardian_aadhar}</p>

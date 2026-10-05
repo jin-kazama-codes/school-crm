@@ -17,6 +17,11 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     const hash = await Utility.createHash(payload.password);
     payload.password = hash;
 
+    if (payload.school_id !== undefined && payload.school_id !== null) {
+      const parsed = parseInt(String(payload.school_id), 10);
+      payload.school_id = isNaN(parsed) ? undefined : parsed;
+    }
+
     const now = new Date();
     const user = await prisma.user.create({
       data: { ...payload, created_by: userId, created_at: now, updated_at: now, ...schoolCondition },
@@ -46,7 +51,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     }
 
     return NextResponse.json(
-      Utility.formatResponse(200, { token, id: user.id }),
+      Utility.formatResponse(200, { token, id: user.id, school_id: user.school_id }),
       { status: 200 }
     );
   } catch (err) {

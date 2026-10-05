@@ -659,14 +659,14 @@ export const Utility = () => {
         dispatch(displayToast({ toastAlert: display, toastSeverity: severity, toastMessage: safeMsg }));
 
         setTimeout(() => {
-            dispatch(displayToast({ toastAlert: !display, toastSeverity: "", toastMessage: "" }));
+            dispatch(displayToast({ toastAlert: false, toastSeverity: severity, toastMessage: "" }));
             if (path) {
                 navigateTo(path);
                 if (reload) {
                     location.reload();
                 }
             }
-        }, 2000);
+        }, 2200);
     };
 
     //this used to upload images on aws s3 bucket 
@@ -741,6 +741,68 @@ export const Utility = () => {
         });
     };
 
+    /** Smoothly scroll to the target input field and focus on it
+     * @param {string} identifier - The name or ID or selector of the element
+     * @param {number} scrollDuration - Duration of the scroll animation in ms
+     */
+    const focusAndScrollToField = (identifier, scrollDuration = 650) => {
+        if (typeof window === "undefined" || !identifier) return;
+        const el =
+            document.getElementById(identifier) ||
+            document.querySelector(`[name="${identifier}"]`) ||
+            document.querySelector(`[data-field="${identifier}"]`) ||
+            document.querySelector(`.${identifier}`);
+
+        if (el) {
+            const focusable =
+                el.matches("input, select, textarea, button, [tabindex]")
+                    ? el
+                    : el.querySelector("input, select, textarea, button, [tabindex]") || el;
+
+            const targetRect = el.getBoundingClientRect();
+            const targetY = Math.max(
+                0,
+                window.pageYOffset + targetRect.top - window.innerHeight / 2 + targetRect.height / 2
+            );
+            const startY = window.pageYOffset;
+            const distance = targetY - startY;
+
+            if (Math.abs(distance) < 20) {
+                try {
+                    focusable.focus({ preventScroll: true });
+                } catch (_) {
+                    focusable.focus();
+                }
+                return;
+            }
+
+            let startTime = null;
+            const easeInOutCubic = (t) =>
+                t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+            const animateScroll = (currentTime) => {
+                if (startTime === null) startTime = currentTime;
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / scrollDuration, 1);
+                const ease = easeInOutCubic(progress);
+
+                window.scrollTo(0, startY + distance * ease);
+
+                if (elapsed < scrollDuration) {
+                    requestAnimationFrame(animateScroll);
+                } else {
+                    try {
+                        focusable.focus({ preventScroll: true });
+                    } catch (_) {
+                        focusable.focus();
+                    }
+                }
+            };
+
+            requestAnimationFrame(animateScroll);
+        }
+    };
+
     return {
         addClassKeyword,
         appendSuffix,
@@ -758,6 +820,7 @@ export const Utility = () => {
         fetchAndSetTeacherData,
         findById,
         findMultipleById,
+        focusAndScrollToField,
         formatBloodGroup,
         formatDate,
         formatImageName,
@@ -778,4 +841,62 @@ export const Utility = () => {
         verifyToken,
         getStateCityFromZipCode
     };
+};
+
+export const focusAndScrollToField = (identifier, scrollDuration = 650) => {
+    if (typeof window === "undefined" || !identifier) return;
+    const el =
+        document.getElementById(identifier) ||
+        document.querySelector(`[name="${identifier}"]`) ||
+        document.querySelector(`[data-field="${identifier}"]`) ||
+        document.querySelector(`.${identifier}`);
+
+    if (el) {
+        const focusable =
+            el.matches("input, select, textarea, button, [tabindex]")
+                ? el
+                : el.querySelector("input, select, textarea, button, [tabindex]") || el;
+
+        const targetRect = el.getBoundingClientRect();
+        const targetY = Math.max(
+            0,
+            window.pageYOffset + targetRect.top - window.innerHeight / 2 + targetRect.height / 2
+        );
+        const startY = window.pageYOffset;
+        const distance = targetY - startY;
+
+        if (Math.abs(distance) < 20) {
+            try {
+                focusable.focus({ preventScroll: true });
+            } catch (_) {
+                focusable.focus();
+            }
+            return;
+        }
+
+        let startTime = null;
+        const easeInOutCubic = (t) =>
+            t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        const animateScroll = (currentTime) => {
+            if (startTime === null) startTime = currentTime;
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / scrollDuration, 1);
+            const ease = easeInOutCubic(progress);
+
+            window.scrollTo(0, startY + distance * ease);
+
+            if (elapsed < scrollDuration) {
+                requestAnimationFrame(animateScroll);
+            } else {
+                try {
+                    focusable.focus({ preventScroll: true });
+                } catch (_) {
+                    focusable.focus();
+                }
+            }
+        };
+
+        requestAnimationFrame(animateScroll);
+    }
 };

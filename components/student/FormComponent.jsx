@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import { RotateCcw, Save, ArrowLeft, GraduationCap, CreditCard } from "lucide-react";
+import { RotateCcw, Save, ArrowLeft, GraduationCap, CreditCard, Loader2 } from "lucide-react";
 
 import API from "../../apis";
 import AddressFormComponent from "../address/AddressFormComponent";
@@ -31,7 +31,9 @@ const ENV = process.env;
 
 const FormComponent = () => {
     const [title, setTitle] = useState("Create");
-    const [loading, setLoading] = useState(false);
+    const [isPopulating, setIsPopulating] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const loading = isPopulating || isSubmitting;
     const [formData, setFormData] = useState({
         studentData: { values: null, validated: false },
         addressData: { values: null, validated: false },
@@ -68,8 +70,8 @@ const FormComponent = () => {
     const userParams = useParams();
 
     const { state } = useLocation();
-    const { getLocalStorage, getIdsFromObject, generatePassword, findMultipleById, formatImageName, fetchAndSetAll,
-        toastAndNavigate, generateNormalPassword, formateName } = Utility();
+    const { getLocalStorage, setLocalStorage, getIdsFromObject, generatePassword, findMultipleById, formatImageName, fetchAndSetAll,
+        toastAndNavigate, generateNormalPassword, formateName, focusAndScrollToField } = Utility();
 
     let id = state?.id || userParams?.id;
     const showIdCard = !id || (id && !updatedValues?.studentData?.id_card);
@@ -85,7 +87,7 @@ const FormComponent = () => {
     }, []);
 
     const updateStudentAndAddress = useCallback(async formData => {
-        setLoading(true);
+        setIsSubmitting(true);
         const paths = [];
         const dataFields = [];
 
@@ -114,12 +116,12 @@ const FormComponent = () => {
                 paths.push("/update-address");
                 dataFields.push({ ...formData.addressData.values });
             }
-            const responses = await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
-            if (responses) {        //due to this if schoolform or address form is dirty, then other forms are also manipulated
-                updateImageAndClassData(formData);
+            if (paths.length > 0) {
+                await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
             }
+            await updateImageAndClassData(formData);
         } catch (err) {
-            setLoading(false);
+            setIsSubmitting(false);
             toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
             throw err;
         }
@@ -130,78 +132,86 @@ const FormComponent = () => {
         let flag = false;
         try {
             let formattedName;
-            // delete all images from db on every update and later insert new and old again
+            // delete images from db when new image is uploaded and later insert new
             let deleteImgs = [];
             if (formData.imageData?.values?.image) {
                 deleteImgs.push("student");
-            } else if (formData.parentImageData?.values?.image) {
-                deleteImgs.push("parent");
-            } else {
-                flag = true;
             }
-            await API.ImageAPI.deleteImage({
-                parent: deleteImgs,
-                parent_id: id
-            });
+            if (formData.parentImageData?.values?.image) {
+                deleteImgs.push("parent");
+            }
+            if (deleteImgs.length > 0) {
+                await API.ImageAPI.deleteImage({
+                    parent: deleteImgs,
+                    parent_id: id
+                });
+            }
+            flag = true;
             // upload new images to backend folder and insert in db
             if (formData.imageData?.values?.image) {
-                Array.from(formData.imageData.values?.image).map(async image => {
-                    formattedName = formatImageName(image.name);
-                    API.ImageAPI.uploadImageToS3({
-                        image: image,
-                        folder: `student/${formattedName}`,
-                    })
-                        .then(res => {
-                            if (res.data.status === "Success") {
-                                API.ImageAPI.createImage({
-                                    image_src: res.data.data,
-                                    school_id: formData.studentData.values.school_id,
-                                    parent_id: formData.studentData.values.id,
-                                    parent: 'student',
-                                    type: 'normal'
-                                });
-                            }
+                await Promise.all(
+                    Array.from(formData.imageData.values?.image).map(async (image) => {
+                        const formattedName = formatImageName(image.name);
+                        const res = await API.ImageAPI.uploadImageToSupabase({
+                            image: image,
+                            folder: `student/${formattedName}`,
                         });
-                    flag = true;
-                });
+                        if (res?.data?.status === "Success" || res?.data?.data) {
+                            const imageUrl = res.data.data;
+                            await API.ImageAPI.createImage({
+                                image_src: imageUrl,
+                                school_id: formData.studentData.values.school_id,
+                                parent_id: formData.studentData.values.id,
+                                parent: 'student',
+                                type: 'normal'
+                            });
+                        }
+                    })
+                );
+                flag = true;
             }
 
-            // upload new parent images to aws and insert in db
+            // upload new parent images to supabase and insert in db
             if (formData.parentImageData?.values?.image) {
-                Array.from(formData.parentImageData.values.image).map(async image => {
-                    let formattedName = formatImageName(image.name);
-                    API.ImageAPI.uploadImageToS3({
-                        image: image,
-                        folder: `student/${formattedName}`,
-                    })
-                        .then(res => {
-                            if (res.data.status === "Success") {
-                                API.ImageAPI.createImage({
-                                    image_src: res.data.data,
-                                    school_id: formData.studentData.values.school_id,
-                                    parent_id: formData.studentData.values.id,
-                                    parent: 'parent',
-                                    type: 'normal'
-                                });
-                            }
+                await Promise.all(
+                    Array.from(formData.parentImageData.values.image).map(async (image) => {
+                        const formattedName = formatImageName(image.name);
+                        const res = await API.ImageAPI.uploadImageToSupabase({
+                            image: image,
+                            folder: `student/${formattedName}`,
                         });
-                });
+                        if (res?.data?.status === "Success" || res?.data?.data) {
+                            const imageUrl = res.data.data;
+                            await API.ImageAPI.createImage({
+                                image_src: imageUrl,
+                                school_id: formData.studentData.values.school_id,
+                                parent_id: formData.studentData.values.id,
+                                parent: 'parent',
+                                type: 'parent'
+                            });
+                        }
+                    })
+                );
                 flag = true;
             }
 
             if (flag) {
-                setLoading(false);
-                toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, `/student/listing/${getLocalStorage('class') || ''}`);
+                setIsSubmitting(false);
+                const targetClass = formData.studentData.values?.class || getLocalStorage('class') || '';
+                if (formData.studentData.values?.class) {
+                    setLocalStorage('class', formData.studentData.values.class);
+                }
+                toastAndNavigate(dispatch, true, "success", "Successfully Updated", navigateTo, `/student/listing/${targetClass}`);
             }
         } catch (err) {
-            setLoading(false);
+            setIsSubmitting(false);
             toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
             throw err;
         }
     }, [formData]);
 
     const populateStudentData = useCallback(id => {
-        setLoading(true);
+        setIsPopulating(true);
         const paths = [`/get-by-pk/student/${id}`, `/get-address/student/${id}`, `/get-image/student/${id}`, `/get-image/parent/${id}`];
 
         API.CommonAPI.multipleAPICall("GET", paths)
@@ -211,19 +221,22 @@ const FormComponent = () => {
                     responses[0].data.data.dob = dayjs(responses[0].data.data.dob);
                     responses[0].data.data.admission_date = dayjs(responses[0].data.data.admission_date);
                 }
+                const studentImg = responses[2]?.data?.data ? (Array.isArray(responses[2].data.data) ? responses[2].data.data : [responses[2].data.data]) : [];
+                const parentImg = responses[3]?.data?.data ? (Array.isArray(responses[3].data.data) ? responses[3].data.data : [responses[3].data.data]) : [];
+
                 const dataObj = {
                     studentData: responses[0].data.data,
                     addressData: responses[1]?.data?.data,
-                    studentImage: responses[2]?.data?.data,
-                    parentImage: responses[3]?.data.data
+                    studentImage: studentImg,
+                    parentImage: parentImg
                 };
                 setUpdatedValues(dataObj);
-                setUpdatedStudentImage(dataObj?.studentImage);
-                setUpdatedParentImage(dataObj?.parentImage);
-                setLoading(false);
+                setUpdatedStudentImage(studentImg);
+                setUpdatedParentImage(parentImg);
+                setIsPopulating(false);
             })
             .catch(err => {
-                setLoading(false);
+                setIsPopulating(false);
                 toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
                 throw err;
             });
@@ -233,7 +246,7 @@ const FormComponent = () => {
         let promise1;
         let promise2;
         let promise3;
-        setLoading(true);
+        setIsSubmitting(true);
         const username = await formateName(formData.studentData.values?.father_name || formData.studentData.values?.mother_name ||
             formData.studentData.values?.guardian);
         const password = await generateNormalPassword(username, schoolInformation?.school_code || 'DEMO');
@@ -242,6 +255,8 @@ const FormComponent = () => {
             ...formData.studentData.values,
             subjects: getIdsFromObject(formData.studentData.values?.subjects)
         }
+
+        const currentSchoolId = schoolInformation?.school_id || formData.studentData.values?.school_id;
 
         API.UserAPI.register({
             username: username,
@@ -252,90 +267,116 @@ const FormComponent = () => {
             designation: 'parent',
             status: formData.studentData.values.status
         })
-            .then(({ data: user }) => {
+            .then(async ({ data: user }) => {
                 if (user?.status === 'Success') {
+                    const userId = user?.data?.id || user?.id;
+                    const resolvedSchoolId = user?.data?.school_id || currentSchoolId;
 
-                    API.AddressAPI.createAddress({
+                    const userAddrPromise = API.AddressAPI.createAddress({
                         ...formData.addressData.values,
-                        school_id: user.data.school_id,
-                        parent_id: user.data.id,
+                        school_id: resolvedSchoolId,
+                        parent_id: userId,
                         parent: 'user'
-                    })
+                    });
 
                     API.StudentAPI.createStudent({
                         ...formData.studentData.values,
-                        parent_id: user.data.id,
+                        school_id: resolvedSchoolId,
+                        parent_id: userId,
                         password: password
                     })
                         .then(async ({ data: student }) => {
-                            promise1 = API.AddressAPI.createAddress({
+                            const studentId = student?.data?.id || student?.data?.data?.id || student?.id;
+                            const studentSchoolId = student?.data?.school_id || resolvedSchoolId;
+
+                            if (!studentId && student?.status !== 'Success') {
+                                setIsSubmitting(false);
+                                toastAndNavigate(dispatch, true, "error", student?.msg || "Failed to create student", navigateTo, 0);
+                                return;
+                            }
+
+                            const childPromises = [userAddrPromise];
+
+                            const addrPromise = API.AddressAPI.createAddress({
                                 ...formData.addressData.values,
-                                school_id: student.data.school_id,
-                                parent_id: student.data.id,
+                                school_id: studentSchoolId,
+                                parent_id: studentId,
                                 parent: 'student'
                             });
+                            childPromises.push(addrPromise);
 
                             if (formData.imageData.values?.image?.length) {
-                                promise2 = Array.from(formData.imageData.values.image).map(async (image) => {
-                                    let formattedName = formatImageName(image.name);
-                                    await API.ImageAPI.uploadImageToS3({
-                                        image: image,
-                                        folder: `student/${formattedName}`,
-                                    })
-                                        .then(res => {
-                                            if (res.data.status === "Success") {
-                                                API.ImageAPI.createImage({
-                                                    image_src: res.data.data,
-                                                    school_id: student.data.school_id,
-                                                    parent_id: student.data.id,
-                                                    parent: 'student',
-                                                    type: 'normal'
-                                                })
-                                            }
-                                        })
+                                Array.from(formData.imageData.values.image).forEach((image) => {
+                                    const imgPromise = (async () => {
+                                        const formattedName = formatImageName(image.name);
+                                        const res = await API.ImageAPI.uploadImageToSupabase({
+                                            image: image,
+                                            folder: `student/${formattedName}`,
+                                        });
+                                        if (res?.data?.status === "Success" || res?.data?.data) {
+                                            const imageUrl = res.data.data;
+                                            await API.ImageAPI.createImage({
+                                                image_src: imageUrl,
+                                                school_id: studentSchoolId,
+                                                parent_id: studentId,
+                                                parent: 'student',
+                                                type: 'normal'
+                                            });
+                                        }
+                                    })();
+                                    childPromises.push(imgPromise);
                                 });
                             }
 
                             if (formData.parentImageData.values?.image?.length) {
-                                promise3 = Array.from(formData.parentImageData.values.image).map(async (image) => {
-                                    let formattedName = formatImageName(image.name);
-                                    await API.ImageAPI.uploadImageToS3({
-                                        image: image,
-                                        folder: `student/${formattedName}`,
-                                    })
-                                        .then(res => {
-                                            if (res.data.status === "Success") {
-                                                API.ImageAPI.createImage({
-                                                    image_src: res.data.data,
-                                                    school_id: student.data.school_id,
-                                                    parent_id: student.data.id,
-                                                    parent: 'parent',
-                                                    type: 'parent'
-                                                })
-                                            }
-
-                                        })
+                                Array.from(formData.parentImageData.values.image).forEach((image) => {
+                                    const parentImgPromise = (async () => {
+                                        const formattedName = formatImageName(image.name);
+                                        const res = await API.ImageAPI.uploadImageToSupabase({
+                                            image: image,
+                                            folder: `student/${formattedName}`,
+                                        });
+                                        if (res?.data?.status === "Success" || res?.data?.data) {
+                                            const imageUrl = res.data.data;
+                                            await API.ImageAPI.createImage({
+                                                image_src: imageUrl,
+                                                school_id: studentSchoolId,
+                                                parent_id: studentId,
+                                                parent: 'parent',
+                                                type: 'parent'
+                                            });
+                                        }
+                                    })();
+                                    childPromises.push(parentImgPromise);
                                 });
                             }
+
                             try {
-                                await Promise.all([promise1, promise2, promise3]);
-                                setLoading(false);
-                                toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/student/listing/${getLocalStorage('class') || ''}`);
+                                await Promise.all(childPromises);
+                                setIsSubmitting(false);
+                                const targetClass = formData.studentData.values?.class || getLocalStorage('class') || '';
+                                if (formData.studentData.values?.class) {
+                                    setLocalStorage('class', formData.studentData.values.class);
+                                }
+                                toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/student/listing/${targetClass}`);
                             } catch (err) {
-                                setLoading(false);
-                                toastAndNavigate(dispatch, true, err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
+                                setIsSubmitting(false);
+                                toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
                                 console.log('Error in student create', err);
                             }
                         })
                         .catch(err => {
-                            setLoading(false);
+                            setIsSubmitting(false);
                             toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
                             console.log('Error in student create', err);
                         });
+                } else {
+                    setIsSubmitting(false);
+                    toastAndNavigate(dispatch, true, "error", user?.msg || "User creation failed", navigateTo, 0);
                 }
             })
             .catch(err => {
-                setLoading(false);
+                setIsSubmitting(false);
                 toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
                 console.log('Error in student create', err);
             });
@@ -357,36 +398,125 @@ const FormComponent = () => {
         }
     }, [updatedValues?.studentData, updatedValues?.addressData, updatedValues?.studentImage]);
 
-    //Create/Update/Populate student
+    // Populate student on edit
     useEffect(() => {
-        if (id && !submitted && formSubjectsInRedux?.listData) {
+        if (id && formSubjectsInRedux?.listData) {
             setTitle("Update");
             populateStudentData(id);
         }
-        if (formValidated) {
-            formData?.studentData?.values?.id ? updateStudentAndAddress(formData) : createStudent(formData);
-        } else {
-            setSubmitted(false);
-        }
-    }, [id, submitted, formSubjectsInRedux?.listData]);
+    }, [id, formSubjectsInRedux?.listData]);
 
     const handleSubmit = async () => {
-        await studentFormRef.current.Submit();
-        await addressFormRef.current.Submit();
+        const studentErrors = studentFormRef.current?.validate ? await studentFormRef.current.validate() : await studentFormRef.current?.Submit();
+        const addressErrors = addressFormRef.current?.validate ? await addressFormRef.current.validate() : await addressFormRef.current?.Submit();
         await imageFormRef.current?.Submit();
         await parentImageFormRef.current?.Submit();
+
+        if (studentErrors && Object.keys(studentErrors).length > 0) {
+            const visualOrder = [
+                "session",
+                "firstname",
+                "lastname",
+                "contact_no",
+                "email",
+                "aadhaar_no",
+                "gender",
+                "class",
+                "section",
+                "dob",
+                "admission_date",
+                "admission_type",
+                "subjects",
+                "blood_group",
+                "birth_mark",
+                "religion",
+                "nationality",
+                "caste_group",
+                "house",
+                "bus",
+                "fee_waiver_type",
+                "waived_fees",
+                "mother_name",
+                "mother_contact_no",
+                "mother_aadhar",
+                "father_name",
+                "father_contact_no",
+                "father_aadhar",
+                "guardian_name",
+                "guardian_contact_no",
+                "guardian_aadhar"
+            ];
+            const errorKeys = Object.keys(studentErrors);
+            const firstKey = visualOrder.find(k => errorKeys.includes(k)) || errorKeys[0];
+            const firstMsg = typeof studentErrors[firstKey] === "string" ? studentErrors[firstKey] : "Please fill all required student details";
+            toastAndNavigate(dispatch, true, "error", firstMsg);
+            focusAndScrollToField(firstKey);
+            setSubmitted(false);
+            return;
+        }
+
+        if (addressErrors && Object.keys(addressErrors).length > 0) {
+            const addressVisualOrder = [
+                "street",
+                "landmark",
+                "zipcode",
+                "state",
+                "city"
+            ];
+            const errorKeys = Object.keys(addressErrors);
+            const firstKey = addressVisualOrder.find(k => errorKeys.includes(k)) || errorKeys[0];
+            const firstMsg = typeof addressErrors[firstKey] === "string" ? addressErrors[firstKey] : "Please fill all required address details";
+            toastAndNavigate(dispatch, true, "error", firstMsg);
+            focusAndScrollToField(firstKey);
+            setSubmitted(false);
+            return;
+        }
+
+        const studentValues = studentFormRef.current?.formik?.values || formData?.studentData?.values;
+        const addressValues = addressFormRef.current?.formik?.values || formData?.addressData?.values;
+        const imageValues = imageFormRef.current?.formik?.values || formData?.imageData?.values;
+        const parentImageValues = parentImageFormRef.current?.formik?.values || formData?.parentImageData?.values;
+
+        const payloadData = {
+            studentData: {
+                values: studentValues,
+                dirty: studentFormRef.current?.formik?.dirty ?? true,
+                validated: true
+            },
+            addressData: {
+                values: addressValues,
+                dirty: addressFormRef.current?.formik?.dirty ?? true,
+                validated: true
+            },
+            imageData: {
+                values: imageValues,
+                dirty: imageFormRef.current?.formik?.dirty ?? false,
+                validated: true
+            },
+            parentImageData: {
+                values: parentImageValues,
+                dirty: parentImageFormRef.current?.formik?.dirty ?? false,
+                validated: true
+            }
+        };
+
         setSubmitted(true);
+        if (id || payloadData?.studentData?.values?.id) {
+            await updateStudentAndAddress(payloadData);
+        } else {
+            await createStudent(payloadData);
+        }
     };
 
     const handleFormChange = (data, form) => {
         if (form === 'student') {
-            setFormData({ ...formData, studentData: data });
+            setFormData(prev => ({ ...prev, studentData: data }));
         } else if (form === 'address') {
-            setFormData({ ...formData, addressData: data });
+            setFormData(prev => ({ ...prev, addressData: data }));
         } else if (form === 'student_image') {
-            setFormData({ ...formData, imageData: data });
+            setFormData(prev => ({ ...prev, imageData: data }));
         } else if (form === 'parent_image') {
-            setFormData({ ...formData, parentImageData: data });
+            setFormData(prev => ({ ...prev, parentImageData: data }));
         }
     };
 
@@ -588,15 +718,24 @@ const FormComponent = () => {
                         <button 
                             type="submit" 
                             onClick={() => handleSubmit()} 
-                            disabled={!dirty || submitted}
+                            disabled={loading}
                             className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                                 title === "Update" 
                                     ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30" 
                                     : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
                             }`}
                         >
-                            <Save className="w-4 h-4" />
-                            {title === "Update" ? "Update Student" : "Save Student"}
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                    <span>{title === "Update" ? "Updating..." : "Saving..."}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    <span>{title === "Update" ? "Update Student" : "Save Student"}</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -607,9 +746,21 @@ const FormComponent = () => {
                     message={toastInfo.toastMessage}
                 />
 
-                {loading && (
-                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
-                        <Loader />
+                {isPopulating && (
+                    <div className="fixed inset-0 bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <Loader 
+                            text="Loading Student Information..."
+                            subtext="Retrieving academic details, parent records, and media attachments"
+                        />
+                    </div>
+                )}
+
+                {isSubmitting && (
+                    <div className="fixed inset-0 bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <Loader 
+                            text={title === "Update" ? "Updating Student Profile..." : "Saving Student Details..."}
+                            subtext="Processing academic profile, parent account, and attachments"
+                        />
                     </div>
                 )}
             </div>

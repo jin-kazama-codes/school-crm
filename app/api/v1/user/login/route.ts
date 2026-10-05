@@ -10,8 +10,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const payload = await request.json();
+    const email = typeof payload.email === "string" ? payload.email.trim() : "";
+    const contact_no = typeof payload.contact_no === "string" ? payload.contact_no.trim() : "";
+    const password = typeof payload.password === "string" ? payload.password.trim() : "";
 
-    if (!payload.email && !payload.contact_no) {
+    if (!email && !contact_no) {
       return NextResponse.json(
         Utility.formatResponse(200, "Email or contact number is required"),
         { status: 200 }
@@ -19,13 +22,13 @@ export async function POST(request: NextRequest) {
     }
 
     const searchCriteria: Record<string, unknown>[] = [];
-    if (payload.email) {
-      searchCriteria.push({ email: payload.email });
-      searchCriteria.push({ username: payload.email });
-      searchCriteria.push({ contact_no: payload.email });
+    if (email) {
+      searchCriteria.push({ email: { equals: email, mode: "insensitive" } });
+      searchCriteria.push({ username: { equals: email, mode: "insensitive" } });
+      searchCriteria.push({ contact_no: email });
     }
-    if (payload.contact_no) {
-      searchCriteria.push({ contact_no: payload.contact_no });
+    if (contact_no) {
+      searchCriteria.push({ contact_no: contact_no });
     }
 
     const user = await prisma.user.findFirst({
@@ -37,6 +40,11 @@ export async function POST(request: NextRequest) {
         Utility.formatResponse(200, "User does not exist"),
         { status: 200 }
       );
+    }
+
+    let isMatch = await Utility.comparePassword(password, user.password!);
+    if (!isMatch && payload.password && payload.password !== password) {
+      isMatch = await Utility.comparePassword(payload.password, user.password!);
     }
 
     if (user && user.school_id) {
@@ -52,10 +60,6 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const isMatch = await Utility.comparePassword(
-        payload.password,
-        user.password!
-      );
       if (isMatch) {
         const token = Utility.getSignedToken(user.id);
         return NextResponse.json(

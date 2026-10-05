@@ -19,11 +19,13 @@ import classNames from "../modules";
 import Search from "../common/Search";
 import ServerPaginationGrid from "../common/Datagrid";
 import ViewDetailModal from "../common/ViewDetailModal";
+import StudentDossierModal from "./StudentDossierModal";
 
 import { datagridColumns } from "./StudentConfig";
 import { setAllSubjects } from "../../redux/actions/SubjectAction";
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
+import { setListingSchoolHouses } from "../../redux/actions/SchoolHouseAction";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
 import { setStudents } from "../../redux/actions/StudentAction";
 import { useCommon } from "../hooks/common";
@@ -49,6 +51,7 @@ const ListingComponent = ({ rolePriority = null }) => {
   const allClasses = useSelector((state) => state.allClasses);
   const schoolSections = useSelector((state) => state.schoolSections);
   const allSections = useSelector((state) => state.allSections);
+  const listingSchoolHouses = useSelector((state) => state.listingSchoolHouses);
   const { listData = { count: 0, rows: [] }, loading } = useSelector((state) => state.allStudents);
 
   const navigateTo = useNavigate();
@@ -161,22 +164,27 @@ const ListingComponent = ({ rolePriority = null }) => {
   }, [selectedClass, selectedSection, rolePriority]);
 
   const populateData = useCallback(id => {
-    const paths = [`/get-by-pk/student/${id}`, `/get-address/student/${id}`, `/get-image/student/${id}`];
+    const paths = [`/get-by-pk/student/${id}`, `/get-address/student/${id}`, `/get-image/student/${id}`, `/get-image/parent/${id}`];
     API.CommonAPI.multipleAPICall("GET", paths)
       .then(responses => {
-        if (responses[0].data.data) {
-          responses[0].data.data.subjects = findMultipleById(responses[0].data.data.subjects, subjectsInRedux?.listData?.rows)
+        const studentRaw = responses[0]?.data?.data || responses[0]?.data;
+        const addressRaw = responses[1]?.data?.data || responses[1]?.data;
+        const studentImgRaw = responses[2]?.data?.data || responses[2]?.data;
+        const parentImgRaw = responses[3]?.data?.data || responses[3]?.data;
+
+        if (studentRaw && studentRaw.subjects) {
+          studentRaw.subjects = findMultipleById(studentRaw.subjects, subjectsInRedux?.listData?.rows);
         }
         const dataObj = {
-          studentData: responses[0].data.data,
-          addressData: responses[1]?.data?.data,
-          imageData: responses[2]?.data?.data
+          studentData: studentRaw,
+          addressData: addressRaw,
+          imageData: Array.isArray(studentImgRaw) ? studentImgRaw : (studentImgRaw ? [studentImgRaw] : []),
+          parentImageData: Array.isArray(parentImgRaw) ? parentImgRaw : (parentImgRaw ? [parentImgRaw] : []),
         };
         setStudentDetail(dataObj);
       })
       .catch(err => {
-        toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred");
-        throw err;
+        console.error("Error populating student details:", err);
       });
   }, [subjectsInRedux?.listData?.rows]);
 
@@ -194,6 +202,9 @@ const ListingComponent = ({ rolePriority = null }) => {
     }
     if (getLocalStorage("schoolInfo") && (!schoolClasses?.listData?.length || !schoolSections?.listData?.length || !classData?.length)) {
       fetchAndSetSchoolData(dispatch, setSchoolClasses, setSchoolSections, setClassData);
+    }
+    if (!listingSchoolHouses?.listData?.rows?.length) {
+      getPaginatedData(0, 50, setListingSchoolHouses, API.SchoolHouseAPI);
     }
   }, []);
 
@@ -419,16 +430,19 @@ const ListingComponent = ({ rolePriority = null }) => {
         imports={studentImport}
       />
 
-      <ViewDetailModal
+      <StudentDossierModal
         open={openModal}
         setOpen={setOpenModal}
-        title='Student Details'
-        horizontalData={horizontalData}
-        verticalData={verticalData}
         detail={studentDetail}
         countryData={countryData}
         stateData={stateData}
         cityData={cityData}
+        allClasses={schoolClasses?.listData?.length ? schoolClasses.listData : allClasses?.listData || []}
+        allSections={schoolSections?.listData?.length ? schoolSections.listData : allSections?.listData || []}
+        allSubjects={subjectsInRedux?.listData?.rows || subjectsInRedux?.listData || []}
+        allHouses={listingSchoolHouses?.listData?.rows || []}
+        classData={classData || []}
+        rolePriority={rolePriority}
       />
     </div>
   );

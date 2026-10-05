@@ -289,3 +289,251 @@ In paginated tables, applying a column filter or table quick-search on page 1 on
 3. In `useEffect`, pass `activeSearchQuery` to `getQuery(page, size, action, api, condition, activeSearchQuery)`.
 4. The server-side API (e.g. `get-users` or `genericList`) queries all matching rows in the database across all pages with total `count` and returns the paginated results for page 1.
 
+---
+
+### 9.12 Form Validation Focus, Smooth Scrolling & Toast Dismissal Lifecycle (Bug #16)
+
+**Enhancements:**
+1. **Always-Visible Dustbin on Image Preview**: Uploaded image previews in [PreviewImage.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/image/PreviewImage.jsx) display a persistent dustbin (`Trash2`) icon at the top-right corner with smooth hover scaling and instant removal.
+2. **Smooth Scroll & Focus on Form Validation Errors**: When submitting forms in [FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx), if any required field fails validation, `focusAndScrollToField(firstKey)` is invoked to smoothly center the viewport on the first invalid input and focus the cursor on it.
+3. **Mandatory Crimson Rose Indicator**: All required input labels render `* (Mandatory)` styled in crimson rose (`#e05353`).
+4. **Toast Blue Info Flash Fix**: In [Toast.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/common/Toast.jsx) and [Utility index.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/utility/index.jsx), prevented the empty blue info banner from flashing during toast dismissal when `toastSeverity` resets to empty.
+5. **Strict Production ERP Validation**: Applied 10-digit mobile (`/^[6-9]\d{9}$/`), 12-digit Aadhaar (`/^\d{12}$/`), RFC email, enrolled subjects requirement, and 6-digit postal code validation across student, parent, and address schemas in [Validation.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/Validation.jsx).
+6. **DOB & Admission Date Constraints**: Restricts student Date of Birth to a minimum of 10 years ago (`max = Today - 10 Years` in UI date picker and Yup validation test), and restricts Admission Date from selecting future dates.
+
+---
+
+### 9.13 Header Scoped `school_id` Integer Parsing in Prisma Queries (Bug #17)
+
+**Problem:**
+On submitting user registration or student creation (`POST /api/v1/register`), Prisma threw `PrismaClientValidationError: Argument 'school_id': Invalid value provided. Expected Int or Null, provided String.`. The UI loading overlay remained permanently mid-opaque.
+
+**Root Cause:**
+`Utility.getSchoolIdFromHeader(request)` in `lib/utility.ts` decrypted the school token string (e.g. `"1"`) and returned `{ school_id: "1" }`. Prisma schema defines `User.school_id`, `Student.school_id`, and other models as `Int?`. Passing string `"1"` in `prisma.user.create({ data: { ...payload, ...schoolCondition } })` caused validation failure.
+
+**Fix Pattern:**
+1. In [utility.ts](file:///d:/School%20CRM%20Project/school-crm-next/lib/utility.ts), parse `parseInt(decrypted_school_id, 10)` in `getSchoolIdFromHeader`, returning `{ school_id: number }`.
+2. In [register/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/register/route.ts) and [user/register/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/user/register/route.ts), parse `payload.school_id` to integer if present as an extra safeguard.
+3. In [FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx), added error handling fallback for non-success API responses to ensure loading state resets cleanly (`setLoading(false)`) and displays the error toast.
+
+---
+
+### 9.14 Prisma Dynamic Payload Sanitization & Glassmorphism Save Loader (Bug #18)
+
+**Problem:**
+1. On `create-student` (`POST /api/v1/create-student`), Prisma threw validation errors:
+   - `Failed to parse empty string. Expected decimal String` on empty Decimal fields (`guardian_contact_no: ""`, `guardian_aadhar: ""`).
+   - String integer fields (`section: "1"`, `waived_fees: "15000"`) and non-existent model payload fields (`age: ""`, `password`, `bus`) caused validation failures.
+2. The UI displayed a plain opaque overlay without a visible animated loader, and the Save button lacked a loading state with "Saving..." text.
+
+**Root Cause:**
+`genericCreate` in `lib/crudHelpers.ts` did not sanitize input types or filter model columns for models not in `MODEL_ALLOWED_FIELDS`. Empty strings were passed directly to `Decimal?`, `Int?`, and `DateTime?` columns in Prisma.
+
+**Fix Pattern:**
+1. In [crudHelpers.ts](file:///d:/School%20CRM%20Project/school-crm-next/lib/crudHelpers.ts):
+   - Implemented schema-aware field definitions (`STATIC_MODEL_FIELDS` merged with dynamic `Prisma.dmmf`).
+   - `sanitizePayload`: Strips columns not in the target Prisma model, parses string numbers to `Int`/`Float`, converts empty strings `""` to `null` for `Int`, `Float`, `Decimal`, and `DateTime` columns, and converts boolean representations.
+2. In [Loader.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/common/Loader.jsx): Built a sleek, glassmorphic loader with dual-ring spinning gradients and customizable title/subtext.
+3. In [FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx): Added spinning `Loader2` and `"Saving..."` / `"Updating..."` indicator on the Save/Update button and linked the backdrop loader card.
+4. In [StudentFormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/StudentFormComponent.jsx): Converted Mother, Father, and Guardian Contact (`maxLength={10}`) and Aadhaar (`maxLength={12}`) inputs from `type="number"` to `type="text"` to match the student basic details form and preserve exact string formatting for validation.
+
+---
+
+### 9.15 Form Submit Disabled State & Multi-Section State Sync (Bug #19)
+
+**Problem:**
+When a validation error occurred and the user corrected the invalid field, the "Save Student" button remained disabled, preventing form submission.
+
+**Root Cause:**
+1. The submit button evaluated `disabled={!dirty || submitted || loading}`. When child forms reinitialized (e.g. dropdown options loaded) or when a validation error returned early without resetting `submitted`, `!dirty` or `submitted` kept the button disabled.
+2. `handleFormChange` used object spread over existing state (`setFormData({ ...formData, [formKey]: data })`), which could cause race conditions or stale state captures when multiple child forms dispatched validation states simultaneously.
+
+**Fix Pattern:**
+1. In [FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx), updated the submit button disabled state to `disabled={loading}` so the button is always interactive and allows immediate re-validation on click.
+2. Used functional state updates in `handleFormChange` (`setFormData(prev => ({ ...prev, [formKey]: data }))`) to guarantee consistent state across student, address, and media sections.
+3. Ensured `setSubmitted(false)` is explicitly reset if validation errors are detected during `handleSubmit`.
+
+---
+
+### 9.16 Direct Form Dispatch & Atomic Payload Assembly (Bug #20)
+
+**Problem:**
+Clicking "Save Student" did nothing after form validation passed.
+
+**Root Cause:**
+`handleSubmit` previously set `submitted = true` and relied on an asynchronous `useEffect` that checked `if (formValidated)`. Because child formik states update asynchronously, `formValidated` was still evaluated as `false` on the initial `submitted` state flip, causing the `useEffect` to immediately reset `submitted = false` and abort the submission flow.
+
+**Fix Pattern:**
+1. In [FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx), `handleSubmit` directly extracts current form values from child refs (`studentFormRef.current?.formik.values`, `addressFormRef.current?.formik.values`, `imageFormRef.current?.formik.values`) and triggers `createStudent(payloadData)` / `updateStudentAndAddress(payloadData)` immediately without waiting for deferred `useEffect` cycles.
+2. In [ImagePicker.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/image/ImagePicker.jsx), exposed `formik` and `validate` in `useImperativeHandle`.
+
+---
+
+### 9.17 Prisma Enum Mapping for BloodGroup and Hyphenated Identifiers (Bug #21)
+
+**Problem:**
+On student creation, Prisma threw `Invalid value for argument blood_group. Expected BloodGroup.` when given `"B+"`.
+
+**Root Cause:**
+In Prisma schema, `BloodGroup` enum members are defined as `A_POS @map("A+")`, `B_POS @map("B+")`, etc. The Prisma Client runtime queries require the enum key (`"B_POS"`), whereas the HTML UI options send standard strings (`"B+"`).
+
+**Fix Pattern:**
+1. In [crudHelpers.ts](file:///d:/School%20CRM%20Project/school-crm-next/lib/crudHelpers.ts), introduced `ENUM_VALUE_MAPPINGS` in `sanitizePayload` to automatically map `"B+"` -> `"B_POS"`, `"A+"` -> `"A_POS"`, `"co-ed"` -> `"co_ed"`, `"senior-sec"` -> `"senior_sec"`, `"sub-admin"` -> `"sub_admin"`, etc.
+2. In [StudentFormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/StudentFormComponent.jsx), normalized backend `A_POS` / `B_POS` back to `"A+"` / `"B+"` when initializing `updatedValues` for edit mode.
+
+---
+
+### 9.18 Supabase Storage Upload Naming & Student Roll/Enrollment Number Generation (Bug #22)
+
+**Problem:**
+1. Image uploads failed with `{"status":"Error","msg":"Endpoint upload-image-s3 not found"}` because routes were under `/api/v1/image/...` while frontend called `/api/v1/upload-image-s3`. AWS S3 was removed and replaced with Supabase Storage, requiring function naming cleanup to avoid confusion.
+2. In Supabase `student` table, `roll_no`, `enrollment_no`, and `head` were not saved or were null/empty.
+
+**Root Cause:**
+1. Frontend API helper used `uploadImageToS3` calling the old endpoint. Next.js route handlers needed `/api/v1/upload-image` and `/api/v1/upload-image-s3` pointing to Supabase Storage client (`supabaseAdmin.storage`).
+2. `roll_no` and `enrollment_no` were not generated automatically on student creation if omitted from frontend payload, and `head` was not defaulting to `0`.
+
+**Fix Pattern:**
+1. In [apis/ImageAPI.jsx](file:///d:/School%20CRM%20Project/school-crm-next/apis/ImageAPI.jsx): Renamed/standardized upload method to `uploadImageToSupabase` (with backward compatibility aliases `uploadImageToS3` and `uploadImage`) uploading to `/upload-image` (resolved to `/api/v1/upload-image`).
+2. In [app/api/v1/upload-image/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/upload-image/route.ts) and [app/api/v1/upload-image-s3/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/upload-image-s3/route.ts): Direct zero-overhead upload to configured `SUPABASE_STORAGE_BUCKET` via `supabaseAdmin.storage.from(BUCKET).upload(...)` and returned public URL.
+3. In [lib/crudHelpers.ts](file:///d:/School%20CRM%20Project/school-crm-next/lib/crudHelpers.ts):
+   - In `genericCreate` for `student`:
+     - Defaulted `head` to `0` if undefined/null.
+     - Generated sequential `roll_no` for `(school_id, class, section)` starting from 1.
+     - Generated sequential `enrollment_no` composed of Academic Session Year prefix (e.g. `2025` from `"2025-2026"`) + 4 sequential digits (e.g. `20250001`).
+4. In [components/student/FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx), [components/teacher/FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/teacher/FormComponent.jsx), [components/school/FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/school/FormComponent.jsx), and [components/attendance/FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/attendance/FormComponent.jsx): Replaced `uploadImageToS3` with `uploadImageToSupabase` and ensured all upload promises are properly resolved via `Promise.all`.
+
+---
+
+### 9.19 Login Form Validation & Whitespace Sanitization (Bug #23)
+
+**Problem:**
+When attempting to log in with valid credentials containing leading/trailing whitespace, login failed with "User does not exist" or "Username and Password do not match". There was no strict validation schema enforcing email and password complexity rules on the login form.
+
+**Root Cause:**
+1. [Login.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/login/Login.jsx) did not have a Formik `validationSchema` attached, allowing invalid/untrimmed strings to be dispatched directly.
+2. In [app/api/v1/login/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/login/route.ts) and [app/api/v1/user/login/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/user/login/route.ts), database user search was performed without trimming and without case-insensitive mode (`mode: 'insensitive'`).
+
+**Fix Pattern:**
+1. In [components/login/Validation.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/login/Validation.jsx): Created `loginSchema` and `forgotPasswordSchema` using Yup:
+   - `email`: Required, trimmed, valid email format.
+   - `password`: Required, trimmed, 8–20 chars, at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
+2. In [components/login/Login.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/login/Login.jsx):
+   - Attached `loginSchema` to `<Formik>`.
+   - Trimmed inputs on both `onBlur` and `onSubmit`.
+   - Updated button disabled state to `disabled={loading}`.
+3. In [components/login/ForgetPw.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/login/ForgetPw.jsx):
+   - Attached `forgotPasswordSchema` to `<Formik>` and trimmed email on blur and submit.
+4. In [app/api/v1/login/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/login/route.ts) and [app/api/v1/user/login/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/user/login/route.ts):
+   - Trimmed `email`, `contact_no`, and `password`.
+   - Added case-insensitive matching (`mode: "insensitive"`) for email and username lookups.
+   - Enhanced password comparison to check trimmed password with fallback to raw payload password.
+
+---
+
+### 9.20 Address school_id & parent_id Resolution and Decimal Contact Sanitization (Bug #24)
+
+**Problem:**
+1. When creating a student, two address records are created (one for the parent `user` and one for the `student`). Both address records had `school_id` saved as `NULL`, and the student address had `parent_id` saved as `NULL`.
+2. Parent/Guardian contact numbers and Aadhaar numbers (`mother_contact_no`, `father_contact_no`, `mother_aadhar`, `father_aadhar`, `guardian_contact_no`, `guardian_aadhar`) were getting stored/displayed with floating points (e.g. `8956230231.000000000000`).
+
+**Root Cause:**
+1. `address` was omitted from `MODELS_WITH_SCHOOL_ID` in `lib/crudHelpers.ts`, preventing backend auto-scoping from attaching `school_id`.
+2. `/api/v1/create-student` and `/api/v1/register` returned simple success strings or incomplete payloads instead of `{ id, school_id }`, leading to `undefined` IDs during subsequent address creation calls.
+3. In `prisma/schema.prisma`, `mother_contact_no`, `father_contact_no`, etc., are defined as `Decimal?`. PostgreSQL's default `numeric` representation pads trailing decimal zeros unless truncated before storage and formatted when loaded in the UI.
+
+**Fix Pattern:**
+1. In [lib/crudHelpers.ts](file:///d:/School%20CRM%20Project/school-crm-next/lib/crudHelpers.ts):
+   - Added `"address"` to `MODELS_WITH_SCHOOL_ID`.
+   - In `genericCreate`, returned `{ id: record.id, school_id: record.school_id }` when `returnId = true`.
+   - In `sanitizePayload`, stripped trailing decimal places for fields ending with `_contact_no`, `_aadhar`, or `_no` before Prisma Decimal serialization (`strVal.replace(/\..*$/, "")`).
+2. In [app/api/v1/[...slug]/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/[...slug]/route.ts): Set `returnId: true` for `create-` endpoints.
+3. In [app/api/v1/register/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/register/route.ts): Returned `{ token, id: user.id, school_id: user.school_id }`.
+4. In [components/student/FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx): Passed resolved `school_id` and correct `parent_id` (`userId` for `parent: 'user'` and `studentId` for `parent: 'student'`).
+5. In [components/student/StudentFormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/StudentFormComponent.jsx): Added regex/split normalization in `updatedValues` `useEffect` to strip trailing `.000000` when loading existing student records into form inputs.
+
+---
+
+### 9.21 Official Student Register Dossier Modal (Feature & UI Elevation)
+
+**Implementation:**
+1. Created [StudentDossierModal.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/StudentDossierModal.jsx) to replace the generic `ViewDetailModal` for students with a production-grade Student Register Dossier.
+2. Included official school letterhead header (School Name, Code, Crest, Academic Session), dual portrait toggle (Student & Parent photos), Enrollment Matrix (Enrollment #, Roll #, Admission Date), and 5 structured tabs:
+   - **Identity & Register**: Full legal name, DOB, exact age, gender, blood group, Aadhaar, nationality, religion, caste, identification mark, disability status.
+   - **Academics & House**: Class, section, session, school house, bus transport route, enrolled subjects chips.
+   - **Parents & Guardians**: Father, mother, and guardian cards with contact numbers, Aadhaar, and portal user link.
+   - **Address & Contact**: Formatted residential address with interactive Google Maps link and emergency contact.
+   - **Fees & Concessions**: Concession category (Partial/Full/None) and waived amount.
+4. Fixed enum deserialization for `image.type = 'parent'` across all image GET endpoints:
+   - In [app/api/v1/[...slug]/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/[...slug]/route.ts), [app/api/v1/image/get-image/[parent]/[parent_id]/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/image/get-image/[parent]/[parent_id]/route.ts), and [app/api/v1/image/get-image/[parent]/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/image/get-image/[parent]/route.ts), converted image retrieval queries to raw parameterized SQL with `type::text` and `parent::text`. This completely eliminates `Value 'parent' not found in enum 'ImageType'` runtime errors from Prisma Client.
+
+---
+
+### 9.22 PreviewImage & ImagePicker updatedImage Single Object vs Array Handling (Bug #22)
+
+**Problem:**
+Navigating to student update page `/student/update/:id` caused Next.js to crash with `Runtime TypeError: updatedImage.map is not a function` at `PreviewImage.useEffect (components/image/PreviewImage.jsx:36:26)`.
+
+**Root Cause:**
+When fetching student and parent images via `/get-image/student/:id` and `/get-image/parent/:id`, the API returns a single image object `{ id, image_src: "...", ... }` rather than an array. In [PreviewImage.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/image/PreviewImage.jsx), `updatedImage.map` was called directly assuming `updatedImage` was always an Array.
+
+**Fix Pattern:**
+1. In [PreviewImage.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/image/PreviewImage.jsx), added `getOldImageList(raw)` helper that safely normalizes `updatedImage` into an array whether it is passed as a single object `{ image_src: "..." }`, an array, or `null`.
+2. In [ImagePicker.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/image/ImagePicker.jsx), updated `hasOldImage` detection and `setInitialState` to support both single object and array `updatedImage`.
+3. In [FormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/FormComponent.jsx), normalized `studentImg` and `parentImg` to arrays during `populateStudentData`.
+
+---
+
+### 9.23 Controlled Input Null & Undefined Defaults Normalization (Bug #23)
+
+**Problem:**
+When opening `/student/update/:id`, React logged console errors:
+`StudentFormComponent.jsx:1226 'value' prop on 'input' should not be null. Consider using an empty string to clear the component or 'undefined' for uncontrolled components.`
+and `A component is changing a controlled input to be uncontrolled.`
+
+**Root Cause:**
+Database columns in PostgreSQL that have `NULL` values (e.g., `guardian_name: null`, `guardian_contact_no: null`, `guardian_aadhar: null`, `birth_mark: null`, etc.) were directly copied into Formik's state when applying `updatedValues`. Passing `value={formik.values.guardian_contact_no}` with `null` caused React to warn about null input values and controlled-to-uncontrolled transitions.
+
+**Fix Pattern:**
+1. In [StudentFormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/student/StudentFormComponent.jsx), merged `updatedValues` over `initialValues` and iterated over all keys to ensure non-date properties default to empty strings (`""`), booleans (`false`), numbers (`0`), or arrays (`[]`).
+2. In [AddressFormComponent.jsx](file:///d:/School%20CRM%20Project/school-crm-next/components/address/AddressFormComponent.jsx), normalized `updatedValues` with `initialValues` so `street`, `landmark`, `zipcode`, `state`, and `city` never pass `null` to input/select elements.
+
+---
+
+### 9.24 Supabase Pooler Idle Connection Socket Drop & P1001 Error (Bug #24)
+
+**Problem:**
+After being logged out or idle for a few minutes, logging back in failed with `Error [PrismaClientKnownRequestError]: Can't reach database server at aws-0-ap-south-1.pooler.supabase.com (P1001 / DatabaseNotReachable)`.
+
+**Root Cause:**
+Supabase's PgBouncer transaction pooler (port 6543) terminates idle client sockets after several minutes of inactivity. When Next.js dev server reuses a stale connection from Node's `pg.Pool`, the TCP socket is already closed upstream, resulting in a ~12s connection timeout.
+
+**Fix Pattern:**
+1. In [prisma.ts](file:///d:/School%20CRM%20Project/school-crm-next/lib/prisma.ts), configured `pg.Pool` with `keepAlive: true`, `keepAliveInitialDelayMillis: 10000`, aggressive idle reaper `idleTimeoutMillis: 20000`, `connectionTimeoutMillis: 10000`, and an error listener on the pool to cleanly discard severed idle sockets without failing incoming login/API requests.
+
+---
+
+### 9.25 `delete-image` Endpoint Implementation & `updated_by` User Tracking (Bug #25)
+
+**Problem:**
+1. When updating a student with new or deleted photos, `DELETE /api/v1/delete-image` failed with `404 Not Found (Endpoint delete-image not found)`.
+2. When updating student, user, or address records, `updated_by` field remained `null` in the database.
+
+**Root Cause:**
+1. The DELETE handler in `app/api/v1/[...slug]/route.ts` only handled specific mapping endpoints and lacked a route branch for `delete-image`.
+2. `getAuthUserId(req)` was missing in slug route handlers, causing `userId` to fallback to default `1` or `null` when parsing authorization headers with or without `"Bearer "` prefix. `genericCreate` and `genericUpdate` also didn't guarantee `updated_by` assignment on record creation and modification.
+
+**Fix Pattern:**
+1. Created dedicated [delete-image/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/delete-image/route.ts) and added `delete-image` handler in [[...slug]/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/[...slug]/route.ts) executing parameterized raw queries with `CAST($1::text AS "public"."ImageParent")` supporting single strings and string arrays.
+2. Implemented `getAuthUserId(req)` in [[...slug]/route.ts](file:///d:/School%20CRM%20Project/school-crm-next/app/api/v1/[...slug]/route.ts) to accurately decode user IDs from `x-access-token` / `authorization` JWT tokens.
+3. In [crudHelpers.ts](file:///d:/School%20CRM%20Project/school-crm-next/lib/crudHelpers.ts), updated `genericCreate` and `genericUpdate` to automatically populate `updated_by` with the authenticated user ID across all models.
+
+
+
+
+
+
+
+
+
+

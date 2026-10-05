@@ -151,17 +151,21 @@ const FormComponent = () => {
           parent_id: id,
         });
         if (formData.imageData?.values?.image) {
-          Array.from(formData.imageData.values.image).map((image) => {
-            formattedName = formatImageName(image.name);
-            API.ImageAPI.uploadImage({ image: image, imageName: formattedName });
-            API.ImageAPI.createImage({
-              image_src: formattedName,
-              school_id: formData.teacherData.values.id,
-              parent_id: formData.teacherData.values.id,
-              parent: "teacher",
-              type: "normal"
-            });
-          });
+          await Promise.all(
+            Array.from(formData.imageData.values.image).map(async (image) => {
+              const formattedName = formatImageName(image.name);
+              const res = await API.ImageAPI.uploadImageToSupabase({ image: image, imageName: formattedName, folder: `teacher/${formattedName}` });
+              if (res?.data?.status === "Success" || res?.data?.data) {
+                await API.ImageAPI.createImage({
+                  image_src: res.data.data || formattedName,
+                  school_id: formData.teacherData.values.id,
+                  parent_id: formData.teacherData.values.id,
+                  parent: "teacher",
+                  type: "normal"
+                });
+              }
+            })
+          );
           status = true;
         }
         if (formData.imageData.values.constructor === Array) {
@@ -283,17 +287,21 @@ const FormComponent = () => {
               });
 
               if (formData.imageData.values.image?.length) {
-                promise3 = Array.from(formData.imageData.values.image).map(async (image) => {
-                  let formattedName = formatImageName(image.name);
-                  API.ImageAPI.uploadImage({ image: image, imageName: formattedName });
-                  API.ImageAPI.createImage({
-                    image_src: formattedName,
-                    school_id: teacher.data.school_id,
-                    parent_id: teacher.data.id,
-                    parent: "teacher",
-                    type: "normal"
-                  });
-                });
+                promise3 = Promise.all(
+                  Array.from(formData.imageData.values.image).map(async (image) => {
+                    let formattedName = formatImageName(image.name);
+                    const res = await API.ImageAPI.uploadImageToSupabase({ image: image, imageName: formattedName, folder: `teacher/${formattedName}` });
+                    if (res?.data?.status === "Success" || res?.data?.data) {
+                      await API.ImageAPI.createImage({
+                        image_src: res.data.data || formattedName,
+                        school_id: teacher.data.school_id,
+                        parent_id: teacher.data.id,
+                        parent: "teacher",
+                        type: "normal"
+                      });
+                    }
+                  })
+                );
               }
 
               try {

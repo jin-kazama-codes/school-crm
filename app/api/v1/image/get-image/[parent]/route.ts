@@ -26,14 +26,17 @@ export async function GET(
     : undefined;
 
   try {
-    const whereClause: Record<string, unknown> = { parent };
-    if (schoolId) whereClause.school_id = schoolId;
+    let query = `SELECT id, school_id, parent::text, parent_id, priority, type::text, image_src, created_at, updated_at, created_by, updated_by
+                 FROM "public"."image"
+                 WHERE "parent" = CAST($1::text AS "public"."ImageParent")`;
+    const queryParams: any[] = [parent];
+    if (schoolId) {
+      query += ` AND "school_id" = $2`;
+      queryParams.push(schoolId);
+    }
+    query += ` ORDER BY priority DESC, id DESC`;
 
-    const data = await prisma.image.findMany({
-      where: whereClause,
-      orderBy: { priority: "desc" },
-    });
-
+    const data = await prisma.$queryRawUnsafe<any[]>(query, ...queryParams);
     return NextResponse.json(Utility.formatResponse(200, data), { status: 200 });
   } catch (err) {
     return NextResponse.json(Utility.formatResponse(500, err), { status: 500 });

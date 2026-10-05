@@ -10,7 +10,7 @@ const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "school-crm";
 // POST /api/v1/image/create-image
 export const POST = withAuth(async (req: NextRequest, { userId }) => {
   const r = applyRateLimit(req); if (r) return r;
-  return genericCreate(req, "image", userId);
+  return genericCreate(req, "image", userId, true);
 });
 
 // PATCH /api/v1/image/update-image

@@ -156,24 +156,24 @@ const FormComponent = () => {
       });
       // upload new images to backend folder and insert in db
       if (formData.imageData?.values?.image) {
-        Array.from(formData.imageData.values.image).map(async image => {
-          formattedName = formatImageName(image.name);
-          API.ImageAPI.uploadImageToS3({
-            image: image,
-            folder: `teacher/${formattedName}`,
-          })
-            .then(res => {
-              if (res.data.status === "Success") {
-                API.ImageAPI.createImage({
-                  image_src: res.data.data,
-                  school_id: formData.teacherData.values.id,
-                  parent_id: formData.teacherData.values.id,
-                  parent: "teacher",
-                  type: "normal"
-                });
-              }
+        await Promise.all(
+          Array.from(formData.imageData.values.image).map(async (image) => {
+            const formattedName = formatImageName(image.name);
+            const res = await API.ImageAPI.uploadImageToSupabase({
+              image: image,
+              folder: `teacher/${formattedName}`,
             });
-        });
+            if (res?.data?.status === "Success" || res?.data?.data) {
+              await API.ImageAPI.createImage({
+                image_src: res.data.data,
+                school_id: formData.teacherData.values.id,
+                parent_id: formData.teacherData.values.id,
+                parent: "teacher",
+                type: "normal"
+              });
+            }
+          })
+        );
         status = true;
       }
       // insert old images only in db & not on azure
@@ -304,24 +304,24 @@ const FormComponent = () => {
               });
 
               if (formData.imageData.values.image?.length) {
-                promise3 = Array.from(formData.imageData.values.image).map(async (image) => {
-                  let formattedName = formatImageName(image.name);
-                  await API.ImageAPI.uploadImageToS3({
-                    image: image,
-                    folder: `teacher/${formattedName}`,
-                  })
-                    .then(res => {
-                      if (res.data.status === "Success") {
-                        API.ImageAPI.createImage({
-                          image_src: res.data.data,
-                          school_id: teacher.data.school_id,
-                          parent_id: teacher.data.id,
-                          parent: "teacher",
-                          type: "normal"
-                        });
-                      }
+                promise3 = Promise.all(
+                  Array.from(formData.imageData.values.image).map(async (image) => {
+                    const formattedName = formatImageName(image.name);
+                    const res = await API.ImageAPI.uploadImageToSupabase({
+                      image: image,
+                      folder: `teacher/${formattedName}`,
                     });
-                });
+                    if (res?.data?.status === "Success" || res?.data?.data) {
+                      await API.ImageAPI.createImage({
+                        image_src: res.data.data,
+                        school_id: teacher.data.school_id,
+                        parent_id: teacher.data.id,
+                        parent: "teacher",
+                        type: "normal"
+                      });
+                    }
+                  })
+                );
               }
 
               try {

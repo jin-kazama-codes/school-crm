@@ -1,53 +1,99 @@
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
- */
-
 import * as yup from "yup";
 
-const phoneRegExp = /^((\+[1-9]{1,4}[ -]?)|(\([0-9]{2,3}\)[ -]?)|([0-9]{2,4})[ -]?)*?[0-9]{3,4}[ -]?[0-9]{3,4}$/;
-const emailRegExp = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+export const phoneRegExp = /^[6-9]\d{9}$/;
+export const emailRegExp = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+export const aadhaarRegExp = /^\d{12}$/;
 
 const checkoutSchema = yup.object().shape({
     session: yup.string()
         .required("This Field is Required"),
     firstname: yup.string()
-        .min(2, 'Firstname is Too Short!')
-        .max(20, 'Firstname is Too Long!')
+        .trim()
+        .min(2, 'Firstname must be at least 2 characters')
+        .max(50, 'Firstname is too long')
         .required("This Field is Required"),
     lastname: yup.string()
-        .min(2, 'Lastname is Too Short!')
-        .max(20, 'Lastname is Too Long!')
-        .required("This Field is Required"),
-    mother_name: yup.string()
-        .min(2, 'Mother Name is Too Short!')
-        .max(30, 'Mother Name is Too Long!')
-        .required("This Field is Required"),
-    father_name: yup.string()
-        .min(2, 'Father Name is Too Short!')
-        .max(30, 'Father Name is Too Long!')
-        .required("This Field is Required"),
-    email: yup.string()
-        .matches(emailRegExp, "Email Address is Not Valid")
+        .trim()
+        .min(2, 'Lastname must be at least 2 characters')
+        .max(50, 'Lastname is too long')
         .required("This Field is Required"),
     contact_no: yup.string()
-        .matches(phoneRegExp, "Phone Number Is Not Valid")
-        .required("This Field is Required"),
-    class: yup.string()
-        .required("This Field is Required"),
-    section: yup.string()
-        .required("This Field is Required"),
-    dob: yup.date()
-        .required("This Field is Required"),
-    admission_date:  yup.date()
-        .required("This Field is Required"),
+        .trim()
+        .required("This Field is Required")
+        .matches(phoneRegExp, "Must be a valid 10-digit mobile number starting with 6-9"),
+    email: yup.string()
+        .trim()
+        .required("This Field is Required")
+        .matches(emailRegExp, "Email Address is not valid"),
+    aadhaar_no: yup.string()
+        .trim()
+        .required("This Field is Required")
+        .matches(aadhaarRegExp, "Aadhaar number must be exactly 12 digits"),
+    class: yup.mixed()
+        .required("This Field is Required")
+        .test("class-required", "This Field is Required", val => Boolean(val)),
+    section: yup.mixed()
+        .required("This Field is Required")
+        .test("section-required", "This Field is Required", val => Boolean(val)),
+    dob: yup.mixed()
+        .required("This Field is Required")
+        .test("dob-required", "This Field is Required", val => Boolean(val))
+        .test("dob-min-age", "", function (value) {
+            if (!value) return false;
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return false;
+            const tenYearsAgo = new Date();
+            tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+            return date <= tenYearsAgo;
+        }),
+    admission_date: yup.mixed()
+        .required("This Field is Required")
+        .test("adm-date-required", "This Field is Required", val => Boolean(val))
+        .test("adm-date-not-future", "Admission date cannot be in the future", function (value) {
+            if (!value) return true;
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return false;
+            return date <= new Date();
+        }),
     admission_type: yup.string()
         .required("This Field is Required"),
-    aadhaar_no: yup.string()
+    subjects: yup.array()
+        .min(1, "At least one enrolled subject is required")
         .required("This Field is Required"),
+    mother_name: yup.string()
+        .trim()
+        .min(2, "Mother's Name must be at least 2 characters")
+        .max(50, "Mother's Name is too long")
+        .required("This Field is Required"),
+    mother_contact_no: yup.string()
+        .trim()
+        .required("This Field is Required")
+        .matches(phoneRegExp, "Mother contact must be a valid 10-digit mobile number"),
+    mother_aadhar: yup.string()
+        .trim()
+        .required("This Field is Required")
+        .matches(aadhaarRegExp, "Mother Aadhaar must be exactly 12 digits"),
+    father_name: yup.string()
+        .trim()
+        .min(2, "Father's Name must be at least 2 characters")
+        .max(50, "Father's Name is too long")
+        .required("This Field is Required"),
+    father_contact_no: yup.string()
+        .trim()
+        .required("This Field is Required")
+        .matches(phoneRegExp, "Father contact must be a valid 10-digit mobile number"),
+    father_aadhar: yup.string()
+        .trim()
+        .required("This Field is Required")
+        .matches(aadhaarRegExp, "Father Aadhaar must be exactly 12 digits"),
+    guardian_contact_no: yup.string()
+        .trim()
+        .nullable()
+        .test("guardian-phone", "Guardian contact must be a valid 10-digit mobile number", val => !val || phoneRegExp.test(val)),
+    guardian_aadhar: yup.string()
+        .trim()
+        .nullable()
+        .test("guardian-aadhar", "Guardian Aadhaar must be exactly 12 digits", val => !val || aadhaarRegExp.test(val))
 });
 
 export default checkoutSchema;

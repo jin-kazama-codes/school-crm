@@ -5,50 +5,58 @@ import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from "lucide-react"
 const Toast = ({
     alerting,
     message,
-    severity
+    severity = "info"
 }) => {
     const [open, setOpen] = React.useState(alerting);
+    const lastSeverityRef = React.useRef(severity);
 
     React.useEffect(() => {
+        if (severity) {
+            lastSeverityRef.current = severity;
+        }
         setOpen(alerting);
         if (alerting) {
             const timer = setTimeout(() => {
                 setOpen(false);
-            }, 2000);
+            }, 2500);
             return () => clearTimeout(timer);
         }
-    }, [alerting]);
+    }, [alerting, severity]);
 
     const handleClose = () => {
         setOpen(false);
     };
 
-    if (!open) return null;
+    if (!open || !alerting || !message || typeof message !== "string" || !message.trim()) {
+        return null;
+    }
+
+    const currentSeverity = severity || lastSeverityRef.current || "info";
 
     const severityConfig = {
         success: {
-            icon: <CheckCircle2 className="w-5 h-5 text-emerald-50" />,
+            icon: <CheckCircle2 className="w-5 h-5 text-emerald-50 shrink-0" />,
             bg: "bg-emerald-600",
             border: "border-emerald-700"
         },
         error: {
-            icon: <AlertCircle className="w-5 h-5 text-red-50" />,
+            icon: <AlertCircle className="w-5 h-5 text-red-50 shrink-0" />,
             bg: "bg-red-600",
             border: "border-red-700"
         },
         info: {
-            icon: <Info className="w-5 h-5 text-blue-50" />,
+            icon: <Info className="w-5 h-5 text-blue-50 shrink-0" />,
             bg: "bg-blue-600",
             border: "border-blue-700"
         },
         warning: {
-            icon: <AlertTriangle className="w-5 h-5 text-yellow-50" />,
+            icon: <AlertTriangle className="w-5 h-5 text-yellow-50 shrink-0" />,
             bg: "bg-yellow-600",
             border: "border-yellow-700"
         },
     };
 
-    const config = severityConfig[severity] || severityConfig.info;
+    const config = severityConfig[currentSeverity] || severityConfig.info;
 
     return (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] animate-in slide-in-from-top-5 fade-in duration-300">
@@ -57,7 +65,7 @@ const Toast = ({
                 <p className="flex-1 text-sm font-medium pr-4">{message}</p>
                 <button 
                     onClick={handleClose}
-                    className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                    className="p-1 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
                     aria-label="close"
                 >
                     <X className="w-4 h-4 text-white/90" />

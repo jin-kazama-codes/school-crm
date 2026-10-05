@@ -10,6 +10,7 @@ import { useRef, useState } from "react";
 import { Formik } from "formik";
 import { Mail } from "lucide-react";
 import SignInLoader from "../common/SignInLoader";
+import { forgotPasswordSchema } from "./Validation";
 
 const ForgetPassword = ({ Api, isFliped, setIsFliped, dispatch, toastAndNavigate, isMobile, isTab }) => {
     const [loading, setLoading] = useState(false);
@@ -25,7 +26,10 @@ const ForgetPassword = ({ Api, isFliped, setIsFliped, dispatch, toastAndNavigate
 
     const handleSubmit = (values) => {
         setLoading(true);
-        Api.forgotPassword(values)
+        const payload = {
+            email: values.email ? values.email.trim().toLowerCase() : ""
+        };
+        Api.forgotPassword(payload)
             .then(res => {
                 if (res.status === "Success") {
                     setLoading(false);
@@ -36,7 +40,11 @@ const ForgetPassword = ({ Api, isFliped, setIsFliped, dispatch, toastAndNavigate
                     toastAndNavigate(dispatch, true, "error", "User does not exist");
                 }
             })
-            .catch(err => console.log('Error in Forget Password API', err));
+            .catch(err => {
+                setLoading(false);
+                toastAndNavigate(dispatch, true, "error", err?.message || "Error occurred");
+                console.log('Error in Forget Password API', err);
+            });
     };
 
     return (
@@ -52,6 +60,7 @@ const ForgetPassword = ({ Api, isFliped, setIsFliped, dispatch, toastAndNavigate
 
             <Formik
                 innerRef={formikRef}
+                validationSchema={forgotPasswordSchema}
                 initialValues={{ email: "" }}
                 onSubmit={handleSubmit}
             >
@@ -62,16 +71,19 @@ const ForgetPassword = ({ Api, isFliped, setIsFliped, dispatch, toastAndNavigate
                     touched,
                     handleBlur,
                     handleChange,
+                    setFieldValue,
                     handleSubmit
                 }) => (
                     <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col space-y-4">
                         <div className="space-y-1">
                             <input
-                                required
                                 name="email"
                                 type="email"
                                 placeholder="Enter Email"
-                                onBlur={handleBlur}
+                                onBlur={(e) => {
+                                    setFieldValue("email", e.target.value.trim());
+                                    handleBlur(e);
+                                }}
                                 onChange={handleChange}
                                 value={values.email}
                                 className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f0f0f] focus:outline-none focus:ring-2 transition-all ${
@@ -86,9 +98,9 @@ const ForgetPassword = ({ Api, isFliped, setIsFliped, dispatch, toastAndNavigate
                         </div>
 
                         <button
-                            disabled={!dirty || loading}
+                            disabled={loading}
                             type="submit"
-                            className="w-full py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md shadow-emerald-600/20"
+                            className="w-full py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
                         >
                             {loading ? <SignInLoader /> : "Send Reset Link"}
                         </button>

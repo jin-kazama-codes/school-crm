@@ -16,7 +16,7 @@ export interface FormatResponse {
 }
 
 export interface SchoolCondition {
-  school_id?: string | number;
+  school_id?: number;
 }
 
 export interface JWTPayload {
@@ -142,7 +142,10 @@ const Utility = {
           school_info?.vect
         );
         if (decrypted_school_id) {
-          whereCondition = { school_id: decrypted_school_id };
+          const parsedId = parseInt(decrypted_school_id, 10);
+          if (!isNaN(parsedId)) {
+            whereCondition = { school_id: parsedId };
+          }
         }
       }
     } catch (err) {
