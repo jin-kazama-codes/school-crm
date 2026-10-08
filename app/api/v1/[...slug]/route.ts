@@ -7,8 +7,8 @@ import { genericList, genericCreate, genericUpdate } from "@/lib/crudHelpers";
 
 // Mapping of route endpoint names to Prisma model names
 const MODEL_MAPPING: Record<string, { model: string; searchFields: string[] }> = {
-  "employees": { model: "employee", searchFields: ["firstname", "lastname", "email"] },
-  "employee": { model: "employee", searchFields: ["firstname", "lastname", "email"] },
+  "employees": { model: "employee", searchFields: ["firstname", "lastname", "email", "role"] },
+  "employee": { model: "employee", searchFields: ["firstname", "lastname", "email", "role"] },
   "classes": { model: "school_class", searchFields: ["name"] },
   "class": { model: "school_class", searchFields: ["name"] },
   "schools": { model: "school", searchFields: ["name", "email", "school_code", "director", "principal"] },
@@ -281,7 +281,90 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         where: { marksheet_id: marksheetId },
         orderBy: { subject_id: "asc" },
       });
-      return NextResponse.json(Utility.formatResponse(200, data), { status: 200 });
+      const formattedData = (data || []).map((row: any) => ({
+        ...row,
+        marks_obtained: row.marks,
+        total_marks: row.max_marks,
+      }));
+      return NextResponse.json(Utility.formatResponse(200, formattedData), { status: 200 });
+    } catch (err) {
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Payment data by class and section (e.g., get-payment-data/5/2)
+  if (endpoint.startsWith("get-payment-data/")) {
+    try {
+      const parts = endpoint.split("/");
+      const cId = parseInt(parts[1], 10);
+      const sId = parseInt(parts[2], 10);
+      if (isNaN(cId) || isNaN(sId)) {
+        return NextResponse.json(Utility.formatResponse(400, "Invalid classId or sectionId"), { status: 400 });
+      }
+
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = schoolCond.school_id ? parseInt(String(schoolCond.school_id)) : undefined;
+
+      const school = schoolId ? await prisma.school.findFirst({
+        where: { id: schoolId },
+        select: {
+          id: true,
+          session_start: true,
+          payment_date: true,
+          payment_methods: true,
+        },
+      }) : await prisma.school.findFirst({
+        select: {
+          id: true,
+          session_start: true,
+          payment_date: true,
+          payment_methods: true,
+        },
+      });
+
+      const classDataFilter: Record<string, unknown> = {
+        class_id: cId,
+        section_id: sId,
+      };
+      if (schoolId) classDataFilter.school_id = schoolId;
+
+      const classData = await prisma.school_class_data.findFirst({
+        where: classDataFilter,
+        select: {
+          class_fee: true,
+          late_fee: true,
+          late_fee_duration: true,
+        },
+      });
+
+      let methodNames: string[] = [];
+      if (school?.payment_methods) {
+        const methodIds = school.payment_methods
+          .split(",")
+          .map((id: string) => parseInt(id.trim(), 10))
+          .filter((id: number) => !isNaN(id));
+
+        if (methodIds.length > 0) {
+          const methods = await prisma.payment_method.findMany({
+            where: { id: { in: methodIds } },
+            select: { name: true },
+          });
+          methodNames = methods.map((m: { name: string | null }) => m.name ?? "").filter(Boolean);
+        }
+      }
+
+      const result = {
+        id: school?.id || 1,
+        session_start: school?.session_start,
+        payment_date: school?.payment_date,
+        payment_methods: school?.payment_methods,
+        class_fee: classData?.class_fee ?? 0,
+        classLateFee: classData?.late_fee ?? 0,
+        late_fee_duration: classData?.late_fee_duration ?? "monthly",
+        methodName: methodNames.join(", "),
+      };
+
+      return NextResponse.json(Utility.formatResponse(200, [result]), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
     }
@@ -646,9 +729,10 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
             ELSE NULL
           END AS class_section,
           sch.name AS school_name,
-          addr.street, addr.landmark, addr.zipcode,
+          addr.street, addr.landmark, addr.zipcode, addr.city, addr.state, addr.country,
           ci.name AS city_name,
           st.name AS state_name,
+          co.name AS country_name,
           img.image_src AS student_image,
           COUNT(*) OVER() AS count
         FROM student s
@@ -656,18 +740,24 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         LEFT JOIN class   cl  ON cl.id  = s.class
         LEFT JOIN section se  ON se.id  = s.section
         LEFT JOIN LATERAL (
-          SELECT street, landmark, zipcode, city, state
+          SELECT street, landmark, zipcode, city, state, country
           FROM address
-          WHERE parent = 'student' AND parent_id = s.id
-          ORDER BY id DESC
+          WHERE (parent::text = 'student' AND (parent_id = s.id OR (s.parent_id IS NOT NULL AND parent_id = s.parent_id)))
+             OR (parent::text = 'user' AND s.parent_id IS NOT NULL AND parent_id = s.parent_id)
+          ORDER BY 
+            CASE WHEN parent::text = 'student' AND parent_id = s.id THEN 1
+                 WHEN parent::text = 'student' THEN 2
+                 ELSE 3 END,
+            id DESC
           LIMIT 1
         ) addr ON true
         LEFT JOIN city ci ON ci.id = addr.city
         LEFT JOIN state st ON st.id = addr.state
+        LEFT JOIN country co ON co.id = addr.country
         LEFT JOIN LATERAL (
           SELECT image_src
           FROM image
-          WHERE parent = 'student' AND parent_id = s.id
+          WHERE (parent::text = 'student' AND (parent_id = s.id OR (s.parent_id IS NOT NULL AND parent_id = s.parent_id)))
           ORDER BY priority ASC, id DESC
           LIMIT 1
         ) img ON true
@@ -936,6 +1026,9 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
           m.session,
           m.term,
           m.result,
+          m.co_scholastic_data,
+          m.discipline_data,
+          m.overall_remark,
           m.created_at,
           m.updated_at,
           m.created_by,
@@ -1299,14 +1392,29 @@ async function handlePost(req: NextRequest, endpoint: string) {
   if (endpoint === "create-marksheet-data") {
     try {
       const body = await req.json();
-      const { marksheet_id, subject_id, marks, max_marks, grade } = body;
+      const { marksheet_id, subject_id, marks, max_marks, marks_obtained, total_marks, grade, remark, result } = body;
+
+      const rawMarks = marks !== undefined && marks !== null && String(marks).trim() !== ""
+        ? marks
+        : marks_obtained !== undefined && marks_obtained !== null && String(marks_obtained).trim() !== ""
+        ? marks_obtained
+        : null;
+
+      const rawMaxMarks = max_marks !== undefined && max_marks !== null && String(max_marks).trim() !== ""
+        ? max_marks
+        : total_marks !== undefined && total_marks !== null && String(total_marks).trim() !== ""
+        ? total_marks
+        : null;
+
       await prisma.marksheet_data.create({
         data: {
           marksheet_id: parseInt(String(marksheet_id)),
           subject_id: parseInt(String(subject_id)),
-          marks: marks !== undefined ? parseFloat(String(marks)) : undefined,
-          max_marks: max_marks !== undefined ? parseFloat(String(max_marks)) : undefined,
-          grade: grade ?? null,
+          marks: rawMarks !== null ? parseFloat(String(rawMarks)) : null,
+          max_marks: rawMaxMarks !== null ? parseFloat(String(rawMaxMarks)) : null,
+          grade: grade ? String(grade).trim() : null,
+          remark: remark ? String(remark).trim() : null,
+          result: result ? String(result).trim() : null,
         },
       });
       return NextResponse.json(Utility.formatResponse(200, "Created Successfully"), { status: 200 });

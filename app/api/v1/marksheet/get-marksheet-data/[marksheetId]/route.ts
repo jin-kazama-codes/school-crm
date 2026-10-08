@@ -30,7 +30,13 @@ export async function GET(
       orderBy: { subject_id: "asc" },
     });
 
-    return NextResponse.json(Utility.formatResponse(200, data), { status: 200 });
+    const formattedData = (data || []).map((row: any) => ({
+      ...row,
+      marks_obtained: row.marks,
+      total_marks: row.max_marks,
+    }));
+
+    return NextResponse.json(Utility.formatResponse(200, formattedData), { status: 200 });
   } catch (err) {
     return NextResponse.json(Utility.formatResponse(500, err), { status: 500 });
   }

@@ -29,6 +29,9 @@ function createPrismaClient() {
     global.pgPool = pool;
   }
 
+  // Ensure payment table discount_percent accepts decimals (Float)
+  pool.query(`ALTER TABLE "payment" ALTER COLUMN "discount_percent" TYPE DOUBLE PRECISION USING "discount_percent"::double precision;`).catch(() => {});
+
   const adapter = new PrismaPg(pool);
   return new PrismaClient({
     adapter,

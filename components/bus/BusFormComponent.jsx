@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
-import { Bus, User, Phone, FileText, IdCard, MapPin, ChevronDown } from "lucide-react";
+import { Bus, User, Phone, FileText, IdCard, MapPin, ChevronDown, Users, Radio } from "lucide-react";
 
 import BusValidation from "./Validation";
 import config from "../config";
@@ -24,6 +24,8 @@ const initialValues = {
     conductor_contact: "",
     conductor_aadhaar: "",
     route: "",
+    capacity: "",
+    gps_device_id: "",
     status: "active"
 };
 
@@ -92,7 +94,7 @@ const BusFormComponent = ({
 
     return (
         <form ref={refId} onSubmit={formik.handleSubmit} className="space-y-6">
-            
+
             {/* ── CARD: Bus Details & Vehicle Information ───────────────────────── */}
             <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
                 <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-[#222]">
@@ -106,7 +108,7 @@ const BusFormComponent = ({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                    
+
                     {/* Registration Number */}
                     <div className="lg:col-span-2">
                         <label className={labelClasses}>Registration Number*</label>
@@ -118,11 +120,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.registration_no}
-                                className={`${inputClasses} ${
-                                    formik.touched.registration_no && formik.errors.registration_no
+                                className={`${inputClasses} ${formik.touched.registration_no && formik.errors.registration_no
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="e.g., UP-32-AB-1234"
                             />
                         </div>
@@ -142,11 +143,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.route}
-                                className={`${inputClasses} ${
-                                    formik.touched.route && formik.errors.route
+                                className={`${inputClasses} ${formik.touched.route && formik.errors.route
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="e.g., City Center to Campus"
                             />
                         </div>
@@ -166,11 +166,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.driver}
-                                className={`${inputClasses} ${
-                                    formik.touched.driver && formik.errors.driver
+                                className={`${inputClasses} ${formik.touched.driver && formik.errors.driver
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="Driver full name"
                             />
                         </div>
@@ -190,11 +189,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.driver_contact}
-                                className={`${inputClasses} ${
-                                    formik.touched.driver_contact && formik.errors.driver_contact
+                                className={`${inputClasses} ${formik.touched.driver_contact && formik.errors.driver_contact
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="+91..."
                             />
                         </div>
@@ -214,11 +212,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.driver_license}
-                                className={`${inputClasses} ${
-                                    formik.touched.driver_license && formik.errors.driver_license
+                                className={`${inputClasses} ${formik.touched.driver_license && formik.errors.driver_license
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="License ID"
                             />
                         </div>
@@ -238,11 +235,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.conductor}
-                                className={`${inputClasses} ${
-                                    formik.touched.conductor && formik.errors.conductor
+                                className={`${inputClasses} ${formik.touched.conductor && formik.errors.conductor
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="Conductor full name"
                             />
                         </div>
@@ -262,11 +258,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.conductor_contact}
-                                className={`${inputClasses} ${
-                                    formik.touched.conductor_contact && formik.errors.conductor_contact
+                                className={`${inputClasses} ${formik.touched.conductor_contact && formik.errors.conductor_contact
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="+91..."
                             />
                         </div>
@@ -286,11 +281,10 @@ const BusFormComponent = ({
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
                                 value={formik.values.conductor_aadhaar}
-                                className={`${inputClasses} ${
-                                    formik.touched.conductor_aadhaar && formik.errors.conductor_aadhaar
+                                className={`${inputClasses} ${formik.touched.conductor_aadhaar && formik.errors.conductor_aadhaar
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                                 placeholder="12-digit Aadhaar"
                             />
                         </div>
@@ -299,8 +293,54 @@ const BusFormComponent = ({
                         )}
                     </div>
 
+                    {/* Seating Capacity */}
+                    <div>
+                        <label className={labelClasses}>Seating Capacity</label>
+                        <div className="relative">
+                            <Users className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                name="capacity"
+                                onBlur={formik.handleBlur}
+                                onChange={formik.handleChange}
+                                value={formik.values.capacity || ""}
+                                className={`${inputClasses} ${formik.touched.capacity && formik.errors.capacity
+                                        ? "border-rose-400 ring-1 ring-rose-400"
+                                        : ""
+                                    }`}
+                                placeholder="e.g., 40"
+                            />
+                        </div>
+                        {formik.touched.capacity && formik.errors.capacity && (
+                            <p className={errorClasses}>{formik.errors.capacity}</p>
+                        )}
+                    </div>
+
+                    {/* GPS Tracking Device ID */}
+                    <div>
+                        <label className={labelClasses}>GPS Device / IMEI</label>
+                        <div className="relative">
+                            <Radio className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                name="gps_device_id"
+                                onBlur={formik.handleBlur}
+                                onChange={formik.handleChange}
+                                value={formik.values.gps_device_id || ""}
+                                className={`${inputClasses} ${formik.touched.gps_device_id && formik.errors.gps_device_id
+                                        ? "border-rose-400 ring-1 ring-rose-400"
+                                        : ""
+                                    }`}
+                                placeholder="e.g., GPS-88219"
+                            />
+                        </div>
+                        {formik.touched.gps_device_id && formik.errors.gps_device_id && (
+                            <p className={errorClasses}>{formik.errors.gps_device_id}</p>
+                        )}
+                    </div>
+
                     {/* Status */}
-                    <div className="lg:col-span-4">
+                    <div className="lg:col-span-2">
                         <label className={labelClasses}>Status</label>
                         <div className="relative max-w-xs">
                             <select
@@ -308,11 +348,10 @@ const BusFormComponent = ({
                                 value={formik.values.status}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
-                                className={`${selectClasses} pr-9 ${
-                                    formik.touched.status && formik.errors.status
+                                className={`${selectClasses} pr-9 ${formik.touched.status && formik.errors.status
                                         ? "border-rose-400 ring-1 ring-rose-400"
                                         : ""
-                                }`}
+                                    }`}
                             >
                                 {Object.keys(config.status).map((item) => (
                                     <option key={item} value={item}>{config.status[item]}</option>

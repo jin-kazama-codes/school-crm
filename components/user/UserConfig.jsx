@@ -9,11 +9,11 @@
 
 import { useNavigate } from "@/lib/routerAdapter";
 import { useSelector } from "react-redux";
-import { FileEdit } from 'lucide-react';
+import { Pencil, Eye } from 'lucide-react';
 
 import { Utility } from "../utility";
 
-export const datagridColumns = () => {
+export const datagridColumns = (rolePriority = null, setOpenModal = null, setSelectedUserId = null) => {
   const selected = useSelector((state) => state.menuItems.selected);
 
   const { capitalizeEveryWord, formatDate } = Utility();
@@ -23,6 +23,11 @@ export const datagridColumns = () => {
     navigateTo(`/${selected.toLowerCase()}/update/${id}`, {
       state: { id: id },
     });
+  };
+
+  const handleActionShow = (id) => {
+    if (setSelectedUserId) setSelectedUserId(id);
+    if (setOpenModal) setOpenModal(true);
   };
 
   const columns = [
@@ -98,16 +103,25 @@ export const datagridColumns = () => {
       headerAlign: "center",
       align: "center",
       flex: 1,
-      minWidth: 75,
+      minWidth: 90,
       renderCell: ({ row: { id } }) => {
         return (
-          <div className="flex justify-center items-center w-full h-full">
-            <button
+          <div className="flex justify-center items-center gap-1.5 w-full h-full">
+            {rolePriority !== 1 && (
+              <button
                 onClick={() => handleActionEdit(id)}
-                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
                 title="Edit"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => handleActionShow(id)}
+              className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50 cursor-pointer"
+              title="Preview Dossier"
             >
-                <FileEdit className="w-5 h-5" />
+              <Eye className="w-4 h-4" />
             </button>
           </div>
         );

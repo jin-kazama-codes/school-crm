@@ -90,6 +90,10 @@ export async function genericList(
     if (key === "classId" || key === "class_id") field = "class";
     if (key === "sectionId" || key === "section_id") field = "section";
     if (key === "parentId") field = "parent_id";
+    if (key === "studentId" || key === "student_id") field = "student_id";
+    if (key === "teacherId" || key === "teacher_id") field = "teacher_id";
+    if (key === "employeeId" || key === "employee_id") field = "employee_id";
+    if (key === "schoolId" || key === "school_id") field = "school_id";
 
     if (/^\d+$/.test(value)) {
       whereCondition[field] = parseInt(value, 10);
@@ -179,6 +183,36 @@ const STATIC_MODEL_FIELDS: Record<string, Record<string, string>> = {
   user: {
     id: "Int", school_id: "Int", username: "String", password: "String", email: "String",
     contact_no: "String", role: "Int", designation: "String", gender: "String", status: "String",
+    created_at: "DateTime", updated_at: "DateTime", created_by: "Int", updated_by: "Int"
+  },
+  payment: {
+    id: "Int", school_id: "Int", student_id: "Int", method: "Int",
+    fee: "String", type: "String", type_duration: "String", academic_year: "String",
+    amount: "Float", final_amount: "Float", late_fee: "Float", discount_percent: "Float",
+    status: "String", reference_no: "String", receipt_url: "String",
+    due_date: "DateTime", created_at: "DateTime", updated_at: "DateTime",
+    created_by: "Int", updated_by: "Int"
+  },
+  payment_method: {
+    id: "Int", name: "String",
+    created_at: "DateTime", updated_at: "DateTime", created_by: "Int", updated_by: "Int"
+  },
+  bus: {
+    id: "Int", school_id: "Int", registration_no: "String", driver: "String",
+    driver_contact: "String", driver_license: "String", conductor: "String",
+    conductor_contact: "String", conductor_aadhaar: "String", route: "String",
+    capacity: "Int", gps_device_id: "String", status: "String",
+    created_at: "DateTime", updated_at: "DateTime", created_by: "Int", updated_by: "Int"
+  },
+  holiday: {
+    id: "Int", school_id: "Int", title: "String", startDate: "DateTime", endDate: "DateTime",
+    type: "String", notes: "String",
+    created_at: "DateTime", updated_at: "DateTime", created_by: "Int", updated_by: "Int"
+  },
+  marksheet: {
+    id: "Int", school_id: "Int", student_id: "Int", class_id: "Int", section_id: "Int",
+    session: "String", term: "String", result: "String", co_scholastic_data: "Json", discipline_data: "Json",
+    overall_remark: "String",
     created_at: "DateTime", updated_at: "DateTime", created_by: "Int", updated_by: "Int"
   }
 };
@@ -294,6 +328,16 @@ function sanitizePayload(modelName: string, payload: Record<string, unknown>): R
         sanitized[key] = isNaN(d.getTime()) ? null : d;
       } else if (type === "Boolean") {
         sanitized[key] = val === true || val === "true" || val === 1 || val === "1";
+      } else if (type === "Json") {
+        if (typeof val === "string") {
+          try {
+            sanitized[key] = JSON.parse(val);
+          } catch {
+            sanitized[key] = val;
+          }
+        } else {
+          sanitized[key] = val;
+        }
       } else {
         sanitized[key] = val;
       }

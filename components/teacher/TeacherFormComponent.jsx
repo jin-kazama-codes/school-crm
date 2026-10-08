@@ -91,73 +91,94 @@ const TeacherFormComponent = ({
     }
   };
 
-  const getAndSetSubjects = () => {
-    const sectionSubjects = {};
-    classData.forEach((obj) => {
-      if (
-        (formik.values.classes.includes(`${obj.class_id}`) || formik.values.classes.includes(obj.class_id)) &&
-        formik.values.sections.some((sectionArray) =>
-          sectionArray.some(
-            (sectionObj) => sectionObj.section_id === obj.section_id
-          )
-        )
-      ) {
-        if (!sectionSubjects[obj.class_id]) {
-          sectionSubjects[obj.class_id] = {};
-        }
-        const selectedSubjects = findMultipleById(obj.subject_ids, allSubjects);
-        sectionSubjects[obj.class_id][obj.section_id] = selectedSubjects;
+  const getSectionsForClass = (selectedClassId) => {
+    if (!selectedClassId) return [];
+    const classSections = (classData || []).filter(
+      (obj) => (obj.class_id ?? obj.id) == selectedClassId
+    );
+    const map = new Map();
+    classSections.forEach(({ section_id, section_name, id, name }) => {
+      const sId = section_id ?? id;
+      const sName = section_name ?? name;
+      if (sId && !map.has(String(sId))) {
+        map.set(String(sId), { section_id: sId, section_name: sName });
       }
     });
-    dispatch(setSchoolSubjects(sectionSubjects));
+    if (map.size === 0 && allSections?.length) {
+      allSections.forEach((s) => {
+        const sId = s.section_id ?? s.id;
+        const sName = s.section_name ?? s.name;
+        if (sId && !map.has(String(sId))) {
+          map.set(String(sId), { section_id: sId, section_name: sName });
+        }
+      });
+    }
+    return Array.from(map.values());
+  };
+
+  const getAvailableSubjects = (classId, sectionId) => {
+    if (!classId || !sectionId) return [];
+    const fromState =
+      schoolSubjects?.listData?.[classId]?.[sectionId] ||
+      schoolSubjects?.listData?.[String(classId)]?.[String(sectionId)];
+    if (fromState && fromState.length > 0) return fromState;
+
+    const match = (classData || []).find(
+      (obj) => (obj.class_id ?? obj.id) == classId && (obj.section_id ?? obj.id) == sectionId
+    );
+    if (match?.subject_ids && allSubjects?.length) {
+      return findMultipleById(match.subject_ids, allSubjects);
+    }
+    return [];
+  };
+
+  const getAndSetSubjects = () => {
+    // Subjects are dynamically resolved via getAvailableSubjects(classId, sectionId) directly from classData & allSubjects
   };
 
   const getAndSetSections = () => {
-    const selectedSectionsSet = new Set();
-    for (const obj of classData) {
-      if (
-        (formik.values.classes.length &&
-          formik.values.classes.includes(
-            initialState?.sections?.length ? `${obj.class_id}` : obj.class_id
-          )) ||
-        (!formik.values.classes.length && obj.class_id === formik.values.class)
-      ) {
-        selectedSectionsSet.add({
-          section_id: obj.section_id,
-          section_name: obj.section_name,
-        });
+    const selectedSectionsMap = new Map();
+    for (const obj of classData || []) {
+      const objClassId = obj.class_id ?? obj.id;
+      const matchesAllocatedClass = formik.values.classes?.some((cId) => cId == objClassId);
+      const matchesClassTeacher = formik.values.class && formik.values.class == objClassId;
+      if (matchesAllocatedClass || matchesClassTeacher) {
+        const sId = obj.section_id ?? obj.id;
+        const sName = obj.section_name ?? obj.name;
+        if (sId && !selectedSectionsMap.has(String(sId))) {
+          selectedSectionsMap.set(String(sId), {
+            section_id: sId,
+            section_name: sName,
+          });
+        }
       }
     }
-    const selectedSectionsArray = Array.from(selectedSectionsSet);
-    const filteredSections = allSections.filter((section) =>
-      selectedSectionsArray.some(
-        (selectedSection) => selectedSection.section_id === section.section_id
-      )
-    );
-    dispatch(setSchoolSections(filteredSections));
+    const selectedSectionsArray = Array.from(selectedSectionsMap.values());
+    dispatch(setSchoolSections(selectedSectionsArray));
   };
 
   useEffect(() => {
     if (
-      formik.values.sections.some((innerArray) => innerArray.length > 0) &&
-      classData.length
+      formik.values.sections.some((innerArray) => innerArray?.length > 0) &&
+      classData?.length
     ) {
       getAndSetSubjects();
     }
-  }, [formik.values?.sections, classData.length]);
+  }, [formik.values?.sections, classData?.length, allSubjects]);
 
   useEffect(() => {
-    if ((formik.values?.classes || formik.values?.class) && classData.length) {
+    if ((formik.values?.classes?.length || formik.values?.class) && classData?.length) {
       getAndSetSections();
     }
-  }, [formik.values?.classes, formik.values?.class, classData.length]);
+  }, [formik.values?.classes, formik.values?.class, classData?.length]);
 
   useEffect(() => {
     if (
       getLocalStorage("schoolInfo") &&
       (!schoolSubjects?.listData?.length ||
         !schoolClasses?.listData?.length ||
-        !schoolSections?.listData?.length)
+        !schoolSections?.listData?.length ||
+        !classData?.length)
     ) {
       fetchAndSetSchoolData(
         dispatch,
@@ -166,7 +187,7 @@ const TeacherFormComponent = ({
         setClassData
       );
     }
-  }, [classData.length]);
+  }, [classData?.length]);
 
   useEffect(() => {
     if (reset) {
@@ -183,8 +204,38 @@ const TeacherFormComponent = ({
 
   useEffect(() => {
     if (updatedValues) {
-      const splittedArray = updatedValues.selectedClass.reduce((acc, obj) => {
-        const key = obj.class_id;
+      const normalizedTeacher = { ...initialValues, ...(updatedValues.teacherData || {}) };
+
+      if (normalizedTeacher.blood_group) {
+        const bgMap = {
+          A_POS: "A+", A_NEG: "A-", B_POS: "B+", B_NEG: "B-",
+          AB_POS: "AB+", AB_NEG: "AB-", O_POS: "O+", O_NEG: "O-",
+          a_pos: "A+", a_neg: "A-", b_pos: "B+", b_neg: "B-",
+          ab_pos: "AB+", ab_neg: "AB-", o_pos: "O+", o_neg: "O-",
+          "A+": "A+", "A-": "A-", "B+": "B+", "B-": "B-",
+          "AB+": "AB+", "AB-": "AB-", "O+": "O+", "O-": "O-",
+        };
+        normalizedTeacher.blood_group =
+          bgMap[normalizedTeacher.blood_group] ||
+          bgMap[normalizedTeacher.blood_group?.toUpperCase()] ||
+          normalizedTeacher.blood_group;
+      }
+
+      if (normalizedTeacher.contact_no !== undefined && normalizedTeacher.contact_no !== null) {
+        normalizedTeacher.contact_no = String(normalizedTeacher.contact_no).split(".")[0];
+      }
+      if (normalizedTeacher.is_specially_abled !== undefined) {
+        normalizedTeacher.is_specially_abled = Boolean(normalizedTeacher.is_specially_abled);
+      }
+      if (normalizedTeacher.is_class_teacher !== undefined) {
+        normalizedTeacher.is_class_teacher = Boolean(
+          normalizedTeacher.is_class_teacher === true ||
+          normalizedTeacher.is_class_teacher?.data?.[0] === 1
+        );
+      }
+
+      const splittedArray = (updatedValues.selectedClass || []).reduce((acc, obj) => {
+        const key = obj.class_id ?? obj.id;
         if (!acc[key]) {
           acc[key] = [];
         }
@@ -196,23 +247,32 @@ const TeacherFormComponent = ({
 
       const assignUpdatedSections = (sectionData) => {
         let filteredSectionArray = [];
-        sectionData.map((sections) => {
-          let filteredSection = allSections?.filter((obj) =>
-            sections.some((sect) => sect.section_id === obj.section_id)
+        (sectionData || []).forEach((sections) => {
+          let filteredSection = (allSections || classData || [])?.filter((obj) =>
+            (sections || []).some((sect) => (sect.section_id ?? sect.id) == (obj.section_id ?? obj.id))
           );
-          filteredSectionArray.push(filteredSection);
+          const map = new Map();
+          (filteredSection || []).forEach((item) => {
+            const sId = item.section_id ?? item.id;
+            const sName = item.section_name ?? item.name;
+            if (sId && !map.has(String(sId))) {
+              map.set(String(sId), { section_id: sId, section_name: sName });
+            }
+          });
+          filteredSectionArray.push(Array.from(map.values()));
         });
         return filteredSectionArray;
       };
 
       const assignUpdatedSubjects = (splittedArray) => {
         const subArr = [[]];
-        Object.keys(splittedArray).map((field, index) => {
-          Object.values(splittedArray)[index].map((section, sectionIndex) => {
+        Object.keys(splittedArray).forEach((field, index) => {
+          Object.values(splittedArray)[index].forEach((section, sectionIndex) => {
             const value = findMultipleById(section.subject_ids, allSubjects);
             if (index > 0 && sectionIndex === 0) {
               subArr[index] = [];
             }
+            if (!subArr[index]) subArr[index] = [];
             subArr[index][sectionIndex] = value;
           });
         });
@@ -221,7 +281,7 @@ const TeacherFormComponent = ({
 
       setInitialState({
         ...initialState,
-        ...updatedValues.teacherData,
+        ...normalizedTeacher,
         classes: hasData ? Object.keys(splittedArray) : [],
         sections: hasData
           ? assignUpdatedSections(Object.values(splittedArray))
@@ -734,8 +794,10 @@ const TeacherFormComponent = ({
                       }`}
                     >
                       <option value="" disabled>Select Section</option>
-                      {schoolSections?.listData?.map((section) => (
-                        <option value={section.section_id} key={section.section_id}>{section.section_name}</option>
+                      {getSectionsForClass(formik.values.class).map((section) => (
+                        <option value={section.section_id ?? section.id} key={section.section_id ?? section.id}>
+                          {section.section_name ?? section.name}
+                        </option>
                       ))}
                     </select>
                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -803,8 +865,12 @@ const TeacherFormComponent = ({
                             subArr[index] = e.target.value;
                             formik.setFieldValue("classes", subArr);
                             if (!updatedValues) {
-                              if (formik.values.sections) formik.setFieldValue("sections", []);
-                              if (formik.values.subjects) formik.setFieldValue("subjects", [[]]);
+                              const sectArr = [...(formik.values.sections || [])];
+                              sectArr[index] = [];
+                              formik.setFieldValue("sections", sectArr);
+                              const subArrSubjects = [...(formik.values.subjects || [])];
+                              subArrSubjects[index] = [];
+                              formik.setFieldValue("subjects", subArrSubjects.length ? subArrSubjects : [[]]);
                             }
                           }}
                           className={`${selectClasses} pr-9`}
@@ -828,11 +894,12 @@ const TeacherFormComponent = ({
                       <select
                         multiple
                         name={`sections.${key}`}
-                        value={(formik.values.sections[index] || []).map(s => s.section_id)}
+                        value={(formik.values.sections[index] || []).map(s => s.section_id ?? s.id)}
                         onChange={(e) => {
                           const selectedOptions = Array.from(e.target.selectedOptions);
+                          const availableSections = getSectionsForClass(formik.values.classes[index]);
                           const selectedValues = selectedOptions.map(option => {
-                            return (schoolSections?.listData || []).find(sec => sec.section_id == option.value);
+                            return (availableSections || []).find(sec => (sec.section_id ?? sec.id) == option.value);
                           }).filter(Boolean);
                           
                           const sectArr = [...formik.values.sections];
@@ -841,9 +908,9 @@ const TeacherFormComponent = ({
                         }}
                         className={`${multiSelectClasses} h-24`}
                       >
-                        {schoolSections?.listData?.map((section) => (
-                          <option value={section.section_id} key={section.section_id} className="py-1 px-1.5 rounded">
-                            {section.section_name}
+                        {getSectionsForClass(formik.values.classes[index]).map((section) => (
+                          <option value={section.section_id ?? section.id} key={section.section_id ?? section.id} className="py-1 px-1.5 rounded">
+                            {section.section_name ?? section.name}
                           </option>
                         ))}
                       </select>
@@ -859,19 +926,19 @@ const TeacherFormComponent = ({
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
                           <BookOpen className="w-3.5 h-3.5" />
-                          Subjects for Section {section.section_name}
+                          Subjects for Section {section.section_name ?? section.name}
                         </label>
                         <span className="text-[10px] text-slate-400 font-medium">Ctrl/Cmd click to multiselect</span>
                       </div>
                       <select
                         multiple
                         name={`subjects.${index}.${sectionIndex}`}
-                        value={(formik.values.subjects[index] ? formik.values.subjects[index][sectionIndex] || [] : []).map(s => s.id)}
+                        value={(formik.values.subjects[index] ? formik.values.subjects[index][sectionIndex] || [] : []).map(s => s.id ?? s.subject_id)}
                         onChange={(e) => {
                           const selectedOptions = Array.from(e.target.selectedOptions);
-                          const availableSubjects = schoolSubjects?.listData?.[formik.values.classes[index]]?.[section.section_id] || [];
+                          const availableSubjects = getAvailableSubjects(formik.values.classes[index], section.section_id ?? section.id);
                           const selectedValues = selectedOptions.map(option => {
-                            return availableSubjects.find(sub => sub.id == option.value);
+                            return availableSubjects.find(sub => (sub.id ?? sub.subject_id) == option.value);
                           }).filter(Boolean);
 
                           const subArr = [...formik.values.subjects];
@@ -884,9 +951,9 @@ const TeacherFormComponent = ({
                         }}
                         className={`${multiSelectClasses} h-24`}
                       >
-                        {(schoolSubjects?.listData?.[formik.values.classes[index]]?.[section.section_id] || []).map((sub) => (
-                          <option value={sub.id} key={sub.id} className="py-1 px-1.5 rounded">
-                            {sub.name}
+                        {getAvailableSubjects(formik.values.classes[index], section.section_id ?? section.id).map((sub) => (
+                          <option value={sub.id ?? sub.subject_id} key={sub.id ?? sub.subject_id} className="py-1 px-1.5 rounded">
+                            {sub.name ?? sub.subject_name}
                           </option>
                         ))}
                       </select>
@@ -921,7 +988,7 @@ const TeacherFormComponent = ({
                       className={`${selectClasses} pr-9`}
                     >
                       <option value="" disabled>Select Class to Allocate</option>
-                      {schoolClasses?.listData?.filter(cls => !formik.values.classes.includes(cls.class_id)).map((cls) => (
+                      {schoolClasses?.listData?.filter(cls => !formik.values.classes.some(c => c == cls.class_id)).map((cls) => (
                         <option value={cls.class_id} key={cls.class_id}>{cls.class_name}</option>
                       ))}
                     </select>

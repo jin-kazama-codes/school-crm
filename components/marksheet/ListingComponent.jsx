@@ -9,6 +9,7 @@ import Search from "../common/Search";
 import ServerPaginationGrid from "../common/Datagrid";
 
 import { datagridColumns } from "./MarksheetConfig";
+import MarksheetReportCardModal from "./MarksheetReportCardModal";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
 import { setMarksheets, setMarksheetClassData } from "../../redux/actions/MarksheetAction";
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
@@ -35,6 +36,9 @@ const ListingComponent = ({ rolePriority = null }) => {
 
   const navigateTo = useNavigate();
   const dispatch = useDispatch();
+
+  const [reportCardOpen, setReportCardOpen] = useState(false);
+  const [selectedMarksheet, setSelectedMarksheet] = useState(null);
 
   const [searchFlag, setSearchFlag] = useState({
     search: false,
@@ -300,7 +304,10 @@ const ListingComponent = ({ rolePriority = null }) => {
                 action={setMarksheets}
                 api={API.MarksheetAPI}
                 getQuery={getPaginatedData}
-                columns={datagridColumns(rolePriority)}
+                columns={datagridColumns(rolePriority, (row) => {
+                    setSelectedMarksheet(row);
+                    setReportCardOpen(true);
+                })}
                 rows={listData?.rows || []}
                 count={listData?.count || 0}
                 loading={loading}
@@ -311,6 +318,13 @@ const ListingComponent = ({ rolePriority = null }) => {
                 setSearchFlag={setSearchFlag}
                 condition={classConditionObj}
             />
+
+        <MarksheetReportCardModal
+            open={reportCardOpen}
+            setOpen={setReportCardOpen}
+            detail={selectedMarksheet}
+            allSubjects={allSubjects?.listData || []}
+        />
     </div>
   );
 };

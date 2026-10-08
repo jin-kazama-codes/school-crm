@@ -2,10 +2,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useSelector } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-import { Pencil, User } from 'lucide-react';
+import { Pencil, User, FileText, Calendar } from 'lucide-react';
 import { Utility } from "../utility";
 
-export const datagridColumns = (rolePriority = null) => {
+export const datagridColumns = (rolePriority = null, handleViewReportCard = null) => {
     const schoolClasses = useSelector(state => state.schoolClasses);
     const allClasses = useSelector(state => state.allClasses);
     const schoolSections = useSelector(state => state.schoolSections);
@@ -39,9 +39,11 @@ export const datagridColumns = (rolePriority = null) => {
                             <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
                                 {displayName}
                             </span>
-                            {row?.student_id && (
+                            {(row?.roll_no || row?.enrollment_no || row?.student_id) && (
                                 <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                                    {row?.roll_no ? `Roll: ${row.roll_no} • ` : ""}ID: #{row.student_id}
+                                    {row?.roll_no ? `Roll: ${row.roll_no}` : ''}
+                                    {row?.roll_no && row?.enrollment_no ? ' • ' : ''}
+                                    {row?.enrollment_no ? `Enroll: ${row.enrollment_no}` : (!row?.roll_no ? `ID: #${row.student_id}` : '')}
                                 </span>
                             )}
                         </div>
@@ -77,19 +79,53 @@ export const datagridColumns = (rolePriority = null) => {
             }
         },
         {
+            field: "session",
+            headerName: "Session",
+            headerAlign: "center",
+            align: "center",
+            flex: 1,
+            minWidth: 100,
+            renderCell: ({ row: { session } }) => (
+                <div className="flex justify-center items-center w-full h-full">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
+                        {session || "—"}
+                    </span>
+                </div>
+            )
+        },
+        {
             field: "term",
             headerName: "Term",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 90,
+            flex: 0.9,
+            minWidth: 85,
             renderCell: ({ row: { term } }) => (
                 <div className="flex justify-center items-center w-full h-full">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/40">
                         Term {term || "I"}
                     </span>
                 </div>
             )
+        },
+        {
+            field: "created_at",
+            headerName: "Issued Date",
+            headerAlign: "center",
+            align: "center",
+            flex: 1.1,
+            minWidth: 120,
+            renderCell: ({ row }) => {
+                const dateStr = row?.created_at
+                    ? new Date(row.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : "—";
+                return (
+                    <div className="flex justify-center items-center gap-1.5 w-full h-full text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{dateStr}</span>
+                    </div>
+                );
+            }
         },
         {
             field: "result",
@@ -97,7 +133,7 @@ export const datagridColumns = (rolePriority = null) => {
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 120,
+            minWidth: 110,
             valueFormatter: (value) => `${capitalizeEveryWord(value) || ""}`,
             renderCell: ({ row: { result } }) => {
                 const getResultStyle = () => {
@@ -121,14 +157,21 @@ export const datagridColumns = (rolePriority = null) => {
             headerName: "Action",
             headerAlign: "center",
             align: "center",
-            flex: 0.8,
-            minWidth: 75,
-            renderCell: ({ row: { id, student_id, term } }) => (
-                <div className="flex justify-center items-center w-full h-full">
+            flex: 1,
+            minWidth: 100,
+            renderCell: ({ row }) => (
+                <div className="flex justify-center items-center gap-1.5 w-full h-full">
                     <button
-                        onClick={() => handleActionEdit(id, student_id, term)}
-                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                        title="Edit"
+                        onClick={() => handleViewReportCard && handleViewReportCard(row)}
+                        className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
+                        title="View Official Report Card"
+                    >
+                        <FileText className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => handleActionEdit(row.id, row.student_id, row.term)}
+                        className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer shadow-2xs"
+                        title="Edit Marksheet"
                     >
                         <Pencil className="w-4 h-4" />
                     </button>
@@ -138,4 +181,5 @@ export const datagridColumns = (rolePriority = null) => {
     ];
     return columns;
 };
+
 

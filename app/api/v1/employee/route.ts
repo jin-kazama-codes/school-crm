@@ -4,7 +4,7 @@ import { genericList, genericCreate, genericUpdate } from "@/lib/crudHelpers";
 
 export const GET = withAuth(async (req: NextRequest, { userId }) => {
   const r = applyRateLimit(req); if (r) return r;
-  return genericList(req, "employee", ["firstname", "lastname", "email", "status"]);
+  return genericList(req, "employee", ["firstname", "lastname", "email", "role", "status"]);
 });
 
 export const POST = withAuth(async (req: NextRequest, { userId }) => {

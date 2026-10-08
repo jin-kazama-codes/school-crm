@@ -20,7 +20,19 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
 
   try {
     const body = await req.json();
-    const { marksheet_id, subject_id, marks, max_marks, grade } = body;
+    const { marksheet_id, subject_id, marks, max_marks, marks_obtained, total_marks, grade, remark, result } = body;
+
+    const rawMarks = marks !== undefined && marks !== null && String(marks).trim() !== ""
+      ? marks
+      : marks_obtained !== undefined && marks_obtained !== null && String(marks_obtained).trim() !== ""
+      ? marks_obtained
+      : null;
+
+    const rawMaxMarks = max_marks !== undefined && max_marks !== null && String(max_marks).trim() !== ""
+      ? max_marks
+      : total_marks !== undefined && total_marks !== null && String(total_marks).trim() !== ""
+      ? total_marks
+      : null;
 
     if (!marksheet_id || !subject_id) {
       return NextResponse.json(
@@ -33,9 +45,11 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
       data: {
         marksheet_id: parseInt(String(marksheet_id)),
         subject_id:   parseInt(String(subject_id)),
-        marks:        marks   !== undefined ? parseFloat(String(marks))     : undefined,
-        max_marks:    max_marks !== undefined ? parseFloat(String(max_marks)) : undefined,
-        grade:        grade   ?? null,
+        marks:        rawMarks !== null ? parseFloat(String(rawMarks)) : null,
+        max_marks:    rawMaxMarks !== null ? parseFloat(String(rawMaxMarks)) : null,
+        grade:        grade ? String(grade).trim() : null,
+        remark:       remark ? String(remark).trim() : null,
+        result:       result ? String(result).trim() : null,
       },
     });
 

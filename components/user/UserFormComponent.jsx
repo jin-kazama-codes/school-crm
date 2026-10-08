@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
@@ -65,8 +65,28 @@ const UserFormComponent = ({
 
   React.useImperativeHandle(refId, () => ({
     Submit: async () => {
+      const errors = await formik.validateForm();
+      formik.setTouched(
+        Object.keys(formik.values).reduce((acc, key) => {
+          acc[key] = true;
+          return acc;
+        }, {})
+      );
       await formik.submitForm();
+      return errors;
     },
+    validate: async () => {
+      const errors = await formik.validateForm();
+      formik.setTouched(
+        Object.keys(formik.values).reduce((acc, key) => {
+          acc[key] = true;
+          return acc;
+        }, {})
+      );
+      return errors;
+    },
+    formik,
+    updatePassword,
   }));
 
   const watchForm = () => {
@@ -78,7 +98,8 @@ const UserFormComponent = ({
       onChange({
         values: values,
         // Bug #13 fix: formik.isSubmitting is false by the time onSubmit fires.
-                validated: Object.keys(formik.errors).length === 0,
+        validated: Object.keys(formik.errors).length === 0,
+        dirty: formik.dirty,
       });
     }
   };
@@ -368,6 +389,11 @@ const UserFormComponent = ({
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   School <span className="text-rose-500">*</span>
+                  {Boolean(schoolId && userId) && (
+                    <span className="text-slate-400 dark:text-slate-500 font-medium normal-case ml-1 text-[11px]">
+                      (Locked)
+                    </span>
+                  )}
                 </label>
                 <div className="relative">
                   <select
@@ -414,7 +440,7 @@ const UserFormComponent = ({
                   {rolePriority === 2 && !allUserRoles?.listData?.length
                     ? null
                     : allUserRoles.listData
-                        ?.filter((role) => role.id > rolePriority && role.id < 4)
+                        ?.filter((role) => (role.priority ?? role.id) > rolePriority || rolePriority === 1 || Number(role.id) === Number(formik.values.role))
                         .map((role) => (
                         <option value={role.id} key={role.name} className="bg-white dark:bg-[#161616]">
                           {role.name.charAt(0).toUpperCase() + role.name.slice(1)}

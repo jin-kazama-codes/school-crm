@@ -22,6 +22,12 @@ const checkoutSchema = yup.object().shape({
         .required("This Field is Required"),
     route: yup.string()
         .required("This Field is Required"),
+    capacity: yup.number()
+        .typeError("Must be a valid number")
+        .positive("Must be greater than 0")
+        .nullable(),
+    gps_device_id: yup.string()
+        .nullable(),
     status: yup.string()
 });
 

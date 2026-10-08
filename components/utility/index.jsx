@@ -128,7 +128,11 @@ export const Utility = () => {
      */
     const createDropdown = (divider, session_start_month) => {
         // Find the index of the session start month in the months array
-        const startMonthIndex = months.findIndex(month => month.toLowerCase() === session_start_month?.toLowerCase());
+        let startMonthIndex = months.findIndex(month => month.toLowerCase() === session_start_month?.toLowerCase());
+        if (startMonthIndex < 0) {
+            startMonthIndex = months.findIndex(month => month.toLowerCase() === 'april');
+            if (startMonthIndex < 0) startMonthIndex = 0;
+        }
 
         // Helper function to rotate the array starting from the given index
         const rotateArray = (arr, index) => {
@@ -137,6 +141,8 @@ export const Utility = () => {
 
         // Helper function to format a period string
         const formatPeriod = (startMonth, endMonth) => {
+            if (!startMonth) return endMonth || "";
+            if (!endMonth || startMonth === endMonth) return startMonth;
             return `${startMonth} - ${endMonth}`;
         };
 
@@ -149,7 +155,7 @@ export const Utility = () => {
             case 3:
             case 4:
                 const dropdownArray = [];
-                const dropdownLength = months.length / divider;
+                const dropdownLength = Math.floor(months.length / divider);
                 for (let i = 0; i < divider; i++) {
                     // The start index of the current dropdownArray
                     const start = (startMonthIndex + i * dropdownLength) % months.length;

@@ -3,15 +3,14 @@
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
  * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
+ * restricted rights software. The use, reproduction, or disclosure of this software is subject to
  * restrictions set forth in your license agreement with School CRM.
  */
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-import dayjs from "dayjs";
-import { RotateCcw, Save, ArrowLeft, Calendar } from "lucide-react";
+import { RotateCcw, Save, ArrowLeft, Calendar, Loader2 } from "lucide-react";
 
 import API from "../../apis";
 import Loader from "../common/Loader";
@@ -54,69 +53,83 @@ const FormComponent = () => {
         }
     }, []);
 
-    const updateHoliday = useCallback(formData => {
-        const dataFields = [
-            { ...formData.holidayData.values }
-        ];
-        const paths = ["/update-holiday"];
+    const updateHoliday = useCallback(async (formData) => {
         setLoading(true);
+        try {
+            const payload = { ...formData.holidayData.values };
+            const response = await API.HolidayAPI.updateHoliday(payload);
+            if (response) {
+                toastAndNavigate(
+                    dispatch,
+                    true,
+                    "info",
+                    "Successfully Updated",
+                    navigateTo,
+                    `/holiday/listing`
+                );
+            }
+            setLoading(false);
+        } catch (err) {
+            setLoading(false);
+            toastAndNavigate(
+                dispatch,
+                true,
+                "error",
+                err?.response?.data?.msg || "An Error Occurred",
+                navigateTo,
+                0
+            );
+            throw err;
+        }
+    }, []);
 
-        API.CommonAPI.multipleAPICall("PATCH", paths, dataFields)
-            .then(responses => {
-                let status = true;
-                responses.forEach(response => {
-                    if (response.data.status !== "Success") {
-                        status = false;
-                    }
-                });
-                if (status) {
-                    setLoading(false);
-                    toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, `/holiday/listing/${getLocalStorage('class') || ''}`);
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
-                throw err;
-            });
-    }, [formData]);
-
-    const populateHolidayData = useCallback(id => {
+    const populateHolidayData = useCallback((id) => {
         setLoading(true);
         const paths = [`/get-by-pk/holiday/${id}`];
         API.CommonAPI.multipleAPICall("GET", paths)
             .then(responses => {
-                if (responses[0].data.data) {
-                    responses[0].data.data.startDate = dayjs(responses[0]?.data?.data?.startDate);
-                    responses[0].data.data.endDate = dayjs(responses[0]?.data?.data?.endDate);
-                }
                 const dataObj = {
-                    holidayData: responses[0].data.data
+                    holidayData: responses[0]?.data?.data || responses[0]?.data
                 };
                 setUpdatedValues(dataObj);
                 setLoading(false);
             })
             .catch(err => {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "Failed to load holiday");
                 throw err;
             });
-    }, [id]);
+    }, []);
 
-    const createHoliday = useCallback(formData => {
+    const createHoliday = useCallback(async (formData) => {
         setLoading(true);
-        API.HolidayAPI.createHoliday({ ...formData.holidayData.values })
-            .then(() => {
-                setLoading(false);
-                toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/holiday/listing`);
-            })
-            .catch(err => {
-                setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
-                throw err;
-            });
-    }, [formData]);
+        try {
+            const payload = { ...formData.holidayData.values };
+            const response = await API.HolidayAPI.createHoliday(payload);
+            if (response) {
+                toastAndNavigate(
+                    dispatch,
+                    true,
+                    "success",
+                    "Successfully Created",
+                    navigateTo,
+                    `/holiday/listing`
+                );
+            }
+            setLoading(false);
+        } catch (err) {
+            setLoading(false);
+            toastAndNavigate(
+                dispatch,
+                true,
+                "error",
+                err?.response?.data?.msg || "Failed to create holiday",
+                navigateTo,
+                0
+            );
+            throw err;
+        }
+    }, []);
 
     useEffect(() => {
         if (id && !submitted) {
@@ -131,6 +144,7 @@ const FormComponent = () => {
     }, [id, submitted]);
 
     const handleSubmit = async () => {
+        setLoading(true);
         await holidayFormRef.current.Submit();
         setSubmitted(true);
     };
@@ -159,7 +173,7 @@ const FormComponent = () => {
                         <div className={`p-2.5 rounded-xl ${
                             title === "Update" 
                                 ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
-                                : "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50"
+                                : "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50"
                         }`}>
                             <Calendar className="w-6 h-6" />
                         </div>
@@ -177,7 +191,7 @@ const FormComponent = () => {
                     
                     <button
                         type="button"
-                        onClick={() => navigateTo(`/holiday/listing/${getLocalStorage('class') || ''}`)}
+                        onClick={() => navigateTo(`/holiday/listing`)}
                         className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
                     >
                         <ArrowLeft className="w-3.5 h-3.5" />
@@ -206,7 +220,7 @@ const FormComponent = () => {
                         {title !== "Update" && (
                             <button 
                                 type="reset" 
-                                disabled={!dirty || submitted}
+                                disabled={!dirty || submitted || loading}
                                 onClick={() => {
                                     if (window.confirm("Do you really want to reset this form?")) {
                                         setReset(true);
@@ -223,8 +237,9 @@ const FormComponent = () => {
                     <div className="flex items-center gap-2.5">
                         <button 
                             type="button"
-                            onClick={() => navigateTo(`/holiday/listing/${getLocalStorage('class') || ''}`)}
-                            className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+                            onClick={() => navigateTo(`/holiday/listing`)}
+                            disabled={loading}
+                            className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-50"
                         >
                             Cancel
                         </button>
@@ -232,15 +247,24 @@ const FormComponent = () => {
                         <button 
                             type="submit" 
                             onClick={() => handleSubmit()} 
-                            disabled={!dirty || submitted}
+                            disabled={!dirty || submitted || loading}
                             className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                                 title === "Update" 
                                     ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30" 
                                     : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
                             }`}
                         >
-                            <Save className="w-4 h-4" />
-                            {title === "Update" ? "Update Holiday" : "Save Holiday"}
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>{title === "Update" ? "Updating..." : "Saving..."}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    <span>{title === "Update" ? "Update Holiday" : "Save Holiday"}</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -252,8 +276,11 @@ const FormComponent = () => {
                 />
 
                 {loading && (
-                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
-                        <Loader />
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[99999] flex items-center justify-center p-4">
+                        <Loader 
+                            text={title === "Update" ? "Updating Holiday..." : "Saving Holiday..."} 
+                            subtext="Saving closure dates and notification details"
+                        />
                     </div>
                 )}
             </div>

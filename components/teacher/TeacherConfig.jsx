@@ -11,14 +11,14 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-import { Pencil } from 'lucide-react';
+import { Pencil, Eye } from 'lucide-react';
 
 import API from "../../apis";
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
 import { Utility } from "../utility";
 
-export const datagridColumns = (rolePriority = null) => {
+export const datagridColumns = (rolePriority = null, setOpen = null, setSelectedId = null) => {
     const schoolClasses = useSelector(state => state.schoolClasses);
     const allClasses = useSelector(state => state.allClasses);
     const schoolSections = useSelector(state => state.schoolSections);
@@ -26,10 +26,15 @@ export const datagridColumns = (rolePriority = null) => {
 
     const dispatch = useDispatch();
     const navigateTo = useNavigate();
-    const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord } = Utility();
+    const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate } = Utility();
 
     const handleActionEdit = (id) => {
         navigateTo(`/teacher/update/${id}`, { state: { id: id } });
+    };
+
+    const handleActionShow = (id) => {
+        if (setOpen) setOpen(true);
+        if (setSelectedId) setSelectedId(id);
     };
 
     useEffect(() => {
@@ -115,6 +120,15 @@ export const datagridColumns = (rolePriority = null) => {
             minWidth: 100
         },
         {
+            field: "created_at",
+            headerName: "Joining Date",
+            headerAlign: "center",
+            align: "center",
+            flex: 1,
+            minWidth: 100,
+            valueFormatter: (value) => `${formatDate(value)}`
+        },
+        {
             field: "status",
             headerName: "Status",
             headerAlign: "center",
@@ -138,25 +152,34 @@ export const datagridColumns = (rolePriority = null) => {
                 );
             }
         },
-        ...(rolePriority !== 1 ? [{
+        {
             field: "action",
             headerName: "Action",
             headerAlign: "center",
             align: "center",
-            flex: 1,
-            minWidth: 75,
+            flex: 0.8,
+            minWidth: 90,
             renderCell: ({ row: { id } }) => (
-                <div className="flex justify-center items-center w-full h-full">
+                <div className="flex justify-center items-center gap-1.5 w-full h-full">
+                    {rolePriority !== 1 && (
+                        <button
+                            onClick={() => handleActionEdit(id)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                            title="Edit"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </button>
+                    )}
                     <button
-                        onClick={() => handleActionEdit(id)}
-                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                        title="Edit"
+                        onClick={() => handleActionShow(id)}
+                        className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50 cursor-pointer"
+                        title="Preview"
                     >
-                        <Pencil className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                     </button>
                 </div>
             )
-        }] : [])
+        }
     ];
     return columns;
 };

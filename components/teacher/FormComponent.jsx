@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import { RotateCcw, Save, ArrowLeft, UserCheck } from "lucide-react";
+import { RotateCcw, Save, ArrowLeft, UserCheck, Loader2 } from "lucide-react";
 
 import API from "../../apis";
 import AddressFormComponent from "../address/AddressFormComponent";
@@ -31,7 +31,9 @@ const ENV = process.env;
 
 const FormComponent = () => {
   const [title, setTitle] = useState("Create");
-  const [loading, setLoading] = useState(false);
+  const [isPopulating, setIsPopulating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const loading = isPopulating || isSubmitting;
   const [formData, setFormData] = useState({
     teacherData: { values: null, validated: false },
     addressData: { values: null, validated: false },
@@ -63,6 +65,7 @@ const FormComponent = () => {
   const {
     formatImageName,
     fetchAndSetAll,
+    fetchAndSetSchoolData,
     getLocalStorage,
     getIdsFromObject,
     generateNormalPassword,
@@ -83,7 +86,7 @@ const FormComponent = () => {
   }, []);
 
   const updateTeacherAndAddress = useCallback(async formData => {
-    setLoading(true);
+    setIsSubmitting(true);
     const paths = [];
     const dataFields = [];
 
@@ -109,53 +112,47 @@ const FormComponent = () => {
         paths.push("/update-address");
         dataFields.push(formData.addressData.values);
       }
-      await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
-      updateImageAndClassData(formData);
+      if (paths.length > 0) {
+        await API.CommonAPI.multipleAPICall("PATCH", paths, dataFields);
+      }
+      await updateImageAndClassData(formData);
     } catch (err) {
-      setLoading(false);
+      setIsSubmitting(false);
       toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
       throw err;
     }
   }, [formData]);
 
   const updateImageAndClassData = useCallback(async (formData) => {
-    let updatePromises = [];
-    let status = null;
-
-    if (formData.teacherData.dirty) {
-      await (async () => {
+    try {
+      if (formData.teacherData.dirty) {
         // delete all class sections from mapping table
         await API.TeacherAPI.deleteFromMappingTable({ teacher_id: id });
 
-        updatePromises = formData.teacherData.values.sections.map(
-          (innerArray, classIndex) => {
-            const teacherClass =
-              formData.teacherData.values.classes[classIndex] || 0;
-            // Iterating through each section in the class then associating subject ids for each section of class
-            innerArray.map((sectionData, sectionIndex) => {
-              const subjectArray = formData.teacherData.values.subjects[classIndex] ? formData.teacherData.values.subjects[classIndex][sectionIndex] : [];
-              API.TeacherAPI.insertIntoMappingTable([
-                formData.teacherData.values.id,
-                teacherClass,
-                sectionData.section_id,
-                getIdsFromObject(subjectArray, allSubjects?.listData),
-              ]);
-            });
-          }
-        );
-        await Promise.all(updatePromises);
-      })();
-    }
+        const mappingPromises = [];
+        (formData.teacherData.values.sections || []).forEach((innerArray, classIndex) => {
+          const teacherClass = formData.teacherData.values.classes[classIndex] || 0;
+          (innerArray || []).forEach((sectionData, sectionIndex) => {
+            const subjectArray = formData.teacherData.values.subjects?.[classIndex]
+              ? formData.teacherData.values.subjects[classIndex][sectionIndex]
+              : [];
+            const p = API.TeacherAPI.insertIntoMappingTable([
+              formData.teacherData.values.id,
+              teacherClass,
+              sectionData.section_id ?? sectionData.id,
+              getIdsFromObject(subjectArray, allSubjects?.listData),
+            ]);
+            mappingPromises.push(p);
+          });
+        });
+        await Promise.all(mappingPromises);
+      }
 
-    try {
-      let formattedName;
-      // delete all images from db on every update and later insert new and old again
-      await API.ImageAPI.deleteImage({
-        parent: "teacher",
-        parent_id: id,
-      });
-      // upload new images to backend folder and insert in db
       if (formData.imageData?.values?.image) {
+        await API.ImageAPI.deleteImage({
+          parent: "teacher",
+          parent_id: id,
+        });
         await Promise.all(
           Array.from(formData.imageData.values.image).map(async (image) => {
             const formattedName = formatImageName(image.name);
@@ -174,35 +171,19 @@ const FormComponent = () => {
             }
           })
         );
-        status = true;
-      }
-      // insert old images only in db & not on azure
-      if (formData.imageData.values.constructor === Array) {
-        formData.imageData.values.map(oldIimage => {
-          API.ImageAPI.createImage({
-            image_src: oldIimage.image_src,
-            school_id: oldIimage.school_id,
-            parent_id: oldIimage.parent_id,
-            parent: oldIimage.parent,
-            type: oldIimage.type,
-          });
-        });
-        status = true;
       }
 
-      if (status) {
-        setLoading(false);
-        toastAndNavigate(
-          dispatch,
-          true,
-          "info",
-          "Successfully Updated",
-          navigateTo,
-          `/teacher/listing`
-        );
-      }
+      setIsSubmitting(false);
+      toastAndNavigate(
+        dispatch,
+        true,
+        "success",
+        "Successfully Updated",
+        navigateTo,
+        `/teacher/listing`
+      );
     } catch (err) {
-      setLoading(false);
+      setIsSubmitting(false);
       toastAndNavigate(
         dispatch,
         true,
@@ -213,10 +194,10 @@ const FormComponent = () => {
       );
       throw err;
     }
-  }, [formData]);
+  }, [formData, id, allSubjects?.listData]);
 
   const populateTeacherData = useCallback((id) => {
-    setLoading(true);
+    setIsPopulating(true);
     const paths = [
       `/get-by-pk/teacher/${id}`,
       `/get-address/teacher/${id}`,
@@ -239,10 +220,10 @@ const FormComponent = () => {
         };
         setUpdatedValues(dataObj);
         setUpdatedImage(dataObj?.imageData);
-        setLoading(false);
+        setIsPopulating(false);
       })
       .catch((err) => {
-        setLoading(false);
+        setIsPopulating(false);
         toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
         throw err;
       });
@@ -250,9 +231,9 @@ const FormComponent = () => {
 
   const createTeacher = useCallback(async formData => {
     let promise1;
-    let promise2;
+    let promise2 = [];
     let promise3;
-    setLoading(true);
+    setIsSubmitting(true);
     const username =
       formData.teacherData.values?.firstname.toLowerCase() + (formData.teacherData.values?.lastname
         ? `${formData.teacherData.values?.lastname.toLowerCase()}` : "");
@@ -289,22 +270,26 @@ const FormComponent = () => {
                 parent: "teacher"
               });
 
-              promise2 = formData.teacherData.values.sections.map((innerArray, classIndex) => {
+              const mappingPromises = [];
+              (formData.teacherData.values.sections || []).forEach((innerArray, classIndex) => {
                 const teacherClass = formData.teacherData.values.classes[classIndex] || 0;
-                // Iterating through each section in the class then associating subject ids for each section of class
-                innerArray.map((sectionData, sectionIndex) => {
-                  const subjectArray = formData.teacherData.values.subjects[classIndex] ? formData.teacherData.values.subjects[classIndex][sectionIndex] : [];
-                  API.TeacherAPI.insertIntoMappingTable([
+                (innerArray || []).forEach((sectionData, sectionIndex) => {
+                  const subjectArray = formData.teacherData.values.subjects?.[classIndex]
+                    ? formData.teacherData.values.subjects[classIndex][sectionIndex]
+                    : [];
+                  const p = API.TeacherAPI.insertIntoMappingTable([
                     teacher.data.id,
                     teacherClass,
-                    sectionData.section_id,
+                    sectionData.section_id ?? sectionData.id,
                     getIdsFromObject(subjectArray, allSubjects?.listData),
                   ]);
+                  mappingPromises.push(p);
                 });
               });
 
-              if (formData.imageData.values.image?.length) {
-                promise3 = Promise.all(
+              let imagePromise = null;
+              if (formData.imageData.values?.image?.length) {
+                imagePromise = Promise.all(
                   Array.from(formData.imageData.values.image).map(async (image) => {
                     const formattedName = formatImageName(image.name);
                     const res = await API.ImageAPI.uploadImageToSupabase({
@@ -325,11 +310,13 @@ const FormComponent = () => {
               }
 
               try {
-                await Promise.all([promise1, promise2, promise3]);
-                setLoading(false);
+                const allPromises = [promise1, ...mappingPromises];
+                if (imagePromise) allPromises.push(imagePromise);
+                await Promise.all(allPromises);
+                setIsSubmitting(false);
                 toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/teacher/listing`);
               } catch (err) {
-                setLoading(false);
+                setIsSubmitting(false);
                 toastAndNavigate(
                   dispatch,
                   true,
@@ -342,14 +329,17 @@ const FormComponent = () => {
               }
             })
             .catch((err) => {
-              setLoading(false);
+              setIsSubmitting(false);
               toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
               console.log("Error in teacher create", err);
             });
+        } else {
+          setIsSubmitting(false);
+          toastAndNavigate(dispatch, true, "error", user?.msg || "Failed to create user", navigateTo, 0);
         }
       })
       .catch((err) => {
-        setLoading(false);
+        setIsSubmitting(false);
         toastAndNavigate(
           dispatch,
           true,
@@ -373,6 +363,12 @@ const FormComponent = () => {
       fetchAndSetAll(dispatch, setAllSubjects, API.SubjectAPI);
     }
   }, [allSubjects?.listData?.length]);
+
+  useEffect(() => {
+    if (getLocalStorage("schoolInfo") && !classData?.length) {
+      fetchAndSetSchoolData(dispatch, false, false, setClassData);
+    }
+  }, [classData?.length]);
 
   // Create/Update/Populate teacher
   useEffect(() => {
@@ -550,15 +546,24 @@ const FormComponent = () => {
               <button 
                 type="submit" 
                 onClick={() => handleSubmit()} 
-                disabled={!dirty || submitted}
+                disabled={loading}
                 className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                   title === "Update" 
                     ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30" 
                     : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
                 }`}
               >
-                <Save className="w-4 h-4" />
-                {title === "Update" ? "Update Teacher" : "Save Teacher"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>{title === "Update" ? "Updating..." : "Saving..."}</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>{title === "Update" ? "Update Teacher" : "Save Teacher"}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -569,9 +574,21 @@ const FormComponent = () => {
             message={toastInfo.toastMessage}
           />
 
-          {loading && (
-            <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
-              <Loader />
+          {isPopulating && (
+            <div className="fixed inset-0 bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <Loader 
+                text="Loading Teacher Information..."
+                subtext="Retrieving qualifications, allocated classes, and profile assets"
+              />
+            </div>
+          )}
+
+          {isSubmitting && (
+            <div className="fixed inset-0 bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <Loader 
+                text={title === "Update" ? "Updating Teacher Profile..." : "Saving Teacher Details..."}
+                subtext="Processing teaching allocations, credentials, and attachments"
+              />
             </div>
           )}
         </div>

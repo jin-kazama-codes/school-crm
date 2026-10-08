@@ -6,7 +6,7 @@
  * restrictions set forth in your license agreement with School CRM.
 */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@/lib/routerAdapter";
 import { useSelector, useDispatch } from "react-redux";
 import { PlusCircle } from "lucide-react";
@@ -15,6 +15,7 @@ import PropTypes from "prop-types";
 import API from "../../apis";
 import Search from "../common/Search";
 import ServerPaginationGrid from '../common/Datagrid';
+import EmployeeDossierModal from "./EmployeeDossierModal";
 
 import { datagridColumns } from "./EmployeeConfig";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
@@ -22,10 +23,16 @@ import { setEmployees } from "../../redux/actions/EmployeeAction";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
 
-
 const pageSizeOptions = [10, 20, 50];
 
 const ListingComponent = ({ rolePriority = null }) => {
+    const [openModal, setOpenModal] = useState(false);
+    const [employeeDetail, setEmployeeDetail] = useState(null);
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+    const [countryData, setCountryData] = useState([]);
+    const [stateData, setStateData] = useState([]);
+    const [cityData, setCityData] = useState([]);
+
     const selected = useSelector(state => state.menuItems.selected);
     const { listData, loading } = useSelector(state => state.allEmployees);
 
@@ -46,6 +53,57 @@ const ListingComponent = ({ rolePriority = null }) => {
     const importBtn = true;
     const employeeImport = "employee";
 
+    const populateData = useCallback((id) => {
+        const paths = [
+            `/get-by-pk/employee/${id}`,
+            `/get-address/employee/${id}`
+        ];
+        API.CommonAPI.multipleAPICall("GET", paths)
+            .then(responses => {
+                const employeeRaw = responses[0]?.data?.data || responses[0]?.data;
+                const addressRaw = responses[1]?.data?.data || responses[1]?.data;
+
+                const dataObj = {
+                    employeeData: employeeRaw,
+                    addressData: addressRaw
+                };
+                setEmployeeDetail(dataObj);
+            })
+            .catch(err => {
+                console.error("Error populating employee details:", err);
+            });
+    }, []);
+
+    useEffect(() => {
+        if (selectedEmployeeId) {
+            populateData(selectedEmployeeId);
+
+            API.CountryAPI.getCountries()
+                .then(countries => {
+                    if (countries.status === 'Success') {
+                        setCountryData(countries.data.list);
+                    }
+                })
+                .catch(err => { console.error(err); });
+
+            API.StateAPI.getAllStates()
+                .then(states => {
+                    if (states.status === 'Success') {
+                        setStateData(states.data.rows);
+                    }
+                })
+                .catch(err => { console.error(err); });
+
+            API.CityAPI.getAllCities()
+                .then(cities => {
+                    if (cities.status === 'Success') {
+                        setCityData(cities.data.rows);
+                    }
+                })
+                .catch(err => { console.error(err); });
+        }
+    }, [selectedEmployeeId, populateData]);
+
     useEffect(() => {
         dispatch(setMenuItem("Employee"));
     }, []);
@@ -53,7 +111,6 @@ const ListingComponent = ({ rolePriority = null }) => {
     return (
         <div 
             className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200"
-            
         >
             <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-sm p-5">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -83,22 +140,32 @@ const ListingComponent = ({ rolePriority = null }) => {
             </div>
 
             <ServerPaginationGrid
-                    action={setEmployees}
-                    api={API.EmployeeAPI}
-                    getQuery={getPaginatedData}
-                    columns={datagridColumns(rolePriority)}
-                    rolePriority={rolePriority}
-                    importBtn={importBtn}
-                    rows={listData.rows}
-                    count={listData.count}
-                    loading={loading}
-                    selected={selected}
-                    pageSizeOptions={pageSizeOptions}
-                    setOldPagination={setOldPagination}
-                    searchFlag={searchFlag}
-                    setSearchFlag={setSearchFlag}
-                    imports={employeeImport}
-                />
+                action={setEmployees}
+                api={API.EmployeeAPI}
+                getQuery={getPaginatedData}
+                columns={datagridColumns(rolePriority, setOpenModal, setSelectedEmployeeId)}
+                rolePriority={rolePriority}
+                importBtn={importBtn}
+                rows={listData?.rows || []}
+                count={listData?.count || 0}
+                loading={loading}
+                selected={selected}
+                pageSizeOptions={pageSizeOptions}
+                setOldPagination={setOldPagination}
+                searchFlag={searchFlag}
+                setSearchFlag={setSearchFlag}
+                imports={employeeImport}
+            />
+
+            <EmployeeDossierModal
+                open={openModal}
+                setOpen={setOpenModal}
+                detail={employeeDetail}
+                countryData={countryData}
+                stateData={stateData}
+                cityData={cityData}
+                rolePriority={rolePriority}
+            />
         </div>
     );
 };

@@ -29,9 +29,23 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
     const navigateTo = useNavigate();
     const { fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate } = Utility();
 
-    function formatAddress(params) {
-        const { street, landmark, city_name, state_name, zipcode } = params?.row || {};
-        const parts = [street, landmark, city_name, state_name, zipcode].filter(Boolean);
+    function formatAddress(value, row) {
+        const data = (row && typeof row === 'object') ? row : (value && typeof value === 'object' && value.row ? value.row : (typeof value === 'object' ? value : {}));
+        const street = data.street;
+        const landmark = data.landmark ? `Near ${data.landmark}` : null;
+        const cityName = data.city_name || (data.city && isNaN(Number(data.city)) ? data.city : null);
+        const stateName = data.state_name || (data.state && isNaN(Number(data.state)) ? data.state : null);
+        const zipcode = data.zipcode;
+        const countryName = data.country_name || (data.country && isNaN(Number(data.country)) ? data.country : null);
+
+        const parts = [
+            street,
+            landmark,
+            cityName,
+            stateName ? `${stateName} - ${zipcode || ''}`.trim() : zipcode,
+            countryName
+        ].filter(Boolean);
+
         return parts.length ? parts.join(", ") : "—";
     }    
 
@@ -174,7 +188,17 @@ export const datagridColumns = (rolePriority = null, setOpen = null) => {
             align: 'center',
             flex: 1,
             minWidth: 200,
-            valueGetter: formatAddress,
+            valueGetter: (value, row) => formatAddress(value, row),
+            renderCell: (params) => {
+                const text = formatAddress(params?.value, params?.row);
+                return (
+                    <div className="flex justify-center items-center w-full h-full text-xs text-slate-700 dark:text-slate-200 font-medium px-2">
+                        <span className="truncate" title={text}>
+                            {text}
+                        </span>
+                    </div>
+                );
+            }
         }
     ];
     return columns;

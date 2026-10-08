@@ -179,25 +179,67 @@ const FormComponent = ({ rolePriority }) => {
         }
     }, [id, isCreate, pathname]);
 
-    useEffect(() => {
-        if (formData.userData.validated && formData.addressData.validated) {
-            (!isCreate && (formData.userData.values?.id || id)) 
-                ? updateUserAndAddress(formData) 
-                : registerUser(formData);
-        } else {
-            setSubmitted(false);
-        }
-    }, [formData.userData.validated, formData.addressData.validated]);
-
     const handleSubmit = async () => {
-        await userFormRef.current.Submit();
-        await addressFormRef.current.Submit();
+        const userErrors = await userFormRef.current?.Submit();
+        const addressErrors = await addressFormRef.current?.Submit();
+
+        if (userErrors && Object.keys(userErrors).length > 0) {
+            const firstError = Object.values(userErrors)[0];
+            toastAndNavigate(dispatch, true, "error", typeof firstError === "string" ? firstError : "Please fill all required user fields");
+            setSubmitted(false);
+            return;
+        }
+
+        if (addressErrors && Object.keys(addressErrors).length > 0) {
+            const firstError = Object.values(addressErrors)[0];
+            toastAndNavigate(dispatch, true, "error", typeof firstError === "string" ? firstError : "Please fill all required address fields");
+            setSubmitted(false);
+            return;
+        }
+
+        const userFormik = userFormRef.current?.formik;
+        const addressFormik = addressFormRef.current?.formik;
+        const userUpdatePassword = userFormRef.current?.updatePassword;
+
+        let userVals = userFormik?.values ? { ...userFormik.values } : { ...formData.userData.values };
+        if (id && userVals && !userVals.id) {
+            userVals.id = id;
+        }
+        if (!userUpdatePassword?.clicked && id && userVals) {
+            delete userVals.password;
+        }
+
+        const addressVals = addressFormik?.values ? { ...addressFormik.values } : { ...formData.addressData.values };
+
+        const isUserDirty = userFormik ? userFormik.dirty : Boolean(formData.userData.dirty);
+        const isAddressDirty = addressFormik ? addressFormik.dirty : Boolean(formData.addressData.dirty);
+
+        const payload = {
+            userData: {
+                values: userVals,
+                dirty: isUserDirty,
+                validated: true
+            },
+            addressData: {
+                values: addressVals,
+                dirty: isAddressDirty,
+                validated: true
+            }
+        };
+
         setSubmitted(true);
+        if (!isCreate && (payload.userData.values?.id || id)) {
+            updateUserAndAddress(payload);
+        } else {
+            registerUser(payload);
+        }
     };
 
     const handleFormChange = (data, form) => {
-        form === 'user' ? setFormData({ ...formData, userData: data }) :
-            setFormData({ ...formData, addressData: data });
+        setFormData(prev => ({
+            ...prev,
+            [form === 'user' ? 'userData' : 'addressData']: data
+        }));
     };
 
     return (

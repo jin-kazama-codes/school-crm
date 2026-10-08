@@ -11,14 +11,14 @@ import * as yup from "yup";
 const checkoutSchema = yup.object().shape({
   title: yup
     .string()
-    .min(2, "name is Too Short!")
-    .max(20, "name is Too Long!")
+    .min(2, "Title is too short")
+    .max(100, "Title is too long")
     .required("This Field is Required"),
-  startDate: yup.date()
+  startDate: yup.mixed()
     .required("This Field is Required"),
-  endDate: yup.date()
+  endDate: yup.mixed()
     .required("This Field is Required"),
-    holiday_type: yup.string()
+  type: yup.string()
     .required("This Field is Required"),
 });
 

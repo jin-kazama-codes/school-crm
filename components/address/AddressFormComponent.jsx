@@ -115,6 +115,9 @@ const AddressFormComponent = ({
         });
     }
 
+    const isInitialMount = React.useRef(true);
+    const initialCitySet = React.useRef(false);
+
     useEffect(() => {
         if (reset) {
             formik.resetForm();
@@ -130,6 +133,7 @@ const AddressFormComponent = ({
 
     useEffect(() => {
         if (updatedValues) {
+            initialCitySet.current = false;
             setInitialState({
                 ...initialValues,
                 ...updatedValues,
@@ -151,7 +155,6 @@ const AddressFormComponent = ({
                     .then(data => {
                         if (data?.status === 'Success') {
                             setStates(data.data?.list || data.data?.rows || []);
-                            setCities([]);
                         } else {
                             setStates([]);
                             setCities([]);
@@ -163,7 +166,7 @@ const AddressFormComponent = ({
                         setCities([]);
                     });
             }
-        }
+        };
         getStates();
     }, [formik.values.country, countryId]);
 
@@ -173,11 +176,15 @@ const AddressFormComponent = ({
             API.CityAPI.getCities(sId)
                 .then(citiesResponse => {
                     if (citiesResponse?.status === 'Success') {
-                        setCities(citiesResponse.data?.list || citiesResponse.data?.rows || []);
-                        if (zipcodeCity) {
-                            setTimeout(() => {
-                                formik.setFieldValue("city", zipcodeCity);
-                            }, 1000);
+                        const cityList = citiesResponse.data?.list || citiesResponse.data?.rows || [];
+                        setCities(cityList);
+                        // On initial load of updatedValues, ensure city is set once cities load
+                        if (!initialCitySet.current && updatedValues?.city) {
+                            const targetCity = Number(updatedValues.city);
+                            if (cityList.some(c => Number(c.id) === targetCity)) {
+                                formik.setFieldValue("city", targetCity);
+                            }
+                            initialCitySet.current = true;
                         }
                     } else {
                         setCities([]);
@@ -207,30 +214,34 @@ const AddressFormComponent = ({
         }
     }, [formik.values, updatedValues]);
 
-    useEffect(() => {
-        if (cities.length) {
-            formik.setFieldValue("city", updatedValues?.city);
-        }
-    }, [cities.length]);
-
-    useEffect(() => {
-        const fetchStateCity = async () => {
-            if (formik.values.zipcode && (formik.values.zipcode.toString().length === 6)) {
-                try {
-                    const res = await getStateCityFromZipCode(formik?.values?.zipcode);
+    const handleZipcodeLookup = async (code) => {
+        if (code && code.toString().length === 6) {
+            try {
+                const res = await getStateCityFromZipCode(code);
+                if (res?.state && res?.city) {
                     const state_id = await getIdByName(res.state, API.StateAPI);
                     const city_id = await getIdByName(res.city, API.CityAPI);
-
-                    formik.setFieldValue("state", state_id);
-                    setZipcodeCity(city_id);
-                } catch (error) {
-                    console.error("Error fetching state and city", error);
+                    if (state_id && typeof state_id === 'number') {
+                        formik.setFieldValue("state", state_id);
+                        setStateId(state_id);
+                    }
+                    if (city_id && typeof city_id === 'number') {
+                        formik.setFieldValue("city", city_id);
+                    }
                 }
+            } catch (error) {
+                console.error("Error fetching state and city from zipcode", error);
             }
-        };
+        }
+    };
 
-        fetchStateCity();
-    }, [formik?.values?.zipcode]);
+    const handleZipcodeChange = (e) => {
+        formik.handleChange(e);
+        const val = e.target.value;
+        if (val && val.length === 6) {
+            handleZipcodeLookup(val);
+        }
+    };
 
     const inputClass = (field) =>
         `w-full px-3.5 py-2.5 bg-white dark:bg-[#121212] border rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 transition-all ${
@@ -316,7 +327,7 @@ const AddressFormComponent = ({
                             name="zipcode"
                             autoComplete="off"
                             onBlur={formik.handleBlur}
-                            onChange={formik.handleChange}
+                            onChange={handleZipcodeChange}
                             value={formik.values.zipcode}
                             className={inputClass("zipcode")}
                             placeholder="e.g., 110001"
@@ -366,7 +377,7 @@ const AddressFormComponent = ({
                         <div className="relative">
                             <select
                                 name="city"
-                                value={formik.values.city || updatedValues?.city || 0}
+                                value={formik.values.city || 0}
                                 onBlur={formik.handleBlur}
                                 onChange={event => {
                                     const val = Number(event.target.value) || event.target.value;

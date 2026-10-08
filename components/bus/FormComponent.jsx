@@ -3,18 +3,16 @@
  * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
  *
  * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
+ * restricted rights software. The use, reproduction, or disclosure of this software is subject to
  * restrictions set forth in your license agreement with School CRM.
  */
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "@/lib/routerAdapter";
 import { useDispatch, useSelector } from "react-redux";
-import dayjs from "dayjs";
-import { Bus, Save, RotateCcw, ArrowLeft } from "lucide-react";
+import { Bus, Save, RotateCcw, ArrowLeft, Loader2 } from "lucide-react";
 
 import API from "../../apis";
-import AddressFormComponent from "../address/AddressFormComponent";
 import Loader from "../common/Loader";
 import Toast from "../common/Toast";
 import BusFormComponent from "./BusFormComponent";
@@ -29,8 +27,6 @@ const FormComponent = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     busData: { values: null, validated: false },
-    addressData: { values: null, validated: false },
-    imageData: { values: null, validated: true },
   });
   const [updatedValues, setUpdatedValues] = useState(null);
   const [dirty, setDirty] = useState(false);
@@ -41,7 +37,6 @@ const FormComponent = () => {
   const toastInfo = useSelector((state) => state.toastInfo);
 
   const busFormRef = useRef();
-  const addressFormRef = useRef();
 
   const navigateTo = useNavigate();
   const dispatch = useDispatch();
@@ -58,34 +53,19 @@ const FormComponent = () => {
     }
   }, []);
 
-  const updateBusAndAddress = useCallback(
+  const updateBusOnly = useCallback(
     async (formData) => {
       setLoading(true);
-      const paths = [];
-      const dataFields = [];
-
       try {
-        if (formData.busData.dirty) {
-          paths.push("/update-bus");
-          dataFields.push(formData.busData.values);
-        }
-        if (formData.addressData.dirty) {
-          paths.push("/update-address");
-          dataFields.push(formData.addressData.values);
-        }
-        const responses = await API.CommonAPI.multipleAPICall(
-          "PATCH",
-          paths,
-          dataFields
-        );
-        if (responses) {
+        const response = await API.BusAPI.updateBus(formData.busData.values);
+        if (response) {
           toastAndNavigate(
             dispatch,
             true,
             "info",
             "Successfully Updated",
             navigateTo,
-            `/bus/listing/${getLocalStorage("class") || ""}`
+            `/bus/listing`
           );
         }
         setLoading(false);
@@ -95,37 +75,30 @@ const FormComponent = () => {
           dispatch,
           true,
           "error",
-          err ? err?.response?.data?.msg : "An Error Occurred",
+          err?.response?.data?.msg || "An Error Occurred",
           navigateTo,
           0
         );
         throw err;
       }
     },
-    [formData]
+    []
   );
 
   const populateBusData = useCallback((id) => {
     setLoading(true);
-    const paths = [`/get-by-pk/bus/${id}`, `/get-address/bus/${id}`];
+    const paths = [`/get-by-pk/bus/${id}`];
     API.CommonAPI.multipleAPICall("GET", paths)
       .then((responses) => {
-        if (responses[0].data.data) {
-          responses[0].data.data.dob = dayjs(responses[0].data.data.dob);
-          responses[0].data.data.admission_date = dayjs(
-            responses[0].data.data.admission_date
-          );
-        }
         const dataObj = {
-          busData: responses[0].data.data,
-          addressData: responses[1]?.data?.data,
+          busData: responses[0]?.data?.data || responses[0]?.data,
         };
         setUpdatedValues(dataObj);
         setLoading(false);
       })
       .catch((err) => {
         setLoading(false);
-        toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+        toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "Failed to load bus");
         throw err;
       });
   }, []);
@@ -135,41 +108,25 @@ const FormComponent = () => {
       setLoading(true);
       API.BusAPI.createBus({ ...formData.busData.values })
         .then(({ data: bus }) => {
-          if (bus?.status === "Success") {
-            API.AddressAPI.createAddress({
-              ...formData.addressData.values,
-              parent_id: bus.data.id,
-              parent: "bus",
-            })
-              .then(() => {
-                setLoading(false);
-                toastAndNavigate(
-                  dispatch,
-                  true,
-                  "success",
-                  "Successfully Created",
-                  navigateTo,
-                  `/bus/listing`
-                );
-              })
-              .catch((err) => {
-                setLoading(false);
-                toastAndNavigate(
-                  dispatch,
-                  true,
-                  err ? err : "An Error Occurred"
-                );
-                throw err;
-              });
+          if (bus?.status === "Success" || bus?.id) {
+            setLoading(false);
+            toastAndNavigate(
+              dispatch,
+              true,
+              "success",
+              "Successfully Created",
+              navigateTo,
+              `/bus/listing`
+            );
           }
         })
         .catch((err) => {
           setLoading(false);
-          toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg);
+          toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "Failed to create bus");
           throw err;
         });
     },
-    [formData]
+    []
   );
 
   useEffect(() => {
@@ -177,9 +134,9 @@ const FormComponent = () => {
       setTitle("Update");
       populateBusData(id);
     }
-    if (formData.busData.validated && formData.addressData.validated) {
+    if (formData.busData.validated) {
       formData.busData.values?.id
-        ? updateBusAndAddress(formData)
+        ? updateBusOnly(formData)
         : createBus(formData);
     } else {
       setSubmitted(false);
@@ -188,15 +145,12 @@ const FormComponent = () => {
 
   const handleSubmit = async () => {
     await busFormRef.current.Submit();
-    await addressFormRef.current.Submit();
     setSubmitted(true);
   };
 
   const handleFormChange = (data, form) => {
     if (form === "bus") {
       setFormData({ ...formData, busData: data });
-    } else if (form === "address") {
-      setFormData({ ...formData, addressData: data });
     }
   };
 
@@ -218,7 +172,7 @@ const FormComponent = () => {
             <div className={`p-2.5 rounded-xl ${
               title === "Update" 
                 ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50" 
-                : "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50"
+                : "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50"
             }`}>
               <Bus className="w-6 h-6" />
             </div>
@@ -228,8 +182,8 @@ const FormComponent = () => {
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {title === "Update" 
-                  ? "Modify transport vehicle records, transit routes, crew information, and addresses" 
-                  : "Register a new school vehicle with registration details, routes, and crew contacts"}
+                  ? "Modify transport vehicle records, transit routes, seating capacity, and crew contacts" 
+                  : "Register a new school vehicle with registration details, transit route, seating capacity, and crew contacts"}
               </p>
             </div>
           </div>
@@ -257,21 +211,6 @@ const FormComponent = () => {
             userId={id}
             updatedValues={updatedValues?.busData}
           />
-          
-          {/* Address Form Container */}
-          <div className="bg-white/95 dark:bg-[#161616]/90 border border-slate-200/90 dark:border-[#262626] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] p-5 md:p-6 transition-all duration-200">
-            <AddressFormComponent
-              onChange={(data) => {
-                handleFormChange(data, 'address');
-              }}
-              refId={addressFormRef}
-              update={id ? true : false}
-              setDirty={setDirty}
-              reset={reset}
-              setReset={setReset}
-              updatedValues={updatedValues?.addressData}
-            />
-          </div>
         </div>
 
         {/* Action Footer */}
@@ -280,7 +219,7 @@ const FormComponent = () => {
             {title !== "Update" && (
               <button 
                 type="reset" 
-                disabled={!dirty || submitted}
+                disabled={!dirty || submitted || loading}
                 onClick={() => {
                   if (window.confirm("Do you really want to reset this form?")) {
                     setReset(true);
@@ -298,7 +237,8 @@ const FormComponent = () => {
             <button 
               type="button"
               onClick={() => navigateTo(`/${(selected || "bus").toLowerCase()}/listing`)}
-              className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs"
+              disabled={loading}
+              className="px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#252525] rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-50"
             >
               Cancel
             </button>
@@ -306,15 +246,24 @@ const FormComponent = () => {
             <button 
               type="submit" 
               onClick={() => handleSubmit()} 
-              disabled={!dirty || submitted}
+              disabled={!dirty || submitted || loading}
               className={`inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                 title === "Update" 
                   ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 hover:shadow-blue-600/30" 
                   : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 hover:shadow-emerald-600/30"
               }`}
             >
-              <Save className="w-4 h-4" />
-              {title === "Update" ? "Update Bus" : "Save Bus"}
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{title === "Update" ? "Updating..." : "Saving..."}</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{title === "Update" ? "Update Bus" : "Save Bus"}</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -326,8 +275,11 @@ const FormComponent = () => {
         />
 
         {loading && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center">
-            <Loader />
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[99999] flex items-center justify-center p-4">
+            <Loader 
+              text={title === "Update" ? "Updating Bus..." : "Saving Bus..."} 
+              subtext="Saving vehicle details and staff assignments"
+            />
           </div>
         )}
       </div>

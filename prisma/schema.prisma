@@ -125,6 +125,13 @@ enum PaymentType {
   annually
 }
 
+enum PaymentStatus {
+  completed
+  pending
+  failed
+  refunded
+}
+
 enum MarksheetTerm {
   I
   II
@@ -394,18 +401,21 @@ model timetable {
 }
 
 model marksheet {
-  id         Int             @id @default(autoincrement())
-  school_id  Int?
-  student_id Int?
-  class_id   Int?
-  section_id Int?
-  session    String?
-  term       MarksheetTerm?
-  result     MarksheetResult?
-  created_at DateTime?       @db.Timestamp(6)
-  updated_at DateTime?       @db.Timestamp(6)
-  created_by Int?
-  updated_by Int?
+  id                 Int             @id @default(autoincrement())
+  school_id          Int?
+  student_id         Int?
+  class_id           Int?
+  section_id         Int?
+  session            String?
+  term               MarksheetTerm?
+  result             MarksheetResult?
+  co_scholastic_data Json?
+  discipline_data    Json?
+  overall_remark     String?
+  created_at         DateTime?       @db.Timestamp(6)
+  updated_at         DateTime?       @db.Timestamp(6)
+  created_by         Int?
+  updated_by         Int?
 
   @@map("marksheet")
 }
@@ -422,7 +432,10 @@ model payment {
   amount           Float?
   final_amount     Float?
   late_fee         Float?
-  discount_percent Int?
+  discount_percent Float?
+  status           PaymentStatus? @default(completed)
+  reference_no     String?
+  receipt_url      String?
   due_date         DateTime?
   created_at       DateTime?   @db.Timestamp(6)
   updated_at       DateTime?   @db.Timestamp(6)
@@ -467,6 +480,8 @@ model bus {
   conductor_contact String?
   conductor_aadhaar String?
   route             String?
+  capacity          Int?
+  gps_device_id     String?
   status            Status?
   created_at        DateTime? @db.Timestamp(6)
   updated_at        DateTime? @db.Timestamp(6)
@@ -659,6 +674,8 @@ model marksheet_data {
   marks        Float?
   max_marks    Float?
   grade        String?
+  remark       String?
+  result       String?
 
   @@map("marksheet_data")
 }

@@ -7,7 +7,7 @@
  * restrictions set forth in your license agreement with School CRM.
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
@@ -207,8 +207,15 @@ const StudentFormComponent = ({
     if (updatedValues) {
       const normalized = { ...initialValues, ...updatedValues };
       if (normalized.blood_group) {
-        const bgMap = { A_POS: "A+", A_NEG: "A-", B_POS: "B+", B_NEG: "B-", AB_POS: "AB+", AB_NEG: "AB-", O_POS: "O+", O_NEG: "O-" };
-        normalized.blood_group = bgMap[normalized.blood_group] || normalized.blood_group;
+        const bgMap = {
+          A_POS: "A+", A_NEG: "A-", B_POS: "B+", B_NEG: "B-",
+          AB_POS: "AB+", AB_NEG: "AB-", O_POS: "O+", O_NEG: "O-",
+          a_pos: "A+", a_neg: "A-", b_pos: "B+", b_neg: "B-",
+          ab_pos: "AB+", ab_neg: "AB-", o_pos: "O+", o_neg: "O-",
+          "A+": "A+", "A-": "A-", "B+": "B+", "B-": "B-",
+          "AB+": "AB+", "AB-": "AB-", "O+": "O+", "O-": "O-"
+        };
+        normalized.blood_group = bgMap[normalized.blood_group] || bgMap[normalized.blood_group?.toUpperCase()] || normalized.blood_group;
       }
       [
         "mother_contact_no",
@@ -302,6 +309,23 @@ const StudentFormComponent = ({
     }
   }, [formik.values?.class, classData]);
 
+  const availableSubjects = useMemo(() => {
+    if (Array.isArray(schoolSubjects?.listData) && schoolSubjects.listData.length > 0) {
+      return schoolSubjects.listData;
+    }
+    if (formik.values.class && classData?.length) {
+      const sectionSubjects = classData.filter(
+        (obj) =>
+          (obj.class_id ?? obj.id) == formik.values.class &&
+          (!formik.values.section || (obj.section_id ?? obj.id) == formik.values.section)
+      );
+      if (sectionSubjects.length > 0 && sectionSubjects[0]?.subject_ids && allSubjects?.length) {
+        return getValuesFromArray(sectionSubjects[0].subject_ids, allSubjects);
+      }
+    }
+    return [];
+  }, [schoolSubjects?.listData, formik.values.class, formik.values.section, classData, allSubjects]);
+
   const formatDateForInput = (dateValue) => {
     if (!dateValue) return "";
     return dayjs(dateValue).format("YYYY-MM-DD");
@@ -316,7 +340,7 @@ const StudentFormComponent = ({
     const selectedOptions = Array.from(e.target.selectedOptions);
     const selectedValues = selectedOptions
       .map((option) => {
-        return (schoolSubjects?.listData || []).find(
+        return availableSubjects.find(
           (sub) => sub.id == option.value
         );
       })
@@ -735,12 +759,12 @@ const StudentFormComponent = ({
             <select
               multiple
               name="subjects"
-              value={formik.values.subjects.map((s) => s.id)}
+              value={(formik.values.subjects || []).map((s) => typeof s === "object" ? s.id : s)}
               onChange={handleSubjectsChange}
               onBlur={formik.handleBlur}
               className={`${inputClasses} h-28 custom-scrollbar`}
             >
-              {schoolSubjects?.listData?.map((sub) => (
+              {availableSubjects.map((sub) => (
                 <option value={sub.id} key={sub.id} className="py-1 px-1.5 rounded">
                   {sub.name}
                 </option>

@@ -9,15 +9,20 @@
  */
 
 import { useNavigate } from "@/lib/routerAdapter";
-import { Pencil } from 'lucide-react';
+import { Pencil, Eye } from 'lucide-react';
 import { Utility } from "../utility";
 
-export const datagridColumns = (rolePriority = null) => {
+export const datagridColumns = (rolePriority = null, setOpenModal = null, setSelectedEmployeeId = null) => {
     const navigateTo = useNavigate();
     const { capitalizeEveryWord, formatDate } = Utility();
 
     const handleActionEdit = (id) => {
         navigateTo(`/employee/update/${id}`, { state: { id: id } });
+    };
+
+    const handleActionShow = (id) => {
+        if (setSelectedEmployeeId) setSelectedEmployeeId(id);
+        if (setOpenModal) setOpenModal(true);
     };
 
     const columns = [
@@ -56,25 +61,13 @@ export const datagridColumns = (rolePriority = null) => {
             minWidth: 100
         },
         {
-            field: "dob",
-            headerName: "Date of Birth",
+            field: "created_at",
+            headerName: "Joining Date",
             headerAlign: "center",
             align: "center",
             flex: 1,
             minWidth: 100,
             valueFormatter: (value) => `${formatDate(value)}`
-        },
-        {
-            field: "gender",
-            headerName: "Gender",
-            headerAlign: "center",
-            align: "center",
-            flex: 1,
-            minWidth: 100,
-            valueGetter: (value, row) => {
-                const g = row?.gender || (typeof value === 'string' ? value : '');
-                return g ? g.charAt(0).toUpperCase() + g.slice(1) : '';
-            }
         },
         {
             field: "status",
@@ -100,25 +93,34 @@ export const datagridColumns = (rolePriority = null) => {
                 );
             }
         },
-        ...(rolePriority !== 1 ? [{
+        {
             field: "action",
             headerName: "Action",
             headerAlign: "center",
             align: "center",
             flex: 1,
-            minWidth: 75,
+            minWidth: 90,
             renderCell: ({ row: { id } }) => (
-                <div className="flex justify-center items-center w-full h-full">
+                <div className="flex justify-center items-center gap-1.5 w-full h-full">
+                    {rolePriority !== 1 && (
+                        <button
+                            onClick={() => handleActionEdit(id)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                            title="Edit"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </button>
+                    )}
                     <button
-                        onClick={() => handleActionEdit(id)}
-                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                        title="Edit"
+                        onClick={() => handleActionShow(id)}
+                        className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50 cursor-pointer"
+                        title="Preview Dossier"
                     >
-                        <Pencil className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                     </button>
                 </div>
             )
-        }] : [])
+        }
     ];
     return columns;
 };

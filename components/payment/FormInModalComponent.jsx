@@ -91,63 +91,73 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
     if (!openDialog) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-12 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 lg:p-7 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
             <div 
-                className="w-full max-w-7xl h-[95vh] flex flex-col bg-white dark:bg-[#1a1a1a] rounded-[24px] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300"
-                style={{
-                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url(${formBg?.src || formBg})`,
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "center",
-                    backgroundSize: "cover"
-                }}
+                className="w-full max-w-6xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0f0f0f] rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-[#222] animate-in zoom-in-95 duration-200"
             >
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-black/50 backdrop-blur-md sticky top-0 z-10">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                            <CreditCard className="w-6 h-6" />
+                {/* Letterhead / Header */}
+                <div className="relative bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white px-6 py-5 overflow-hidden shrink-0">
+                    <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+                    <div className="relative z-10 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg shadow-black/20 shrink-0">
+                                <CreditCard className="w-6 h-6 text-emerald-300" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                                        Fee Management Portal
+                                    </span>
+                                </div>
+                                <h2 className="text-lg sm:text-xl font-black font-display tracking-tight text-white mt-0.5">
+                                    {selected || "Payment"} Desk
+                                </h2>
+                                <p className="text-xs text-slate-300 flex items-center gap-2 mt-0.5">
+                                    <span>Student: <strong className="text-white">{studentName ? capitalizeEveryWord(studentName) : 'Selected Student'}</strong></span>
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                                {selected} Management
-                            </h2>
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                {studentName ? capitalizeEveryWord(studentName) : 'Student'}
-                            </p>
-                        </div>
+
+                        <button 
+                            type="button"
+                            onClick={handleDialogClose}
+                            className="p-2 hover:bg-white/20 text-white/80 hover:text-white rounded-xl transition-colors cursor-pointer border border-white/10"
+                            aria-label="Close dialog"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
-                    <button 
-                        onClick={handleDialogClose}
-                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 custom-scrollbar">
+                {/* Scrollable Content Body */}
+                <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 custom-scrollbar bg-slate-50/60 dark:bg-[#121212]">
                     
-                    {/* History Section */}
-                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center gap-2">
-                            <History className="w-5 h-5 text-slate-500" />
-                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">
-                                Payment History
+                    {/* Section 1: Payment History */}
+                    <div className="bg-white dark:bg-[#181818] rounded-2xl shadow-xs border border-slate-200/90 dark:border-[#282828] overflow-hidden">
+                        <div className="px-5 py-3.5 border-b border-slate-100 dark:border-[#242424] bg-slate-50/50 dark:bg-[#151515] flex items-center gap-2.5">
+                            <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
+                                <History className="w-4 h-4" />
+                            </div>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                                Past Transaction Records
                             </h3>
                         </div>
-                        <div className="p-2 md:p-4">
+                        <div className="p-4">
                             <PaymentDataTable />
                         </div>
                     </div>
 
-                    {/* New Payment Section */}
-                    <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">
-                                {title} New Payment
+                    {/* Section 2: Create New Payment Form */}
+                    <div className="bg-white dark:bg-[#181818] rounded-2xl shadow-xs border border-slate-200/90 dark:border-[#282828] overflow-hidden">
+                        <div className="px-5 py-3.5 border-b border-slate-100 dark:border-[#242424] bg-slate-50/50 dark:bg-[#151515] flex items-center gap-2.5">
+                            <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40">
+                                <CreditCard className="w-4 h-4" />
+                            </div>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                                Record New Payment Entry
                             </h3>
                         </div>
-                        <div className="p-2 md:p-4">
+                        <div className="p-2 sm:p-4">
                             <PaymentFormComponent
                                 onChange={(data) => handleFormChange(data, 'payment')}
                                 refId={paymentFormRef}
@@ -161,45 +171,44 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-black/50 backdrop-blur-md flex justify-end gap-4 sticky bottom-0 z-10">
-                    {title !== "Update" && (
+                <div className="px-6 py-4 border-t border-slate-200 dark:border-[#222] bg-white dark:bg-[#141414] flex items-center justify-between gap-4 shrink-0">
+                    <div>
+                        {title !== "Update" && (
+                            <button 
+                                type="reset" 
+                                disabled={!dirty || submitted}
+                                onClick={() => {
+                                    if (window.confirm("Do you really want to reset this payment form?")) {
+                                        setReset(true);
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#202020] rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                Reset Form
+                            </button>
+                        )}
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
                         <button 
-                            type="reset" 
-                            disabled={!dirty || submitted}
-                            onClick={() => {
-                                if (window.confirm("Do You Really Want To Reset?")) {
-                                    setReset(true);
-                                }
-                            }}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-white rounded-xl font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                            type="button"
+                            onClick={handleDialogClose}
+                            className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#202020] dark:hover:bg-[#282828] text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition-all cursor-pointer"
                         >
-                            <RotateCcw className="w-5 h-5" />
-                            Reset
+                            Cancel
                         </button>
-                    )}
-                    
-                    <button 
-                        type="button"
-                        onClick={handleDialogClose}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25 dark:hover:text-rose-200 border border-rose-200/80 dark:border-rose-500/30 rounded-xl font-semibold shadow-sm shadow-rose-500/10 hover:shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
-                    >
-                        <X className="w-5 h-5" />
-                        Cancel
-                    </button>
-                    
-                    <button 
-                        type="submit" 
-                        onClick={handleSubmit} 
-                        disabled={!dirty}
-                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 ${
-                            title === "Update" 
-                            ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30 hover:shadow-blue-600/40" 
-                            : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 hover:shadow-emerald-600/40"
-                        }`}
-                    >
-                        <Save className="w-5 h-5" />
-                        Submit Payment
-                    </button>
+                        
+                        <button 
+                            type="submit" 
+                            onClick={handleSubmit} 
+                            disabled={!dirty}
+                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                        >
+                            <Save className="w-4 h-4" />
+                            Submit Payment
+                        </button>
+                    </div>
                 </div>
 
                 <Toast 
@@ -209,7 +218,7 @@ const FormComponent = ({ openDialog, setOpenDialog }) => {
                 />
 
                 {loading && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
                         <Loader />
                     </div>
                 )}
