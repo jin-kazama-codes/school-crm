@@ -1,14 +1,19 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useNavigate } from "@/lib/routerAdapter";
-import { FileEdit, Shield, User, GraduationCap } from 'lucide-react';
+import { Pencil, Eye, Shield, User, GraduationCap } from 'lucide-react';
 import { Utility } from "../utility";
 
-export const datagridColumns = (rolePriority = null) => {
+export const datagridColumns = (rolePriority = null, setOpen = null, setSelectedId = null) => {
     const navigateTo = useNavigate();
     const { capitalizeEveryWord } = Utility();
 
     const handleActionEdit = (id) => {
         navigateTo(`/school-house/update/${id}`, { state: { id: id } });
+    };
+
+    const handleActionShow = (id) => {
+        if (setOpen) setOpen(true);
+        if (setSelectedId) setSelectedId(id);
     };
 
     const columns = [
@@ -148,26 +153,36 @@ export const datagridColumns = (rolePriority = null) => {
                 );
             }
         },
-        ...(rolePriority !== 1 ? [{
+        {
             field: "action",
             headerName: "Action",
             headerAlign: "center",
             align: "center",
             flex: 0.8,
-            minWidth: 80,
+            minWidth: 90,
             renderCell: ({ row: { id } }) => (
-                <div className="flex justify-center items-center w-full h-full">
+                <div className="flex justify-center items-center gap-1.5 w-full h-full">
+                    {rolePriority !== 1 && (
+                        <button
+                            onClick={() => handleActionEdit(id)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                            title="Edit"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </button>
+                    )}
                     <button
-                        onClick={() => handleActionEdit(id)}
-                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                        title="Edit"
+                        onClick={() => handleActionShow(id)}
+                        className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:hover:bg-slate-500/20 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500/50 cursor-pointer"
+                        title="Preview Dossier"
                     >
-                        <FileEdit className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                     </button>
                 </div>
             )
-        }] : [])
+        }
     ];
     return columns;
 };
+
 

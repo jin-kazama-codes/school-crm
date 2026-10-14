@@ -15,14 +15,23 @@ const { getLocalStorage } = Utility();
 export const TimeTableAPI = {
     /** Get TimeTable from the database that meets the specified query parameters
      */
-    getAll: async (conditionObj = false, page = 0, size = 10, search = false, authInfo, cancel = false) => {
+    getAll: async (conditionObj = false, page = 0, size = 100, search = false, authInfo, cancel = false) => {
         let queryParam = '';
+        let resolvedPage = page;
+        let resolvedSize = size;
+
         if (conditionObj) {
+          if (conditionObj.size !== undefined) {
+            resolvedSize = conditionObj.size;
+          }
+          if (conditionObj.page !== undefined) {
+            resolvedPage = conditionObj.page;
+          }
           if (conditionObj.key && conditionObj.value !== undefined) {
             queryParam += `&${conditionObj.key}=${conditionObj.value}`;
           } else {
             Object.keys(conditionObj).forEach(key => {
-              if (conditionObj[key] !== undefined && conditionObj[key] !== null && conditionObj[key] !== false) {
+              if (key !== 'page' && key !== 'size' && conditionObj[key] !== undefined && conditionObj[key] !== null && conditionObj[key] !== false) {
                 queryParam += `&${key}=${conditionObj[key]}`;
               }
             });
@@ -30,7 +39,7 @@ export const TimeTableAPI = {
         }
         const searchParam = search ? `&search=${search}` : '';
         const { data: response } = await api.request({
-            url: `/get-time-tables?page=${page}&size=${size}${queryParam}${searchParam}`,
+            url: `/get-time-tables?page=${resolvedPage}&size=${resolvedSize}${queryParam}${searchParam}`,
             headers: {
                 "x-access-token": getLocalStorage("auth")?.token
             },
@@ -65,6 +74,19 @@ export const TimeTableAPI = {
             method: "PATCH",
             data: fields,
             signal: cancel && cancelApiObject.updateTimeTable ? cancelApiObject.updateTimeTable.handleRequestCancellation().signal : undefined
+        });
+    },
+
+    /** Delete TimeTable slot by ID
+     */
+    deleteTimeTable: async (id, cancel = false) => {
+        return await api.request({
+            url: `/delete-by-pk/timetable/${id}`,
+            headers: {
+                "x-access-token": getLocalStorage("auth").token
+            },
+            method: "DELETE",
+            signal: cancel && cancelApiObject.deleteTimeTable ? cancelApiObject.deleteTimeTable.handleRequestCancellation().signal : undefined
         });
     }
 }

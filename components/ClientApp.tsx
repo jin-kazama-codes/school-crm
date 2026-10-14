@@ -60,6 +60,7 @@ const AttendanceComponent = dynamic(() => import("@/components/attendance/Listin
 const GenerateIdCardComponent = dynamic(() => import("@/components/generateIdCard/ListingComponent"), { ssr: false });
 const HomeworkFormComponent = dynamic(() => import("@/components/homework/FormComponent"), { ssr: false });
 const HomeworkListingComponent = dynamic(() => import("@/components/homework/ListingComponent"), { ssr: false });
+const AssessmentListingComponent = dynamic(() => import("@/components/assessment/ListingComponent"), { ssr: false });
 
 // Import idle timer dynamically (browser only)
 const IdleTimerWrapper = dynamic(
@@ -94,8 +95,9 @@ const getInitialUserRole = (): { name: string; priority: number | null } => {
       }
       if (parsedAuth?.role) {
         const numRole = Number(parsedAuth.role);
-        if (!isNaN(numRole) && numRole >= 1 && numRole <= 5) {
-          return { name: parsedAuth.designation || parsedAuth.role, priority: numRole };
+        if (!isNaN(numRole) && numRole >= 1 && numRole <= 6) {
+          const roleName = numRole === 6 ? "student" : (parsedAuth.designation || parsedAuth.role);
+          return { name: roleName, priority: numRole };
         }
       }
     }
@@ -126,6 +128,9 @@ function renderRouteContent(pathname: string, userRole: { name: string; priority
   if (cleanPath === "/" || cleanPath === "" || base === "dashboard") {
     if (priority <= 3) {
       return <Dashboard rolePriority={priority} />;
+    }
+    if (priority === 6) {
+      return <AssessmentListingComponent rolePriority={priority} />;
     }
   }
 
@@ -185,15 +190,42 @@ function renderRouteContent(pathname: string, userRole: { name: string; priority
     if (base === "time-table" && sub === "create") return <TimeTableFormComponent />;
     if (base === "time-table" && sub === "update") return <TimeTableFormComponent />;
     if (base === "time-table" && (sub === "listing" || sub === "")) return <TimeTableListingComponent rolePriority={priority} />;
+    if ((base === "assessment" || base === "question-bank" || base === "exam-paper") && (sub === "listing" || sub === "")) return <AssessmentListingComponent rolePriority={priority} />;
   }
 
-  // Priority <= 5 routes (Students, Parents)
+  // Priority <= 5 routes (Parents / Guardians)
   if (priority <= 5) {
+    if ((base === "assessment" || base === "question-bank" || base === "exam-paper") && (sub === "listing" || sub === "")) return <AssessmentListingComponent rolePriority={priority} />;
     if (base === "homework" && (sub === "listing" || sub === "")) return <HomeworkListingComponent rolePriority={priority} />;
     if (base === "student" && (sub === "listing" || sub === "")) return <StudentListingComponent rolePriority={priority} schoolInfo={schoolInfo} />;
     if (base === "holiday" && sub === "create") return <HolidayFormComponent />;
     if (base === "holiday" && sub === "update") return <HolidayFormComponent />;
     if (base === "holiday" && (sub === "listing" || sub === "")) return <HolidayListingComponent rolePriority={priority} />;
+  }
+
+  // Priority 6 routes (Students — Isolated Student Portal)
+  if (priority === 6) {
+    if ((base === "assessment" || base === "question-bank" || base === "exam-paper") && (sub === "listing" || sub === "")) {
+      return <AssessmentListingComponent rolePriority={priority} />;
+    }
+    if (base === "homework" && (sub === "listing" || sub === "")) {
+      return <HomeworkListingComponent rolePriority={priority} />;
+    }
+    if (base === "time-table" && (sub === "listing" || sub === "")) {
+      return <TimeTableListingComponent rolePriority={priority} />;
+    }
+    if (base === "attendance" && (sub === "listing" || sub === "")) {
+      return <AttendanceComponent rolePriority={priority} />;
+    }
+    if (base === "marksheet" && (sub === "listing" || sub === "")) {
+      return <MarksheetListingComponent rolePriority={priority} />;
+    }
+    if (base === "noticeboard" && (sub === "listing" || sub === "")) {
+      return <NoticeBoardListing rolePriority={priority} />;
+    }
+    if (base === "holiday" && (sub === "listing" || sub === "")) {
+      return <HolidayListingComponent rolePriority={priority} />;
+    }
   }
 
   return <NotFound />;

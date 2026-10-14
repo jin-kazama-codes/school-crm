@@ -61,7 +61,7 @@ const ProfileModal = ({ openDialog, setOpenDialog, onOpenChangePassword }) => {
   const schoolName = authUser?.school || "The Skolar";
   const designation = profileData?.designation || authUser?.designation || "Administrator";
   const roleVal = profileData?.role ?? authUser?.role;
-  const roleMap = { 1: "Superadmin", 2: "Sub-admin", 3: "Manager", 4: "Teacher", 5: "Student" };
+  const roleMap = { 1: "Superadmin", 2: "Principal", 3: "Clerk", 4: "Teacher", 5: "Guardian", 6: "Student" };
   const roleName = authUser?.roleName || authUser?.role_name || profileData?.role_name || (typeof roleVal === 'number' ? (roleMap[roleVal] || `Role ${roleVal}`) : (roleVal ? capitalizeEveryWord(String(roleVal)) : "User"));
   const priority = authUser?.rolePriority ?? authUser?.priority ?? (typeof roleVal === 'number' ? roleVal : 1);
   const gender = (profileData?.gender || authUser?.gender) ? capitalizeEveryWord(profileData?.gender || authUser?.gender) : "Not Specified";
@@ -69,10 +69,10 @@ const ProfileModal = ({ openDialog, setOpenDialog, onOpenChangePassword }) => {
   const rawCreatedAt = profileData?.created_at || authUser?.created_at;
   const createdAt = rawCreatedAt
     ? new Date(rawCreatedAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-      })
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    })
     : "—";
 
   return createPortal(

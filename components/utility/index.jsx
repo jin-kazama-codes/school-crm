@@ -461,7 +461,7 @@ export const Utility = () => {
             roleStr = String(authInfo.designation);
         } else if (roleName !== undefined && roleName !== null && roleName !== '') {
             const roleNum = Number(roleName);
-            const roleMap = { 1: "Superadmin", 2: "Admin", 3: "Manager", 4: "Teacher", 5: "Student" };
+            const roleMap = { 1: "Superadmin", 2: "Principal", 3: "Clerk", 4: "Teacher", 5: "Guardian", 6: "Student" };
             roleStr = roleMap[roleNum] || String(roleName);
         }
 

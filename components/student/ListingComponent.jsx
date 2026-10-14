@@ -20,6 +20,7 @@ import Search from "../common/Search";
 import ServerPaginationGrid from "../common/Datagrid";
 import ViewDetailModal from "../common/ViewDetailModal";
 import StudentDossierModal from "./StudentDossierModal";
+import StudentCredentialModal from "../models/StudentCredentialModal";
 
 import { datagridColumns } from "./StudentConfig";
 import { setAllSubjects } from "../../redux/actions/SubjectAction";
@@ -42,6 +43,16 @@ const ListingComponent = ({ rolePriority = null }) => {
   const [stateData, setStateData] = useState([]);
   const [cityData, setCityData] = useState([]);
   const [classData, setClassData] = useState([]);
+
+  const [credentialModal, setCredentialModal] = useState({
+    open: false,
+    credentials: null,
+    studentName: "",
+    className: "",
+    title: "Student Portal Account Credentials",
+    subtitle: "Student portal account credentials for online quizzes, attendance & exams."
+  });
+  const [loadingLoginId, setLoadingLoginId] = useState(null);
 
   const selected = useSelector((state) => state.menuItems.selected);
   const subjectsInRedux = useSelector(state => state.allSubjects);
@@ -246,6 +257,58 @@ const ListingComponent = ({ rolePriority = null }) => {
     selectedClass ? setLocalStorage("class", selectedClass) : null;
   }, [selectedClass]);
 
+  const handleGenerateLogin = async (row) => {
+    try {
+      setLoadingLoginId(row.id);
+      const res = await API.StudentAPI.generateStudentLogin(row.id, true);
+      if (res && (res.status === "Success" || res.statusCode === 200) && res.data) {
+        const creds = res.data;
+        const studentFullName = `${capitalizeEveryWord(row.firstname) || ''} ${capitalizeEveryWord(row.lastname) || ''}`.trim() || creds.student_name;
+        
+        let cName = "";
+        if (row.class) {
+          const found = findById(row.class, (schoolClasses?.listData?.length ? schoolClasses.listData : allClasses?.listData) || []);
+          cName = found?.class_name ? `Class ${appendSuffix(found.class_name)}` : `Class ${row.class}`;
+        }
+
+        const isExistingUser = Boolean(row.user_id);
+        setCredentialModal({
+          open: true,
+          credentials: {
+            username: creds.username,
+            password: creds.password
+          },
+          studentName: studentFullName,
+          className: cName,
+          title: isExistingUser ? "Student Portal Credentials" : "Student Login Provisioned!",
+          subtitle: isExistingUser
+            ? "Active credentials synced for student portal access."
+            : "Student account successfully created for online exams & portal access."
+        });
+
+        if (listData?.rows) {
+          const updatedRows = listData.rows.map(item =>
+            item.id === row.id ? { ...item, user_id: creds.user_id } : item
+          );
+          dispatch(setStudents({
+            listData: {
+              ...listData,
+              rows: updatedRows
+            },
+            loading: false
+          }));
+        }
+      } else {
+        toastAndNavigate(dispatch, true, "error", res?.message || "Failed to generate student login credentials");
+      }
+    } catch (err) {
+      console.error("Error generating student login:", err);
+      toastAndNavigate(dispatch, true, "error", err?.response?.data?.message || err?.message || "Failed to generate student login");
+    } finally {
+      setLoadingLoginId(null);
+    }
+  };
+
   const horizontalData = {
     Session: studentDetail?.studentData?.session,
     Name: studentDetail?.studentData?.firstname
@@ -415,7 +478,7 @@ const ListingComponent = ({ rolePriority = null }) => {
         action={setStudents}
         api={API.StudentAPI}
         getQuery={getPaginatedData}
-        columns={datagridColumns(rolePriority, setOpenModal, setSelectedStudentId)}
+        columns={datagridColumns(rolePriority, setOpenModal, setSelectedStudentId, handleGenerateLogin, loadingLoginId)}
         rolePriority={rolePriority}
         condition={classConditionObj}
         importBtn={importBtn}
@@ -443,6 +506,17 @@ const ListingComponent = ({ rolePriority = null }) => {
         allHouses={listingSchoolHouses?.listData?.rows || []}
         classData={classData || []}
         rolePriority={rolePriority}
+      />
+
+      <StudentCredentialModal
+        open={credentialModal.open}
+        onClose={() => setCredentialModal({ open: false, credentials: null, studentName: "", className: "" })}
+        credentials={credentialModal.credentials}
+        studentName={credentialModal.studentName}
+        className={credentialModal.className}
+        title={credentialModal.title}
+        subtitle={credentialModal.subtitle}
+        doneButtonText="Close"
       />
     </div>
   );

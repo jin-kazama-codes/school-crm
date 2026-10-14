@@ -62,21 +62,47 @@ const MarksheetReportCardModal = ({
   }, [open, setOpen]);
 
   useEffect(() => {
-    if (open && detail?.id) {
+    let isMounted = true;
+    const fetchMarksheetData = async () => {
+      if (!open || !detail) {
+        if (isMounted) setMappingData([]);
+        return;
+      }
       setLoading(true);
-      API.MarksheetAPI.getMarksheetData(detail.id)
-        .then((res) => {
-          setMappingData(res?.data || res || []);
-          setLoading(false);
-        })
-        .catch(() => {
+      try {
+        let targetMarksheetId = detail.marksheet_id || null;
+
+        // If detail is a marksheet row (has student_id and an id that isn't student_id, or is row from marksheets table)
+        if (detail.student_id && detail.id) {
+          targetMarksheetId = detail.id;
+        } else if (!targetMarksheetId) {
+          // If detail was passed as a student object, lookup student's marksheet record
+          const studentId = detail.student_id || detail.id;
+          const res = await API.MarksheetAPI.getAll({ student: studentId }, 0, 5).catch(() => null);
+          const found = res?.data?.rows?.[0] || res?.rows?.[0];
+          if (found?.id) {
+            targetMarksheetId = found.id;
+          }
+        }
+
+        if (targetMarksheetId && isMounted) {
+          const res = await API.MarksheetAPI.getMarksheetData(targetMarksheetId);
+          if (isMounted) setMappingData(res?.data || res || []);
+        } else if (isMounted) {
           setMappingData([]);
-          setLoading(false);
-        });
-    } else {
-      setMappingData([]);
-    }
-  }, [open, detail?.id]);
+        }
+      } catch (err) {
+        if (isMounted) setMappingData([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchMarksheetData();
+    return () => {
+      isMounted = false;
+    };
+  }, [open, detail]);
 
   const stats = useMemo(() => {
     let totalObtained = 0;
@@ -299,7 +325,7 @@ const MarksheetReportCardModal = ({
                   <div className="space-y-0.5">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Candidate Name</span>
                     <p className="font-extrabold text-slate-900 text-sm capitalize">
-                      {detail?.student_name || detail?.studentName || `Student #${detail?.student_id}`}
+                      {detail?.student_name || detail?.studentName || detail?.name || (detail?.student_id ? `Student #${detail?.student_id}` : 'Student')}
                     </p>
                   </div>
 
@@ -588,7 +614,7 @@ const MarksheetReportCardModal = ({
             <div>
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Candidate Name</span>
               <p className="font-extrabold text-slate-950 text-sm capitalize">
-                {detail?.student_name || detail?.studentName || `Student #${detail?.student_id}`}
+                {detail?.student_name || detail?.studentName || detail?.name || (detail?.student_id ? `Student #${detail?.student_id}` : 'Student')}
               </p>
             </div>
 

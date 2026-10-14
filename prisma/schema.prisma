@@ -72,6 +72,7 @@ enum AttendanceParent {
 enum AttendanceStatus {
   present
   absent
+  half_day @map("half-day")
 }
 
 enum BloodGroup {
@@ -210,6 +211,7 @@ model school {
   type              SchoolType?
   sub_type          SchoolSubType?
   status            Status?
+  student_login_min_class Int?
   created_at        DateTime?    @db.Timestamp(6)
   updated_at        DateTime?    @db.Timestamp(6)
   created_by        Int?
@@ -241,6 +243,7 @@ model student {
   id                   Int             @id @default(autoincrement())
   school_id            Int?
   parent_id            Int?
+  user_id              Int?
   roll_no              Int?
   enrollment_no        Int?
   session              String?
@@ -373,15 +376,16 @@ model image {
 }
 
 model attendance {
-  id         Int              @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   school_id  Int?
   parent     AttendanceParent?
   parent_id  Int?
   class_id   Int?
   section_id Int?
-  date       DateTime?        @db.Timestamp(6)
+  date       DateTime?         @db.Timestamp(6)
   status     AttendanceStatus?
-  created_at DateTime?        @db.Timestamp(6)
+  remark     String?
+  created_at DateTime?         @db.Timestamp(6)
 
   @@map("attendance")
 }
@@ -692,3 +696,58 @@ model email {
 
   @@map("email")
 }
+
+// Question Bank Model
+model question_bank {
+  id               Int       @id @default(autoincrement())
+  school_id        Int?
+  class_id         Int?
+  section_id       Int?
+  subject_id       Int?
+  chapter          String?
+  mode             String?   // 'MCQ' | 'DESC'
+  question_text    String?
+  option_a         String?
+  option_b         String?
+  option_c         String?
+  option_d         String?
+  correct_option   String?   // 'option_a' | 'option_b' | 'option_c' | 'option_d'
+  difficulty_level String?   // 'Easy' | 'Medium' | 'Hard'
+  max_marks        Float?
+  status           Status?   @default(active)
+  created_at       DateTime? @db.Timestamp(6)
+  updated_at       DateTime? @db.Timestamp(6)
+  created_by       Int?
+  updated_by       Int?
+
+  @@map("question_bank")
+}
+
+// Exam Paper Model (Design & Publish)
+model exam_paper {
+  id               Int       @id @default(autoincrement())
+  school_id        Int?
+  class_id         Int?
+  section_id       Int?
+  subject_id       Int?
+  title            String?
+  paper_code       String?
+  duration_minutes Int?
+  max_marks        Float?
+  passing_marks    Float?
+  instructions     String?
+  sections_json    String?   // JSON string of sections and question IDs
+  status           String?   @default("draft") // 'draft' | 'published'
+  exam_date        DateTime? @db.Timestamp(6)
+  start_time       String?
+  end_time         String?
+  academic_year    String?
+  created_at       DateTime? @db.Timestamp(6)
+  updated_at       DateTime? @db.Timestamp(6)
+  created_by       Int?
+  updated_by       Int?
+
+  @@map("exam_paper")
+}
+
+

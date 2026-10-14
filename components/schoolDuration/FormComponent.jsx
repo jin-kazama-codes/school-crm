@@ -60,24 +60,16 @@ const FormComponent = () => {
         if (!values.id && id) {
             values.id = id;
         }
-        const dataFields = [values];
-        const paths = ["/update-school-duration"];
         setLoading(true);
 
-        API.CommonAPI.multipleAPICall("PATCH", paths, dataFields)
-            .then(responses => {
-                let status = true;
-                responses.forEach(response => {
-                    if (response.data.status !== "Success") {
-                        status = false;
-                    }
-                });
-                if (status) {
+        API.SchoolDurationAPI.updateSchoolDuration(values)
+            .then(response => {
+                if (response?.data?.status === "Success" || response?.status === 200 || response?.data?.status === 200) {
                     setLoading(false);
                     toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, `/school-duration/listing`);
                 } else {
                     setLoading(false);
-                    toastAndNavigate(dispatch, true, "error", "An Error Occurred, Please Try Again");
+                    toastAndNavigate(dispatch, true, "error", response?.data?.msg || "An Error Occurred, Please Try Again");
                 }
             })
             .catch(err => {

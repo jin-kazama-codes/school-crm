@@ -19,7 +19,9 @@ const MODELS_WITH_SCHOOL_ID = new Set([
   "school_class_data", "marksheet", "attendance", "timetable", "image",
   "school_duration",
   "user",
-  "address"
+  "address",
+  "question_bank",
+  "exam_paper"
 ]);
 
 function getSchoolFilter(request: NextRequest, modelName?: string): Record<string, unknown> {
@@ -35,25 +37,28 @@ const MODELS_WITH_UPDATED_AT = new Set([
   "user_role", "school", "user", "student", "teacher", "employee",
   "address", "image", "marksheet", "payment", "payment_method",
   "amenity", "bus", "school_class", "section", "subject",
-  "holiday", "homework", "noticeboard"
+  "holiday", "homework", "noticeboard",
+  "question_bank", "exam_paper"
 ]);
 
 const MODELS_WITH_CREATED_AT = new Set([
-  "attendance", "school_house"
+  "attendance", "school_house", "question_bank", "exam_paper"
 ]);
 
 const MODELS_WITH_UPDATED_BY = new Set([
   "user_role", "school", "user", "student", "teacher", "employee",
   "address", "image", "marksheet", "payment", "payment_method",
   "amenity", "bus", "school_class", "section", "subject",
-  "holiday", "homework", "noticeboard"
+  "holiday", "homework", "noticeboard",
+  "question_bank", "exam_paper"
 ]);
 
 const MODELS_WITH_CREATED_BY = new Set([
   "user_role", "school", "user", "student", "teacher", "employee",
   "address", "image", "marksheet", "payment", "payment_method",
   "amenity", "bus", "school_class", "section", "subject",
-  "holiday", "homework", "noticeboard", "school_house"
+  "holiday", "homework", "noticeboard", "school_house",
+  "question_bank", "exam_paper"
 ]);
 
 function getDefaultOrderBy(modelName: string): Record<string, string> {
@@ -64,73 +69,6 @@ function getDefaultOrderBy(modelName: string): Record<string, string> {
     return { created_at: "desc" };
   }
   return { id: "desc" };
-}
-
-export async function genericList(
-  request: NextRequest,
-  modelName: string,
-  searchFields: string[] = [],
-  orderBy?: Record<string, string>
-) {
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") || "0");
-  const size = parseInt(searchParams.get("size") || "5");
-  const search = searchParams.get("search") || "";
-  const { limit, offset } = Utility.getPagination(page, size);
-
-  const schoolFilter = getSchoolFilter(request, modelName);
-  const whereCondition: Record<string, unknown> = { ...schoolFilter };
-
-  // Parse extra filter parameters from query string
-  searchParams.forEach((value, key) => {
-    if (["page", "size", "search"].includes(key)) return;
-    if (value === undefined || value === null || value === "") return;
-
-    let field = key;
-    if (key === "classId" || key === "class_id") field = "class";
-    if (key === "sectionId" || key === "section_id") field = "section";
-    if (key === "parentId") field = "parent_id";
-    if (key === "studentId" || key === "student_id") field = "student_id";
-    if (key === "teacherId" || key === "teacher_id") field = "teacher_id";
-    if (key === "employeeId" || key === "employee_id") field = "employee_id";
-    if (key === "schoolId" || key === "school_id") field = "school_id";
-
-    if (/^\d+$/.test(value)) {
-      whereCondition[field] = parseInt(value, 10);
-    } else if (value === "true" || value === "false") {
-      whereCondition[field] = value === "true";
-    } else {
-      whereCondition[field] = value;
-    }
-  });
-
-  if (search && searchFields.length > 0) {
-    whereCondition.OR = searchFields.map((f) => ({
-      [f]: { contains: search, mode: "insensitive" },
-    }));
-  }
-
-  const finalOrderBy = orderBy || getDefaultOrderBy(modelName);
-
-  try {
-    const model = getModel(modelName);
-    const [rows, count] = await Promise.all([
-      model.findMany({
-        where: whereCondition,
-        orderBy: finalOrderBy,
-        take: limit,
-        skip: offset,
-      }),
-      model.count({ where: whereCondition }),
-    ]);
-
-    if (count > 0) {
-      return NextResponse.json(Utility.formatResponse(200, { count, rows }), { status: 200 });
-    }
-    return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
-  } catch (err) {
-    return NextResponse.json(Utility.formatResponse(500, err), { status: 500 });
-  }
 }
 
 const MODEL_ALLOWED_FIELDS: Record<string, Set<string>> = {
@@ -144,7 +82,7 @@ const MODEL_ALLOWED_FIELDS: Record<string, Set<string>> = {
 
 const STATIC_MODEL_FIELDS: Record<string, Record<string, string>> = {
   student: {
-    id: "Int", school_id: "Int", parent_id: "Int", roll_no: "Int", enrollment_no: "Int",
+    id: "Int", school_id: "Int", parent_id: "Int", user_id: "Int", roll_no: "Int", enrollment_no: "Int",
     session: "String", firstname: "String", lastname: "String", mother_name: "String",
     mother_contact_no: "Decimal", mother_aadhar: "Decimal", father_name: "String",
     father_contact_no: "Decimal", father_aadhar: "Decimal", guardian_name: "String",
@@ -214,6 +152,39 @@ const STATIC_MODEL_FIELDS: Record<string, Record<string, string>> = {
     session: "String", term: "String", result: "String", co_scholastic_data: "Json", discipline_data: "Json",
     overall_remark: "String",
     created_at: "DateTime", updated_at: "DateTime", created_by: "Int", updated_by: "Int"
+  },
+  attendance: {
+    id: "Int", school_id: "Int", parent: "String", parent_id: "Int", class_id: "Int",
+    section_id: "Int", date: "DateTime", status: "String", remark: "String",
+    created_at: "DateTime"
+  },
+  school_duration: {
+    id: "Int", school_id: "Int", batch: "String", period: "Int", halves: "Int",
+    recess_time: "Int", first_half_period_duration: "Int", second_half_period_duration: "Int",
+    cutoff_time: "Int", opening_time: "DateTime", closing_time: "DateTime",
+    shifts: "String", eve_opening_time: "DateTime", eve_closing_time: "DateTime",
+    employee_entry_time: "DateTime", employee_exit_time: "DateTime"
+  },
+  timetable: {
+    id: "Int", school_id: "Int", class_id: "Int", section_id: "Int", subject_id: "Int",
+    period: "Int", duration: "String", day: "String", batch: "String"
+  },
+  question_bank: {
+    id: "Int", school_id: "Int", class_id: "Int", section_id: "Int", subject_id: "Int",
+    chapter: "String", mode: "String", question_text: "String",
+    option_a: "String", option_b: "String", option_c: "String", option_d: "String",
+    correct_option: "String", difficulty_level: "String", max_marks: "Float",
+    status: "String", created_at: "DateTime", updated_at: "DateTime",
+    created_by: "Int", updated_by: "Int"
+  },
+  exam_paper: {
+    id: "Int", school_id: "Int", class_id: "Int", section_id: "Int", subject_id: "Int",
+    title: "String", paper_code: "String", duration_minutes: "Int",
+    max_marks: "Float", passing_marks: "Float", instructions: "String",
+    sections_json: "String", status: "String", exam_date: "DateTime",
+    start_time: "String", end_time: "String", academic_year: "String",
+    created_at: "DateTime", updated_at: "DateTime",
+    created_by: "Int", updated_by: "Int"
   }
 };
 
@@ -229,6 +200,131 @@ if ((Prisma as any)?.dmmf?.datamodel?.models) {
       }
     }
     MODEL_FIELDS_MAP[m.name] = { ...MODEL_FIELDS_MAP[m.name], ...fieldMap };
+  }
+}
+
+export async function genericList(
+  request: NextRequest,
+  modelName: string,
+  searchFields: string[] = [],
+  orderBy?: Record<string, string>
+) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get("page") || "0");
+  const size = parseInt(searchParams.get("size") || "5");
+  const search = searchParams.get("search") || "";
+  const { limit, offset } = Utility.getPagination(page, size);
+
+  const schoolFilter = getSchoolFilter(request, modelName);
+  const whereCondition: Record<string, unknown> = { ...schoolFilter };
+  const modelFields = MODEL_FIELDS_MAP[modelName];
+
+  // Parse extra filter parameters from query string
+  searchParams.forEach((value, key) => {
+    if (["page", "size", "search"].includes(key)) return;
+    if (value === undefined || value === null || value === "") return;
+
+    let field = key;
+    if (key === "classId" || key === "class_id") {
+      field = modelFields && "class" in modelFields ? "class" : "class_id";
+    } else if (key === "sectionId" || key === "section_id") {
+      field = modelFields && "section" in modelFields ? "section" : "section_id";
+    } else if (key === "subjectId" || key === "subject_id") {
+      field = modelFields && "subject" in modelFields ? "subject" : "subject_id";
+    } else if (key === "parentId") {
+      field = "parent_id";
+    } else if (key === "studentId" || key === "student_id") {
+      field = "student_id";
+    } else if (key === "teacherId" || key === "teacher_id") {
+      field = "teacher_id";
+    } else if (key === "employeeId" || key === "employee_id") {
+      field = "employee_id";
+    } else if (key === "schoolId" || key === "school_id") {
+      field = "school_id";
+    }
+
+    if (modelFields && !(field in modelFields)) {
+      return; // Skip parameters that do not exist on the target model
+    }
+
+    const fieldType = modelFields?.[field];
+
+    if (fieldType === "Int" || /^\d+$/.test(value)) {
+      whereCondition[field] = parseInt(value, 10);
+    } else if (fieldType === "Float" || fieldType === "Decimal") {
+      whereCondition[field] = parseFloat(value);
+    } else if (value === "true" || value === "false") {
+      whereCondition[field] = value === "true";
+    } else {
+      whereCondition[field] = value;
+    }
+  });
+
+  if (search && searchFields.length > 0) {
+    whereCondition.OR = searchFields.map((f) => ({
+      [f]: { contains: search, mode: "insensitive" },
+    }));
+  }
+
+  const finalOrderBy = orderBy || getDefaultOrderBy(modelName);
+
+  try {
+    const model = getModel(modelName);
+    if (!model) {
+      // Dynamic raw SQL fallback when model is not yet compiled into Prisma Client
+      const conditions: string[] = [];
+      const values: any[] = [];
+
+      Object.entries(whereCondition).forEach(([col, val]) => {
+        if (col === "OR") return;
+        if (val !== undefined && val !== null) {
+          values.push(val);
+          conditions.push(`"${col}" = $${values.length}`);
+        }
+      });
+
+      if (search && searchFields.length > 0) {
+        values.push(`%${search}%`);
+        const searchIdx = values.length;
+        const orSql = searchFields.map((f) => `"${f}"::text ILIKE $${searchIdx}`).join(" OR ");
+        conditions.push(`(${orSql})`);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+      const query = `
+        SELECT *, COUNT(*) OVER() AS count
+        FROM "public"."${modelName}"
+        ${whereClause}
+        ORDER BY id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+
+      const rows = await prisma.$queryRawUnsafe<any[]>(query, ...values);
+      if (rows && rows.length > 0) {
+        const count = Number(rows[0]?.count || 0);
+        const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    }
+
+    const [rows, count] = await Promise.all([
+      model.findMany({
+        where: whereCondition,
+        orderBy: finalOrderBy,
+        take: limit,
+        skip: offset,
+      }),
+      model.count({ where: whereCondition }),
+    ]);
+
+    if (count > 0) {
+      return NextResponse.json(Utility.formatResponse(200, { count, rows }), { status: 200 });
+    }
+    return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+  } catch (err: any) {
+    console.error(`[genericList Error for ${modelName}]:`, err);
+    return NextResponse.json(Utility.formatResponse(500, err?.message || String(err)), { status: 500 });
   }
 }
 
@@ -353,6 +449,198 @@ function sanitizePayload(modelName: string, payload: Record<string, unknown>): R
   return sanitized;
 }
 
+export async function provisionStudentUser(
+  studentId: number,
+  userId?: number,
+  force = false,
+  now: Date = new Date()
+): Promise<{
+  success: boolean;
+  message?: string;
+  data?: {
+    student_id: number;
+    user_id: number;
+    username: string;
+    password: string;
+    role: string;
+    student_name: string;
+    classGrade: number;
+    minThreshold: number | null;
+  };
+}> {
+  try {
+    let student: any = null;
+    try {
+      student = await prisma.student.findUnique({
+        where: { id: studentId }
+      });
+    } catch {
+      const rows = await prisma.$queryRaw<any[]>(
+        Prisma.sql`SELECT * FROM "student" WHERE id = ${studentId} LIMIT 1`
+      );
+      student = rows?.[0] || null;
+    }
+
+    if (!student) {
+      return { success: false, message: "Student record not found" };
+    }
+
+    // Ensure student.user_id is read directly from database if client DMMF is stale
+    if (student.user_id === undefined) {
+      const uRows = await prisma.$queryRaw<any[]>(
+        Prisma.sql`SELECT user_id FROM "student" WHERE id = ${studentId} LIMIT 1`
+      );
+      student.user_id = uRows?.[0]?.user_id ?? null;
+    }
+
+    let school: any = null;
+    if (student.school_id) {
+      try {
+        const sRows = await prisma.$queryRaw<any[]>(
+          Prisma.sql`SELECT id, school_code, student_login_min_class FROM "school" WHERE id = ${student.school_id} LIMIT 1`
+        );
+        school = sRows?.[0] || null;
+      } catch {
+        const sRows = await prisma.$queryRaw<any[]>(
+          Prisma.sql`SELECT id, school_code FROM "school" WHERE id = ${student.school_id} LIMIT 1`
+        );
+        school = sRows?.[0] || null;
+      }
+    }
+
+    let classGrade = 0;
+    if (student.class) {
+      const classRec = await prisma.school_class.findUnique({
+        where: { id: student.class },
+        select: { id: true, name: true }
+      });
+
+      if (classRec) {
+        const romanMap: Record<string, number> = {
+          'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6,
+          'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10, 'XI': 11, 'XII': 12, 'XIII': 13
+        };
+        const nameTrim = (classRec.name || '').trim().toUpperCase();
+        if (romanMap[nameTrim]) {
+          classGrade = romanMap[nameTrim];
+        } else {
+          const digits = parseInt(nameTrim.replace(/\D/g, ''), 10);
+          classGrade = !isNaN(digits) ? digits : classRec.id;
+        }
+      } else {
+        classGrade = Number(student.class) || 0;
+      }
+    }
+
+    const minThreshold = school?.student_login_min_class ?? null;
+
+    // If threshold configured and not forced, ensure student meets class threshold
+    if (!force && minThreshold !== null && minThreshold !== undefined) {
+      if (classGrade < minThreshold) {
+        return {
+          success: false,
+          message: `Student class (Grade ${classGrade || 'N/A'}) does not meet school threshold (Class ${minThreshold} & above).`
+        };
+      }
+    }
+
+    const username = String(student.enrollment_no || student.id);
+    const rawPassword = `${(student.firstname || "Student").trim().replace(/\s+/g, "")}@${school?.school_code || "DEMO"}`;
+    const hashedPassword = await Utility.createHash(rawPassword);
+
+    let studentUser = null;
+    if (student.user_id) {
+      studentUser = await prisma.user.findUnique({ where: { id: student.user_id } });
+    }
+
+    if (!studentUser && student.school_id) {
+      studentUser = await prisma.user.findFirst({
+        where: {
+          school_id: student.school_id,
+          username: username
+        }
+      });
+    }
+
+    if (!studentUser) {
+      studentUser = await prisma.user.create({
+        data: {
+          school_id: student.school_id,
+          username: username,
+          password: hashedPassword,
+          email: student.email || null,
+          contact_no: student.contact_no ? String(student.contact_no) : null,
+          role: 6,
+          designation: "student",
+          status: "active",
+          created_at: now,
+          updated_at: now,
+          created_by: userId ?? null
+        }
+      });
+    } else {
+      studentUser = await prisma.user.update({
+        where: { id: studentUser.id },
+        data: {
+          password: hashedPassword,
+          role: 6,
+          designation: "student",
+          status: "active",
+          updated_at: now,
+          updated_by: userId ?? null
+        }
+      });
+    }
+
+    if (student.user_id !== studentUser.id) {
+      await prisma.$executeRaw(
+        Prisma.sql`UPDATE "student" SET "user_id" = ${studentUser.id} WHERE "id" = ${student.id}`
+      );
+    }
+
+    const studentFullName = `${student.firstname || ''} ${student.lastname || ''}`.trim() || username;
+
+    return {
+      success: true,
+      data: {
+        student_id: student.id,
+        user_id: studentUser.id,
+        username: studentUser.username || username,
+        password: rawPassword,
+        role: "student",
+        student_name: studentFullName,
+        classGrade,
+        minThreshold
+      }
+    };
+  } catch (err) {
+    console.error("Error in provisionStudentUser:", err);
+    return { success: false, message: String(err) };
+  }
+}
+
+async function autoGenerateStudentUserIfEligible(
+  record: any,
+  userId?: number,
+  now: Date = new Date()
+): Promise<{ user_id: number; username: string; password: string; role: string; classGrade: number; minThreshold: number } | null> {
+  if (!record || !record.id || !record.school_id || !record.class || record.user_id) {
+    return null;
+  }
+  const result = await provisionStudentUser(record.id, userId, false, now);
+  if (result.success && result.data) {
+    return {
+      user_id: result.data.user_id,
+      username: result.data.username,
+      password: result.data.password,
+      role: result.data.role,
+      classGrade: result.data.classGrade,
+      minThreshold: result.data.minThreshold ?? 0
+    };
+  }
+  return null;
+}
+
 export async function genericCreate(
   request: NextRequest,
   modelName: string,
@@ -451,11 +739,86 @@ export async function genericCreate(
       return NextResponse.json(Utility.formatResponse(200, "Created Successfully"), { status: 200 });
     }
 
+    if (modelName === "attendance") {
+      const inserted = await prisma.$queryRawUnsafe<any[]>(
+        `INSERT INTO "public"."attendance" ("school_id", "parent", "parent_id", "class_id", "section_id", "date", "status", "remark", "created_at")
+         VALUES ($1, CAST($2::text AS "public"."AttendanceParent"), $3, $4, $5, $6, CAST($7::text AS "public"."AttendanceStatus"), $8, $9)
+         RETURNING id, school_id, parent, parent_id, class_id, section_id, date, status, remark, created_at`,
+        dataToCreate.school_id ? parseInt(String(dataToCreate.school_id)) : null,
+        dataToCreate.parent ? String(dataToCreate.parent).toLowerCase() : null,
+        dataToCreate.parent_id ? parseInt(String(dataToCreate.parent_id)) : null,
+        dataToCreate.class_id ? parseInt(String(dataToCreate.class_id)) : null,
+        dataToCreate.section_id ? parseInt(String(dataToCreate.section_id)) : null,
+        dataToCreate.date ? new Date(String(dataToCreate.date)) : now,
+        dataToCreate.status ? String(dataToCreate.status).toLowerCase() : "present",
+        dataToCreate.remark ? String(dataToCreate.remark) : null,
+        now
+      );
+      const record = inserted[0] || {};
+      if (returnId) {
+        return NextResponse.json(Utility.formatResponse(200, { id: record.id, school_id: record.school_id }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(200, "Created Successfully"), { status: 200 });
+    }
+
+    if (!model) {
+      const cols: string[] = [];
+      const placeholders: string[] = [];
+      const values: any[] = [];
+
+      Object.entries(dataToCreate).forEach(([col, val]) => {
+        if (val !== undefined) {
+          cols.push(`"${col}"`);
+          values.push(val);
+          placeholders.push(`$${values.length}`);
+        }
+      });
+
+      if (cols.length === 0) {
+        return NextResponse.json(Utility.formatResponse(400, "No valid data provided"), { status: 400 });
+      }
+
+      const query = `
+        INSERT INTO "public"."${modelName}" (${cols.join(", ")})
+        VALUES (${placeholders.join(", ")})
+        RETURNING *
+      `;
+
+      const inserted = await prisma.$queryRawUnsafe<any[]>(query, ...values);
+      const record = inserted[0] || {};
+      let studentCredentials: any = null;
+      if (modelName === "student") {
+        studentCredentials = await autoGenerateStudentUserIfEligible(record, userId, now);
+      }
+      if (returnId) {
+        return NextResponse.json(Utility.formatResponse(200, {
+          id: record.id,
+          school_id: record.school_id,
+          enrollment_no: record.enrollment_no,
+          roll_no: record.roll_no,
+          user_id: studentCredentials?.user_id || record.user_id || null,
+          ...(studentCredentials ? { student_credentials: studentCredentials } : {})
+        }), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(200, "Created Successfully"), { status: 200 });
+    }
+
     const record = await model.create({
       data: dataToCreate,
     });
+    let studentCredentials: any = null;
+    if (modelName === "student") {
+      studentCredentials = await autoGenerateStudentUserIfEligible(record, userId, now);
+    }
     if (returnId) {
-      return NextResponse.json(Utility.formatResponse(200, { id: record.id, school_id: record.school_id }), { status: 200 });
+      return NextResponse.json(Utility.formatResponse(200, {
+        id: record.id,
+        school_id: record.school_id,
+        enrollment_no: record.enrollment_no,
+        roll_no: record.roll_no,
+        user_id: studentCredentials?.user_id || record.user_id || null,
+        ...(studentCredentials ? { student_credentials: studentCredentials } : {})
+      }), { status: 200 });
     }
     return NextResponse.json(Utility.formatResponse(200, "Created Successfully"), { status: 200 });
   } catch (err: any) {
@@ -485,6 +848,31 @@ export async function genericUpdate(
       dataToUpdate.updated_at = new Date();
     }
 
+    if (modelName === "attendance") {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "public"."attendance"
+         SET "status" = CAST(COALESCE($1::text, "status"::text) AS "public"."AttendanceStatus"),
+             "remark" = $2,
+             "date" = COALESCE($3, "date"),
+             "school_id" = COALESCE($4, "school_id"),
+             "parent" = CAST(COALESCE($5::text, "parent"::text) AS "public"."AttendanceParent"),
+             "parent_id" = COALESCE($6, "parent_id"),
+             "class_id" = COALESCE($7, "class_id"),
+             "section_id" = COALESCE($8, "section_id")
+         WHERE id = $9`,
+        dataToUpdate.status ? String(dataToUpdate.status).toLowerCase() : null,
+        dataToUpdate.remark !== undefined ? (dataToUpdate.remark || null) : null,
+        dataToUpdate.date ? new Date(String(dataToUpdate.date)) : null,
+        dataToUpdate.school_id ? parseInt(String(dataToUpdate.school_id)) : null,
+        dataToUpdate.parent ? String(dataToUpdate.parent).toLowerCase() : null,
+        dataToUpdate.parent_id ? parseInt(String(dataToUpdate.parent_id)) : null,
+        dataToUpdate.class_id ? parseInt(String(dataToUpdate.class_id)) : null,
+        dataToUpdate.section_id ? parseInt(String(dataToUpdate.section_id)) : null,
+        parseInt(String(id))
+      );
+      return NextResponse.json(Utility.formatResponse(200, "Updated Successfully"), { status: 200 });
+    }
+
     if (modelName === "image") {
       await prisma.$executeRawUnsafe(
         `UPDATE "public"."image"
@@ -508,6 +896,33 @@ export async function genericUpdate(
       return NextResponse.json(Utility.formatResponse(200, "Updated Successfully"), { status: 200 });
     }
 
+    if (!model) {
+      const setClauses: string[] = [];
+      const values: any[] = [];
+
+      Object.entries(dataToUpdate).forEach(([col, val]) => {
+        if (val !== undefined) {
+          values.push(val);
+          setClauses.push(`"${col}" = $${values.length}`);
+        }
+      });
+
+      if (setClauses.length === 0) {
+        return NextResponse.json(Utility.formatResponse(200, "Nothing to update"), { status: 200 });
+      }
+
+      values.push(parseInt(String(id), 10));
+      const idIdx = values.length;
+      const query = `
+        UPDATE "public"."${modelName}"
+        SET ${setClauses.join(", ")}
+        WHERE id = $${idIdx}
+      `;
+
+      await prisma.$executeRawUnsafe(query, ...values);
+      return NextResponse.json(Utility.formatResponse(200, "Updated Successfully"), { status: 200 });
+    }
+
     await model.update({
       where: { id: parseInt(String(id)) },
       data: dataToUpdate,
@@ -525,6 +940,19 @@ export async function genericDelete(
 ) {
   try {
     const model = getModel(modelName);
+    if (!model) {
+      const conditions: string[] = [];
+      const values: any[] = [];
+      Object.entries(whereClause).forEach(([col, val]) => {
+        if (val !== undefined && val !== null) {
+          values.push(val);
+          conditions.push(`"${col}" = $${values.length}`);
+        }
+      });
+      const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+      await prisma.$executeRawUnsafe(`DELETE FROM "public"."${modelName}" ${whereSql}`, ...values);
+      return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
+    }
     await model.deleteMany({ where: whereClause });
     return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
   } catch (err) {

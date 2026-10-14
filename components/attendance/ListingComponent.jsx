@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import API from "../../apis";
 import Search from "../common/Search";
 import ServerPaginationGrid from '../common/Datagrid';
+import AttendanceEditModal from "./AttendanceEditModal";
 
 import { datagridColumns } from "./AttendanceConfig";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
@@ -31,6 +32,8 @@ const ListingComponent = ({ rolePriority = null }) => {
     const [searchFlag, setSearchFlag] = useState({ search: false, searching: false });
     const [oldPagination, setOldPagination] = useState();
     const [reloadBtn, setReloadBtn] = useState(null);
+    const [selectedRecord, setSelectedRecord] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const { getPaginatedData } = useCommon();
     const { getLocalStorage } = Utility();
@@ -42,6 +45,21 @@ const ListingComponent = ({ rolePriority = null }) => {
     useEffect(() => {
         dispatch(setMenuItem("Attendance"));
     }, [dispatch]);
+
+    const handleEditClick = (row) => {
+        setSelectedRecord(row);
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSuccess = (updatedRow) => {
+        // Trigger table reload button if available to get fresh data from server
+        if (reloadBtn) {
+            reloadBtn.click();
+        } else if (listData?.rows?.length) {
+            const updatedRows = listData.rows.map(r => r.id === updatedRow.id ? { ...r, ...updatedRow } : r);
+            dispatch(attendanceAction({ listData: { count: listData.count, rows: updatedRows }, loading: false }));
+        }
+    };
 
     return (
         <div 
@@ -68,7 +86,7 @@ const ListingComponent = ({ rolePriority = null }) => {
                 action={attendanceAction}
                 api={attendanceApi}
                 getQuery={getPaginatedData}
-                columns={datagridColumns(rolePriority)}
+                columns={datagridColumns(rolePriority, handleEditClick)}
                 rows={listData?.rows || []}
                 count={listData?.count || 0}
                 loading={loading}
@@ -77,6 +95,17 @@ const ListingComponent = ({ rolePriority = null }) => {
                 setOldPagination={setOldPagination}
                 searchFlag={searchFlag}
                 setSearchFlag={setSearchFlag}
+            />
+
+            {/* Quick Edit Attendance Modal */}
+            <AttendanceEditModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedRecord(null);
+                }}
+                record={selectedRecord}
+                onSuccess={handleEditSuccess}
             />
         </div>
     );
@@ -87,4 +116,5 @@ ListingComponent.propTypes = {
 };
 
 export default ListingComponent;
+
 

@@ -21,6 +21,8 @@ export const SidebarItem = ({
     selected,
     rolePriority,
     menuVisibility,
+    excludeRoles = [],
+    allowedRoles = null,
     className,
     handleClassClick = null,
     isSubMenu = false,
@@ -32,11 +34,22 @@ export const SidebarItem = ({
 
     const { setLocalStorage } = Utility();
 
-    if (rolePriority > menuVisibility) {
+    if (excludeRoles && excludeRoles.includes(rolePriority)) {
         return null;
     }
 
-    const isActive = title === selected;
+    if (allowedRoles && !allowedRoles.includes(rolePriority)) {
+        return null;
+    }
+
+    if (menuVisibility !== undefined && menuVisibility !== null && rolePriority > menuVisibility) {
+        return null;
+    }
+
+    const isActive =
+        title === selected ||
+        (title === "Exams & Question Bank" && (selected === "Assessment" || selected === "Exams & Question Bank")) ||
+        (title === "Theory Results & Marksheet" && (selected === "Marksheet" || selected === "Theory Results & Marksheet"));
 
     return (
         <div className="mb-0.5 w-full">
@@ -56,11 +69,10 @@ export const SidebarItem = ({
                         navigate(to);
                     }
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer select-none ${
-                    isActive
-                        ? "bg-emerald-600 text-white font-bold shadow-xs shadow-emerald-600/10 dark:neon-glow dark:bg-emerald-500"
-                        : "text-slate-500 dark:text-gray-400 font-semibold hover:bg-slate-50 dark:hover:bg-[#1a1a1a]/50 hover:text-slate-800 dark:hover:text-white"
-                } ${className || ""}`}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer select-none ${isActive
+                    ? "bg-emerald-600 text-white font-bold shadow-xs shadow-emerald-600/10 dark:neon-glow dark:bg-emerald-500"
+                    : "text-slate-500 dark:text-gray-400 font-semibold hover:bg-slate-50 dark:hover:bg-[#1a1a1a]/50 hover:text-slate-800 dark:hover:text-white"
+                    } ${className || ""}`}
             >
                 <div className="w-4 h-4 min-w-[16px] min-h-[16px] shrink-0 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4 [&>svg]:shrink-0">
                     {icon}

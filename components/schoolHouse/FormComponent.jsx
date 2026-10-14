@@ -52,101 +52,116 @@ const FormComponent = () => {
         }
     }, []);
 
-    const updateSchoolHouse = useCallback(formData => {
+    const updateSchoolHouse = useCallback(async (dataPayload) => {
         setLoading(true);
-        // eslint-disable-next-line no-unused-vars
-        const { captainClassId, captainSectionId, viceCaptainClassId, viceCaptainSectionId, ...modifiedObj } = formData.schoolHouseData.values;
+        try {
+            // eslint-disable-next-line no-unused-vars
+            const { captainClassId, captainSectionId, viceCaptainClassId, viceCaptainSectionId, ...modifiedObj } = dataPayload.schoolHouseData.values;
 
-        API.SchoolHouseAPI.updateSchoolHouse(modifiedObj)
-            .then(({ data: updatedData }) => {
-                if (updatedData.status === 'Success') {
-                    setLoading(false);
-                    toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, "/school-house/listing");
-                }
-            })
-            .catch(err => {
+            const res = await API.SchoolHouseAPI.updateSchoolHouse(modifiedObj);
+            const updatedData = res?.data || res;
+            if (updatedData.status === 'Success' || updatedData?.data) {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, `/school-house/update/${id}`);
-                console.log('error updating school house', err);
-            });
-    }, [formData]);
+                toastAndNavigate(dispatch, true, "info", "Successfully Updated", navigateTo, "/school-house/listing");
+            } else {
+                setLoading(false);
+                toastAndNavigate(dispatch, true, "error", updatedData?.msg || "Failed to update school house", navigateTo, `/school-house/update/${id}`);
+            }
+        } catch (err) {
+            setLoading(false);
+            toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred", navigateTo, `/school-house/update/${id}`);
+            console.error('error updating school house', err);
+        }
+    }, [id, dispatch, navigateTo]);
 
-    const populateSchoolHouseData = useCallback(id => {
+    const populateSchoolHouseData = useCallback(async (houseId) => {
         setLoading(true);
-        const paths = [`/get-by-pk/school_house/${id}`];
+        try {
+            const paths = [`/get-by-pk/school_house/${houseId}`];
+            const response = await API.CommonAPI.multipleAPICall("GET", paths);
+            const rawHouse = response[0]?.data?.data || response[0]?.data;
 
-        API.CommonAPI.multipleAPICall("GET", paths)
-            .then(response => {
-                if (response[0].data.status === 'Success') {
-                    const captainId = response[0].data.data.captain;
-                    const viceCaptainId = response[0].data.data.vice_captain;
+            if (rawHouse) {
+                const captainId = rawHouse.captain;
+                const viceCaptainId = rawHouse.vice_captain;
 
-                    Promise.all([
-                        API.StudentAPI.getClassOfStudent(captainId),
-                        API.StudentAPI.getClassOfStudent(viceCaptainId)
-                    ])
-                        .then(results => {
-                            const [captainResult, viceCaptainResult] = results;
-                            const dataObj = {
-                                ...response[0].data.data,
-                                captainClassId: captainResult.data.class,
-                                captainSectionId: captainResult.data.section,
-                                viceCaptainClassId: viceCaptainResult.data.class,
-                                viceCaptainSectionId: viceCaptainResult.data.section
-                            };
-                            setUpdatedValues(dataObj);
-                            setLoading(false);
-                        })
-                        .catch(error => {
-                            console.error("Error in API calls of populating school house:", error);
-                            setLoading(false);
-                        });
-                }
-            })
-            .catch(commonAPIError => {
-                setLoading(false);
-                toastAndNavigate(dispatch, true, "error", commonAPIError ? commonAPIError?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
-            });
-    }, [id]);
+                const [captainResult, viceCaptainResult] = await Promise.all([
+                    captainId ? API.StudentAPI.getClassOfStudent(captainId).catch(() => ({ data: {} })) : Promise.resolve({ data: {} }),
+                    viceCaptainId ? API.StudentAPI.getClassOfStudent(viceCaptainId).catch(() => ({ data: {} })) : Promise.resolve({ data: {} })
+                ]);
 
-    const createSchoolHouse = useCallback(formData => {
+                const dataObj = {
+                    ...rawHouse,
+                    name: rawHouse.name || "",
+                    color_code: rawHouse.color_code || "",
+                    captain: rawHouse.captain || "",
+                    vice_captain: rawHouse.vice_captain || "",
+                    teacher_incharge: rawHouse.teacher_incharge || "",
+                    strength: rawHouse.strength !== null && rawHouse.strength !== undefined ? rawHouse.strength : "",
+                    status: rawHouse.status || "active",
+                    captainClassId: captainResult?.data?.class || captainResult?.class || "",
+                    captainSectionId: captainResult?.data?.section || captainResult?.section || "",
+                    viceCaptainClassId: viceCaptainResult?.data?.class || viceCaptainResult?.class || "",
+                    viceCaptainSectionId: viceCaptainResult?.data?.section || viceCaptainResult?.section || ""
+                };
+                setUpdatedValues(dataObj);
+            }
+            setLoading(false);
+        } catch (commonAPIError) {
+            setLoading(false);
+            toastAndNavigate(dispatch, true, "error", commonAPIError?.response?.data?.msg || "Failed to load school house data", navigateTo, 0);
+        }
+    }, [dispatch, navigateTo]);
+
+    const createSchoolHouse = useCallback(async (dataPayload) => {
         setLoading(true);
-        // eslint-disable-next-line no-unused-vars
-        const { captainClassId, captainSectionId, viceCaptainClassId, viceCaptainSectionId, ...modifiedObj } = formData.schoolHouseData.values;
+        try {
+            // eslint-disable-next-line no-unused-vars
+            const { captainClassId, captainSectionId, viceCaptainClassId, viceCaptainSectionId, ...modifiedObj } = dataPayload.schoolHouseData.values;
 
-        API.SchoolHouseAPI.createSchoolHouse(modifiedObj)
-            .then(({ data: schoolHouse }) => {
-                if (schoolHouse.status === 'Success') {
-                    setLoading(false);
-                    toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, '/school-house/listing');
-                }
-            })
-            .catch(err => {
+            const res = await API.SchoolHouseAPI.createSchoolHouse(modifiedObj);
+            const schoolHouse = res?.data || res;
+            if (schoolHouse.status === 'Success' || schoolHouse?.data) {
                 setLoading(false);
-                toastAndNavigate(dispatch, true, err ? err.response?.data?.msg : "An Error Occurred");
-                console.log('error creating school house', err);
-            });
-    }, [formData]);
+                toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, '/school-house/listing');
+            } else {
+                setLoading(false);
+                toastAndNavigate(dispatch, true, "error", schoolHouse?.msg || "Failed to create school house");
+            }
+        } catch (err) {
+            setLoading(false);
+            toastAndNavigate(dispatch, true, "error", err?.response?.data?.msg || "An Error Occurred");
+            console.error('error creating school house', err);
+        }
+    }, [dispatch, navigateTo]);
 
     useEffect(() => {
-        if (id && !submitted) {
+        if (id) {
             setTitle("Update");
             populateSchoolHouseData(id);
         }
-        if (formData.schoolHouseData.validated) {
+    }, [id]);
+
+    useEffect(() => {
+        if (submitted && formData.schoolHouseData.validated) {
             formData.schoolHouseData.values?.id ? updateSchoolHouse(formData) : createSchoolHouse(formData);
-        } else {
+            setSubmitted(false);
+        } else if (submitted && !formData.schoolHouseData.validated) {
             setSubmitted(false);
         }
-    }, [id, submitted]);
+    }, [submitted, formData, updateSchoolHouse, createSchoolHouse]);
 
     const handleSubmit = async () => {
-        await schoolHouseFormRef.current.Submit();
-        setSubmitted(true);
+        if (schoolHouseFormRef.current?.Submit) {
+            await schoolHouseFormRef.current.Submit();
+            setSubmitted(true);
+        }
     };
 
     const handleFormChange = (data, form) => {
-        form == 'schoolHouse' ? setFormData({ ...formData, schoolHouseData: data }) : '';
+        if (form === 'schoolHouse') {
+            setFormData({ ...formData, schoolHouseData: data });
+        }
     };
 
     return (

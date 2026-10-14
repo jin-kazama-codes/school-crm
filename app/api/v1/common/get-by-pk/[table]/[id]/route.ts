@@ -79,6 +79,36 @@ export async function GET(
       }
     }
 
+    if ((table === "school_house" || table === "school-house") && data) {
+      const houseIdStr = String(data.id);
+      const [captainStudent, viceCaptainStudent, teacherIncharge, houseMembers] = await Promise.all([
+        data.captain ? prisma.student.findUnique({
+          where: { id: Number(data.captain) },
+          select: { id: true, firstname: true, lastname: true, roll_no: true, enrollment_no: true, class: true, section: true, contact_no: true, email: true, gender: true }
+        }) : null,
+        data.vice_captain ? prisma.student.findUnique({
+          where: { id: Number(data.vice_captain) },
+          select: { id: true, firstname: true, lastname: true, roll_no: true, enrollment_no: true, class: true, section: true, contact_no: true, email: true, gender: true }
+        }) : null,
+        data.teacher_incharge ? prisma.teacher.findUnique({
+          where: { id: Number(data.teacher_incharge) },
+          select: { id: true, firstname: true, lastname: true, email: true, contact_no: true, qualification: true, grade: true, gender: true }
+        }) : null,
+        prisma.student.findMany({
+          where: { house: houseIdStr },
+          select: { id: true, firstname: true, lastname: true, roll_no: true, enrollment_no: true, class: true, section: true, gender: true },
+          take: 50,
+          orderBy: { id: "asc" }
+        })
+      ]);
+
+      (data as any).captain_details = captainStudent;
+      (data as any).vice_captain_details = viceCaptainStudent;
+      (data as any).teacher_details = teacherIncharge;
+      (data as any).student_members = houseMembers;
+      (data as any).actual_strength = houseMembers?.length || 0;
+    }
+
     return NextResponse.json(Utility.formatResponse(200, data), { status: 200 });
   } catch (err) {
     return NextResponse.json(Utility.formatResponse(500, err), { status: 500 });

@@ -11,14 +11,20 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "@/lib/routerAdapter";
-import { Pencil, Eye } from 'lucide-react';
+import { Pencil, Eye, KeyRound, GraduationCap } from 'lucide-react';
 
 import API from "../../apis";
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
 import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
 import { Utility } from "../utility";
 
-export const datagridColumns = (rolePriority = null, setOpen = null, setSelectedId = null) => {
+export const datagridColumns = (
+    rolePriority = null,
+    setOpen = null,
+    setSelectedId = null,
+    onGenerateLogin = null,
+    loadingLoginId = null
+) => {
     const schoolClasses = useSelector(state => state.schoolClasses);
     const allClasses = useSelector(state => state.allClasses);
     const schoolSections = useSelector(state => state.schoolSections);
@@ -180,6 +186,62 @@ export const datagridColumns = (rolePriority = null, setOpen = null, setSelected
                         >
                             {capitalizeEveryWord(status) || ''}
                         </div>
+                    </div>
+                );
+            }
+        },
+        {
+            field: "user_id",
+            headerName: "Student Login",
+            headerAlign: "center",
+            align: "center",
+            flex: 1.1,
+            minWidth: 145,
+            renderCell: ({ row }) => {
+                const hasLogin = Boolean(row.user_id);
+                const isLoading = loadingLoginId === row.id;
+
+                if (hasLogin) {
+                    return (
+                        <div className="flex justify-center items-center gap-1.5 w-full h-full">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-900/50 shadow-2xs">
+                                <GraduationCap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                Active
+                            </span>
+                            {onGenerateLogin && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onGenerateLogin(row);
+                                    }}
+                                    disabled={isLoading}
+                                    title="View / Reset Student Credentials"
+                                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-md transition-colors cursor-pointer"
+                                >
+                                    <KeyRound className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="flex justify-center items-center w-full h-full">
+                        {onGenerateLogin ? (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onGenerateLogin(row);
+                                }}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 rounded-lg shadow-2xs transition-all hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+                            >
+                                <KeyRound className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                {isLoading ? "Generating..." : "Generate Login"}
+                            </button>
+                        ) : (
+                            <span className="text-slate-400 text-xs font-medium">Unprovisioned</span>
+                        )}
                     </div>
                 );
             }

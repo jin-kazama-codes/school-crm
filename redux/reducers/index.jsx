@@ -48,6 +48,7 @@ import { setAllUserRolesReducer } from "./UserRoleReducer";
 import { setListingUserRolesReducer } from "./UserRoleReducer";
 import { setNoticeBoardReducer } from "./NoticeBoardReducer";
 import { setAttendancesReducer } from "./AttendanceReducer";
+import { setQuestionsReducer, setExamPapersReducer } from "./AssessmentReducer";
 
 const reducers = combineReducers({
   auth: authReducer,
@@ -88,6 +89,8 @@ const reducers = combineReducers({
   listingPaymentMethods: setListingPaymentMethodsReducer,
   allPaymentMethods: setAllPaymentMethodsReducer,
   allSchoolDurations: setSchoolDurationsReducer,
+  allQuestions: setQuestionsReducer,
+  allExamPapers: setExamPapersReducer,
   menuItems: menuItemReducer,
   toastInfo: displayToastReducer
 });

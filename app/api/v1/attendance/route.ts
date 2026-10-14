@@ -48,45 +48,95 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
         )`
       : Prisma.sql``;
 
-    const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
-      SELECT
-        a.id,
-        a.school_id,
-        a.parent::text AS parent,
-        a.parent_id,
-        a.class_id,
-        a.section_id,
-        a.date,
-        a.status::text AS status,
-        a.created_at,
-        COALESCE(
-          CASE 
-            WHEN a.parent = 'student' THEN CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))
-            WHEN a.parent = 'teacher' THEN CONCAT(tc.firstname, ' ', COALESCE(tc.lastname, ''))
-            WHEN a.parent = 'employee' THEN CONCAT(em.firstname, ' ', COALESCE(em.lastname, ''))
-          END,
-          CONCAT(COALESCE(st.firstname, tc.firstname, em.firstname, ''), ' ', COALESCE(st.lastname, tc.lastname, em.lastname, ''))
-        ) AS name,
-        cl.name AS class_name,
-        se.name AS section_name,
-        COUNT(*) OVER() AS count
-      FROM attendance a
-      LEFT JOIN student  st ON st.id = a.parent_id AND a.parent = 'student'
-      LEFT JOIN teacher  tc ON tc.id = a.parent_id AND a.parent = 'teacher'
-      LEFT JOIN employee em ON em.id = a.parent_id AND a.parent = 'employee'
-      LEFT JOIN class    cl ON cl.id = a.class_id
-      LEFT JOIN section  se ON se.id = a.section_id
-      WHERE 1=1
-        ${schoolClause}
-        ${parentClause}
-        ${parentIdClause}
-        ${classClause}
-        ${sectionClause}
-        ${statusClause}
-        ${searchClause}
-      ORDER BY a.date DESC NULLS LAST, a.id DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `);
+    let rows: any[];
+    try {
+      rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          a.id,
+          a.school_id,
+          a.parent::text AS parent,
+          a.parent_id,
+          a.class_id,
+          a.section_id,
+          a.date,
+          a.status::text AS status,
+          a.remark,
+          a.created_at,
+          COALESCE(
+            CASE 
+              WHEN a.parent = 'student' THEN CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))
+              WHEN a.parent = 'teacher' THEN CONCAT(tc.firstname, ' ', COALESCE(tc.lastname, ''))
+              WHEN a.parent = 'employee' THEN CONCAT(em.firstname, ' ', COALESCE(em.lastname, ''))
+            END,
+            CONCAT(COALESCE(st.firstname, tc.firstname, em.firstname, ''), ' ', COALESCE(st.lastname, tc.lastname, em.lastname, ''))
+          ) AS name,
+          cl.name AS class_name,
+          se.name AS section_name,
+          COUNT(*) OVER() AS count
+        FROM attendance a
+        LEFT JOIN student  st ON st.id = a.parent_id AND a.parent = 'student'
+        LEFT JOIN teacher  tc ON tc.id = a.parent_id AND a.parent = 'teacher'
+        LEFT JOIN employee em ON em.id = a.parent_id AND a.parent = 'employee'
+        LEFT JOIN class    cl ON cl.id = a.class_id
+        LEFT JOIN section  se ON se.id = a.section_id
+        WHERE 1=1
+          ${schoolClause}
+          ${parentClause}
+          ${parentIdClause}
+          ${classClause}
+          ${sectionClause}
+          ${statusClause}
+          ${searchClause}
+        ORDER BY a.date DESC NULLS LAST, a.id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+    } catch (rawErr: any) {
+      if (String(rawErr).includes("column a.remark does not exist") || String(rawErr).includes("42703")) {
+        await prisma.$executeRawUnsafe(`ALTER TABLE "attendance" ADD COLUMN IF NOT EXISTS "remark" TEXT;`);
+        rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+          SELECT
+            a.id,
+            a.school_id,
+            a.parent::text AS parent,
+            a.parent_id,
+            a.class_id,
+            a.section_id,
+            a.date,
+            a.status::text AS status,
+            a.remark,
+            a.created_at,
+            COALESCE(
+              CASE 
+                WHEN a.parent = 'student' THEN CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))
+                WHEN a.parent = 'teacher' THEN CONCAT(tc.firstname, ' ', COALESCE(tc.lastname, ''))
+                WHEN a.parent = 'employee' THEN CONCAT(em.firstname, ' ', COALESCE(em.lastname, ''))
+              END,
+              CONCAT(COALESCE(st.firstname, tc.firstname, em.firstname, ''), ' ', COALESCE(st.lastname, tc.lastname, em.lastname, ''))
+            ) AS name,
+            cl.name AS class_name,
+            se.name AS section_name,
+            COUNT(*) OVER() AS count
+          FROM attendance a
+          LEFT JOIN student  st ON st.id = a.parent_id AND a.parent = 'student'
+          LEFT JOIN teacher  tc ON tc.id = a.parent_id AND a.parent = 'teacher'
+          LEFT JOIN employee em ON em.id = a.parent_id AND a.parent = 'employee'
+          LEFT JOIN class    cl ON cl.id = a.class_id
+          LEFT JOIN section  se ON se.id = a.section_id
+          WHERE 1=1
+            ${schoolClause}
+            ${parentClause}
+            ${parentIdClause}
+            ${classClause}
+            ${sectionClause}
+            ${statusClause}
+            ${searchClause}
+          ORDER BY a.date DESC NULLS LAST, a.id DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `);
+      } else {
+        throw rawErr;
+      }
+    }
 
     if (rows.length > 0) {
       const count = Number(rows[0]?.count || 0);

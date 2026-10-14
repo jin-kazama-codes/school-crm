@@ -48,6 +48,7 @@ const initialValues = {
     type: "",
     sub_type: "",
     status: "active",
+    student_login_min_class: "",
     same_subjects: []
 };
 
@@ -473,6 +474,36 @@ const SchoolFormComponent = ({
                             </select>
                             <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className={labelClasses}>Student Direct Login Portal</label>
+                        <div className="relative">
+                            <select
+                                name="student_login_min_class"
+                                value={formik.values.student_login_min_class ?? ""}
+                                onChange={(e) => {
+                                    const val = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                                    formik.setFieldValue("student_login_min_class", val);
+                                }}
+                                onBlur={formik.handleBlur}
+                                className={`${selectClasses} appearance-none pr-10`}
+                            >
+                                <option value="">Disabled (Parent Access Only)</option>
+                                <option value="5">Class 5 (V) & Above</option>
+                                <option value="6">Class 6 (VI) & Above</option>
+                                <option value="7">Class 7 (VII) & Above</option>
+                                <option value="8">Class 8 (VIII) & Above</option>
+                                <option value="9">Class 9 (IX) & Above</option>
+                                <option value="10">Class 10 (X) & Above</option>
+                                <option value="11">Class 11 (XI) & Above</option>
+                                <option value="12">Class 12 (XII) Only</option>
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                            Senior classes from this threshold will receive personal student credentials for tests & homework.
+                        </p>
                     </div>
 
                     <div>

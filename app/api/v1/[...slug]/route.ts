@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import Utility from "@/lib/utility";
 import { withAuth, applyRateLimit } from "@/lib/apiHelpers";
-import { genericList, genericCreate, genericUpdate } from "@/lib/crudHelpers";
+import { genericList, genericCreate, genericUpdate, provisionStudentUser } from "@/lib/crudHelpers";
 
 // Mapping of route endpoint names to Prisma model names
 const MODEL_MAPPING: Record<string, { model: string; searchFields: string[] }> = {
@@ -38,6 +38,7 @@ const MODEL_MAPPING: Record<string, { model: string; searchFields: string[] }> =
   "time-tables": { model: "timetable", searchFields: ["batch", "duration"] },
   "time-table": { model: "timetable", searchFields: ["batch", "duration"] },
   "timetables": { model: "timetable", searchFields: ["batch", "duration"] },
+  "timetable": { model: "timetable", searchFields: ["batch", "duration"] },
   "attendance": { model: "attendance", searchFields: [] },
   "attendances": { model: "attendance", searchFields: [] },
   "user-roles": { model: "user_role", searchFields: ["name"] },
@@ -66,6 +67,14 @@ const MODEL_MAPPING: Record<string, { model: string; searchFields: string[] }> =
   "addresses": { model: "address", searchFields: ["street", "landmark", "zipcode"] },
   "image": { model: "image", searchFields: ["image_src"] },
   "images": { model: "image", searchFields: ["image_src"] },
+  "question-banks": { model: "question_bank", searchFields: ["question_text", "chapter"] },
+  "question-bank": { model: "question_bank", searchFields: ["question_text", "chapter"] },
+  "questions": { model: "question_bank", searchFields: ["question_text", "chapter"] },
+  "question": { model: "question_bank", searchFields: ["question_text", "chapter"] },
+  "exam-papers": { model: "exam_paper", searchFields: ["title", "paper_code"] },
+  "exam-paper": { model: "exam_paper", searchFields: ["title", "paper_code"] },
+  "assessments": { model: "exam_paper", searchFields: ["title", "paper_code"] },
+  "assessment": { model: "exam_paper", searchFields: ["title", "paper_code"] },
 };
 
 async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
@@ -370,6 +379,184 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
     }
   }
 
+  // Search Parents for Sibling Linking
+  if (endpoint === "search-parents") {
+    try {
+      const { searchParams } = new URL(req.url);
+      const search = (searchParams.get("search") || searchParams.get("q") || "").trim();
+      const schoolCond = Utility.getSchoolIdFromHeader(req);
+      const schoolId = schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : null;
+
+      if (!search || search.length < 2) {
+        return NextResponse.json(Utility.formatResponse(200, []), { status: 200 });
+      }
+
+      const searchWild = `%${search}%`;
+      const schoolClause = schoolId ? Prisma.sql`AND s.school_id = ${schoolId}` : Prisma.sql``;
+
+      // 1. Find existing students and their parent user info
+      const matchedStudents = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          s.id AS student_id,
+          s.parent_id,
+          s.firstname,
+          s.lastname,
+          s.roll_no,
+          s.father_name,
+          s.father_contact_no,
+          s.father_aadhar,
+          s.mother_name,
+          s.mother_contact_no,
+          s.mother_aadhar,
+          s.guardian_name,
+          s.guardian_contact_no,
+          s.guardian_aadhar,
+          s.contact_no,
+          s.email,
+          cl.name AS class_name,
+          sec.name AS section_name,
+          u.username AS parent_username,
+          u.email AS parent_user_email,
+          u.contact_no AS parent_user_contact
+        FROM student s
+        LEFT JOIN "user" u ON u.id = s.parent_id
+        LEFT JOIN class cl ON cl.id = s.class
+        LEFT JOIN section sec ON sec.id = s.section
+        WHERE s.parent_id IS NOT NULL
+          ${schoolClause}
+          AND (
+            s.father_name ILIKE ${searchWild} OR
+            s.mother_name ILIKE ${searchWild} OR
+            s.guardian_name ILIKE ${searchWild} OR
+            s.contact_no ILIKE ${searchWild} OR
+            CAST(s.father_contact_no AS TEXT) ILIKE ${searchWild} OR
+            CAST(s.mother_contact_no AS TEXT) ILIKE ${searchWild} OR
+            CAST(s.father_aadhar AS TEXT) ILIKE ${searchWild} OR
+            CAST(s.mother_aadhar AS TEXT) ILIKE ${searchWild} OR
+            u.contact_no ILIKE ${searchWild} OR
+            u.username ILIKE ${searchWild} OR
+            u.email ILIKE ${searchWild} OR
+            s.firstname ILIKE ${searchWild} OR
+            s.lastname ILIKE ${searchWild}
+          )
+        ORDER BY s.updated_at DESC
+        LIMIT 50
+      `);
+
+      // 2. Group by parent_id
+      const parentMap = new Map<number, any>();
+      for (const row of matchedStudents) {
+        const pid = Number(row.parent_id);
+        if (!parentMap.has(pid)) {
+          parentMap.set(pid, {
+            parent_id: pid,
+            father_name: row.father_name || "",
+            father_contact_no: row.father_contact_no ? String(row.father_contact_no) : "",
+            father_aadhar: row.father_aadhar ? String(row.father_aadhar) : "",
+            mother_name: row.mother_name || "",
+            mother_contact_no: row.mother_contact_no ? String(row.mother_contact_no) : "",
+            mother_aadhar: row.mother_aadhar ? String(row.mother_aadhar) : "",
+            guardian_name: row.guardian_name || "",
+            guardian_contact_no: row.guardian_contact_no ? String(row.guardian_contact_no) : "",
+            guardian_aadhar: row.guardian_aadhar ? String(row.guardian_aadhar) : "",
+            contact_no: row.contact_no || row.parent_user_contact || "",
+            email: row.email || row.parent_user_email || "",
+            parent_username: row.parent_username || "",
+            student_ids: [row.student_id],
+            children: []
+          });
+        } else {
+          const existing = parentMap.get(pid);
+          if (!existing.student_ids.includes(row.student_id)) {
+            existing.student_ids.push(row.student_id);
+          }
+        }
+        const parentEntry = parentMap.get(pid);
+        parentEntry.children.push({
+          id: row.student_id,
+          name: `${row.firstname || ""} ${row.lastname || ""}`.trim(),
+          class_name: row.class_name || "",
+          section_name: row.section_name || "",
+          roll_no: row.roll_no || null
+        });
+      }
+
+      // 3. Also include parent users (role 5) matching the search if not already grouped
+      const matchedUsers = await prisma.user.findMany({
+        where: {
+          role: 5,
+          status: "active",
+          ...(schoolId ? { school_id: schoolId } : {}),
+          OR: [
+            { username: { contains: search, mode: "insensitive" } },
+            { contact_no: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+          ]
+        },
+        take: 20
+      });
+
+      for (const u of matchedUsers) {
+        if (!parentMap.has(u.id)) {
+          parentMap.set(u.id, {
+            parent_id: u.id,
+            father_name: u.username || "",
+            father_contact_no: u.contact_no || "",
+            father_aadhar: "",
+            mother_name: "",
+            mother_contact_no: "",
+            mother_aadhar: "",
+            guardian_name: "",
+            guardian_contact_no: "",
+            guardian_aadhar: "",
+            contact_no: u.contact_no || "",
+            email: u.email || "",
+            parent_username: u.username || "",
+            student_ids: [],
+            children: []
+          });
+        }
+      }
+
+      const parentList = Array.from(parentMap.values());
+      const parentIds = parentList.map(p => p.parent_id);
+      const allStudentIds = parentList.flatMap(p => p.student_ids);
+
+      // 4. Attach address if available
+      if (parentIds.length > 0) {
+        const addresses = await prisma.address.findMany({
+          where: {
+            OR: [
+              { parent: "user" as any, parent_id: { in: parentIds } },
+              ...(allStudentIds.length > 0 ? [{ parent: "student" as any, parent_id: { in: allStudentIds } }] : [])
+            ]
+          },
+          orderBy: { updated_at: "desc" }
+        });
+
+        for (const p of parentList) {
+          const addr = addresses.find(a => 
+            (a.parent === "user" && a.parent_id === p.parent_id) ||
+            (a.parent === "student" && p.student_ids.includes(a.parent_id!))
+          );
+          p.address = addr ? {
+            street: addr.street || "",
+            landmark: addr.landmark || "",
+            zipcode: addr.zipcode || "",
+            city: addr.city || 0,
+            state: addr.state || 0,
+            country: addr.country || 1
+          } : null;
+        }
+      }
+
+      return NextResponse.json(Utility.formatResponse(200, parentList), { status: 200 });
+    } catch (err) {
+      console.error("Error in search-parents:", err);
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
   // ICard Details
   if (endpoint === "get-icard-details") {
     try {
@@ -458,6 +645,36 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
           data.resolved_subjects = subjects;
           data.subjects_display = subjects.map((s: any) => s.name).join(", ");
         }
+      }
+
+      if ((table === "school_house" || table === "school-house") && data) {
+        const houseIdStr = String(data.id);
+        const [captainStudent, viceCaptainStudent, teacherIncharge, houseMembers] = await Promise.all([
+          data.captain ? prisma.student.findUnique({
+            where: { id: Number(data.captain) },
+            select: { id: true, firstname: true, lastname: true, roll_no: true, enrollment_no: true, class: true, section: true, contact_no: true, email: true, gender: true }
+          }) : null,
+          data.vice_captain ? prisma.student.findUnique({
+            where: { id: Number(data.vice_captain) },
+            select: { id: true, firstname: true, lastname: true, roll_no: true, enrollment_no: true, class: true, section: true, contact_no: true, email: true, gender: true }
+          }) : null,
+          data.teacher_incharge ? prisma.teacher.findUnique({
+            where: { id: Number(data.teacher_incharge) },
+            select: { id: true, firstname: true, lastname: true, email: true, contact_no: true, qualification: true, grade: true, gender: true }
+          }) : null,
+          prisma.student.findMany({
+            where: { house: houseIdStr },
+            select: { id: true, firstname: true, lastname: true, roll_no: true, enrollment_no: true, class: true, section: true, gender: true },
+            take: 50,
+            orderBy: { id: "asc" }
+          })
+        ]);
+
+        data.captain_details = captainStudent;
+        data.vice_captain_details = viceCaptainStudent;
+        data.teacher_details = teacherIncharge;
+        data.student_members = houseMembers;
+        data.actual_strength = houseMembers?.length || 0;
       }
 
       return NextResponse.json(Utility.formatResponse(200, data), { status: 200 });
@@ -615,8 +832,10 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
   ) {
     try {
       const { searchParams } = new URL(req.url);
-      const page = parseInt(searchParams.get("page") || "0");
-      const size = parseInt(searchParams.get("size") || "10");
+      const page = parseInt(searchParams.get("page") || "0", 10);
+      const allSizes = searchParams.getAll("size");
+      const sizeParam = allSizes.length > 0 ? allSizes[allSizes.length - 1] : "100";
+      const size = parseInt(sizeParam || "100", 10);
       const search = (searchParams.get("search") || "").trim();
       const { limit, offset } = Utility.getPagination(page, size);
       const schoolCond = Utility.getSchoolIdFromHeader(req);
@@ -677,7 +896,8 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
             WHEN 'saturday' THEN 6
             WHEN 'sunday' THEN 7
             ELSE 8
-          END ASC
+          END ASC,
+          tt.period ASC
         LIMIT ${limit} OFFSET ${offset}
       `);
 
@@ -823,45 +1043,95 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
           )`
         : Prisma.sql``;
 
-      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
-        SELECT
-          a.id,
-          a.school_id,
-          a.parent::text AS parent,
-          a.parent_id,
-          a.class_id,
-          a.section_id,
-          a.date,
-          a.status::text AS status,
-          a.created_at,
-          COALESCE(
-            CASE 
-              WHEN a.parent = 'student' THEN CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))
-              WHEN a.parent = 'teacher' THEN CONCAT(tc.firstname, ' ', COALESCE(tc.lastname, ''))
-              WHEN a.parent = 'employee' THEN CONCAT(em.firstname, ' ', COALESCE(em.lastname, ''))
-            END,
-            CONCAT(COALESCE(st.firstname, tc.firstname, em.firstname, ''), ' ', COALESCE(st.lastname, tc.lastname, em.lastname, ''))
-          ) AS name,
-          cl.name AS class_name,
-          se.name AS section_name,
-          COUNT(*) OVER() AS count
-        FROM attendance a
-        LEFT JOIN student  st ON st.id = a.parent_id AND a.parent = 'student'
-        LEFT JOIN teacher  tc ON tc.id = a.parent_id AND a.parent = 'teacher'
-        LEFT JOIN employee em ON em.id = a.parent_id AND a.parent = 'employee'
-        LEFT JOIN class    cl ON cl.id = a.class_id
-        LEFT JOIN section  se ON se.id = a.section_id
-        WHERE 1=1
-          ${schoolClause}
-          ${parentClause}
-          ${parentIdClause}
-          ${classClause}
-          ${sectionClause}
-          ${statusClause}
-          ${searchClause}
-        ORDER BY a.date DESC NULLS LAST, a.id DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `);
+      let rows: any[];
+      try {
+        rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+          SELECT
+            a.id,
+            a.school_id,
+            a.parent::text AS parent,
+            a.parent_id,
+            a.class_id,
+            a.section_id,
+            a.date,
+            a.status::text AS status,
+            a.remark,
+            a.created_at,
+            COALESCE(
+              CASE 
+                WHEN a.parent = 'student' THEN CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))
+                WHEN a.parent = 'teacher' THEN CONCAT(tc.firstname, ' ', COALESCE(tc.lastname, ''))
+                WHEN a.parent = 'employee' THEN CONCAT(em.firstname, ' ', COALESCE(em.lastname, ''))
+              END,
+              CONCAT(COALESCE(st.firstname, tc.firstname, em.firstname, ''), ' ', COALESCE(st.lastname, tc.lastname, em.lastname, ''))
+            ) AS name,
+            cl.name AS class_name,
+            se.name AS section_name,
+            COUNT(*) OVER() AS count
+          FROM attendance a
+          LEFT JOIN student  st ON st.id = a.parent_id AND a.parent = 'student'
+          LEFT JOIN teacher  tc ON tc.id = a.parent_id AND a.parent = 'teacher'
+          LEFT JOIN employee em ON em.id = a.parent_id AND a.parent = 'employee'
+          LEFT JOIN class    cl ON cl.id = a.class_id
+          LEFT JOIN section  se ON se.id = a.section_id
+          WHERE 1=1
+            ${schoolClause}
+            ${parentClause}
+            ${parentIdClause}
+            ${classClause}
+            ${sectionClause}
+            ${statusClause}
+            ${searchClause}
+          ORDER BY a.date DESC NULLS LAST, a.id DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `);
+      } catch (rawErr: any) {
+        if (String(rawErr).includes("column a.remark does not exist") || String(rawErr).includes("42703")) {
+          await prisma.$executeRawUnsafe(`ALTER TABLE "attendance" ADD COLUMN IF NOT EXISTS "remark" TEXT;`);
+          rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+            SELECT
+              a.id,
+              a.school_id,
+              a.parent::text AS parent,
+              a.parent_id,
+              a.class_id,
+              a.section_id,
+              a.date,
+              a.status::text AS status,
+              a.remark,
+              a.created_at,
+              COALESCE(
+                CASE 
+                  WHEN a.parent = 'student' THEN CONCAT(st.firstname, ' ', COALESCE(st.lastname, ''))
+                  WHEN a.parent = 'teacher' THEN CONCAT(tc.firstname, ' ', COALESCE(tc.lastname, ''))
+                  WHEN a.parent = 'employee' THEN CONCAT(em.firstname, ' ', COALESCE(em.lastname, ''))
+                END,
+                CONCAT(COALESCE(st.firstname, tc.firstname, em.firstname, ''), ' ', COALESCE(st.lastname, tc.lastname, em.lastname, ''))
+              ) AS name,
+              cl.name AS class_name,
+              se.name AS section_name,
+              COUNT(*) OVER() AS count
+            FROM attendance a
+            LEFT JOIN student  st ON st.id = a.parent_id AND a.parent = 'student'
+            LEFT JOIN teacher  tc ON tc.id = a.parent_id AND a.parent = 'teacher'
+            LEFT JOIN employee em ON em.id = a.parent_id AND a.parent = 'employee'
+            LEFT JOIN class    cl ON cl.id = a.class_id
+            LEFT JOIN section  se ON se.id = a.section_id
+            WHERE 1=1
+              ${schoolClause}
+              ${parentClause}
+              ${parentIdClause}
+              ${classClause}
+              ${sectionClause}
+              ${statusClause}
+              ${searchClause}
+            ORDER BY a.date DESC NULLS LAST, a.id DESC
+            LIMIT ${limit} OFFSET ${offset}
+          `);
+        } else {
+          throw rawErr;
+        }
+      }
 
       if (rows.length > 0) {
         const count = Number(rows[0]?.count || 0);
@@ -1186,6 +1456,23 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
       ]);
 
       if (count > 0) {
+        // Ensure user_id is populated on each student record
+        const studentIds = rows.filter(r => (r as any).user_id === undefined).map(r => r.id);
+        if (studentIds.length > 0) {
+          try {
+            const userIdRows = await prisma.$queryRaw<any[]>(
+              Prisma.sql`SELECT id, user_id FROM "student" WHERE id IN (${Prisma.join(studentIds)})`
+            );
+            const map = new Map(userIdRows.map(u => [u.id, u.user_id]));
+            rows.forEach((r: any) => {
+              if (r.user_id === undefined) {
+                r.user_id = map.get(r.id) ?? null;
+              }
+            });
+          } catch (e) {
+            console.error("Error populating student user_id:", e);
+          }
+        }
         return NextResponse.json(Utility.formatResponse(200, { count, rows }), { status: 200 });
       }
       return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
@@ -1228,6 +1515,30 @@ function getAuthUserId(req: NextRequest): number {
 }
 
 async function handlePost(req: NextRequest, endpoint: string) {
+  // Generate on-demand Student Portal Login Credentials
+  if (endpoint === "generate-student-login") {
+    try {
+      const body = await req.json();
+      const studentId = parseInt(String(body.student_id || body.id), 10);
+      if (isNaN(studentId)) {
+        return NextResponse.json(Utility.formatResponse(400, "Invalid or missing student_id"), { status: 400 });
+      }
+
+      const authUserId = getAuthUserId(req);
+      const force = body.force !== undefined ? Boolean(body.force) : true;
+      const result = await provisionStudentUser(studentId, authUserId, force);
+
+      if (!result.success || !result.data) {
+        return NextResponse.json(Utility.formatResponse(400, result.message || "Failed to generate student login"), { status: 400 });
+      }
+
+      return NextResponse.json(Utility.formatResponse(200, result.data), { status: 200 });
+    } catch (err) {
+      console.error("Error in generate-student-login:", err);
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
   // Login Endpoint
   if (endpoint === "login") {
     try {
@@ -1256,12 +1567,42 @@ async function handlePost(req: NextRequest, endpoint: string) {
       }
 
       const token = Utility.getSignedToken(user.id);
+
+      let studentProfile: any = null;
+      if (user.role === 6) {
+        studentProfile = await prisma.student.findFirst({
+          where: { user_id: user.id },
+          select: {
+            id: true,
+            school_id: true,
+            firstname: true,
+            lastname: true,
+            class: true,
+            section: true,
+            roll_no: true,
+            enrollment_no: true,
+          }
+        });
+      }
+
+      const school = user.school_id
+        ? await prisma.school.findUnique({
+            where: { id: user.school_id },
+            select: { id: true, name: true, school_code: true }
+          })
+        : null;
+
       return NextResponse.json(
         Utility.formatResponse(200, {
           token,
           id: user.id,
           role: user.role,
+          rolePriority: user.role,
+          designation: user.designation || (user.role === 6 ? "student" : undefined),
           username: user.username,
+          school_id: user.school_id,
+          school_name: school?.name || undefined,
+          student: studentProfile || undefined,
         }),
         { status: 200 }
       );
@@ -1530,6 +1871,74 @@ async function handleDelete(req: NextRequest, endpoint: string) {
       return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Generic delete by Primary Key: /delete-by-pk/:model/:id
+  if (endpoint.startsWith("delete-by-pk/") || endpoint === "delete-by-pk") {
+    try {
+      const parts = endpoint.split("/");
+      let modelKey = parts[1] || "";
+      let idStr = parts[2] || "";
+
+      if (!idStr) {
+        const url = new URL(req.url);
+        idStr = url.searchParams.get("id") || "";
+      }
+
+      if (!idStr) {
+        const body = await req.json().catch(() => ({}));
+        idStr = String(body?.id || "");
+        if (!modelKey) modelKey = String(body?.model || "");
+      }
+
+      const id = parseInt(idStr, 10);
+      if (isNaN(id)) {
+        return NextResponse.json(Utility.formatResponse(400, "Invalid primary key ID"), { status: 400 });
+      }
+
+      const mapping = MODEL_MAPPING[modelKey];
+      const modelName = mapping ? mapping.model : modelKey.replace(/-/g, "_");
+
+      if ((prisma as any)[modelName]) {
+        await (prisma as any)[modelName].delete({
+          where: { id },
+        });
+        return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
+      } else {
+        await prisma.$executeRawUnsafe(`DELETE FROM "public"."${modelName}" WHERE id = $1`, id);
+        return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
+      }
+    } catch (err: any) {
+      if (err?.code === "P2025") {
+        return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
+      }
+      return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+    }
+  }
+
+  // Generic delete for delete-:entityKey/:id (e.g. delete-timetable/123)
+  if (endpoint.startsWith("delete-")) {
+    const afterDelete = endpoint.replace("delete-", "");
+    const parts = afterDelete.split("/");
+    if (parts.length >= 2) {
+      const entityKey = parts[0];
+      const id = parseInt(parts[1], 10);
+      if (!isNaN(id)) {
+        const mapping = MODEL_MAPPING[entityKey];
+        const modelName = mapping ? mapping.model : entityKey.replace(/-/g, "_");
+        if ((prisma as any)[modelName]) {
+          try {
+            await (prisma as any)[modelName].delete({ where: { id } });
+            return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
+          } catch (err: any) {
+            if (err?.code === "P2025") {
+              return NextResponse.json(Utility.formatResponse(200, "Deleted Successfully"), { status: 200 });
+            }
+            return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
+          }
+        }
+      }
     }
   }
 

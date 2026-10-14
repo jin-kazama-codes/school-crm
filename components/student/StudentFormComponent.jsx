@@ -12,7 +12,7 @@ import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
 import dayjs from "dayjs";
-import { ChevronDown, Bus, Award, User, Users, HeartHandshake, ShieldCheck } from "lucide-react";
+import { ChevronDown, Bus, Award, User, Users, HeartHandshake, ShieldCheck, Search, RefreshCw, CheckCircle2, X } from "lucide-react";
 
 import API from "../../apis";
 import Toast from "../common/Toast";
@@ -29,6 +29,7 @@ import { useCommon } from "../hooks/common";
 import config from "../config";
 
 const initialValues = {
+  parent_id: null,
   session: "",
   firstname: "",
   lastname: "",
@@ -81,8 +82,17 @@ const StudentFormComponent = ({
   allSubjects,
   userId,
   updatedValues = null,
+  onSelectParent = null,
 }) => {
   const [initialState, setInitialState] = useState(initialValues);
+  const [parentType, setParentType] = useState("new");
+  const [parentSearchQuery, setParentSearchQuery] = useState("");
+  const [parentSearchResults, setParentSearchResults] = useState([]);
+  const [isSearchingParent, setIsSearchingParent] = useState(false);
+  const [selectedParent, setSelectedParent] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
   const schoolClasses = useSelector((state) => state.schoolClasses);
   const schoolSections = useSelector((state) => state.schoolSections);
   const schoolSubjects = useSelector((state) => state.schoolSubjects);
@@ -101,6 +111,65 @@ const StudentFormComponent = ({
     getValuesFromArray,
     toastAndNavigate,
   } = Utility();
+
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setParentSearchQuery(query);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (!query || query.trim().length < 2) {
+      setParentSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    setIsSearchingParent(true);
+    setShowDropdown(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await API.StudentAPI.searchParents(query.trim());
+        if (res?.status === "Success" || Array.isArray(res?.data)) {
+          setParentSearchResults(res.data || []);
+        } else {
+          setParentSearchResults([]);
+        }
+      } catch (err) {
+        console.error("Error searching parents:", err);
+        setParentSearchResults([]);
+      } finally {
+        setIsSearchingParent(false);
+      }
+    }, 350);
+  };
+
+  const handleSelectParent = (p) => {
+    setSelectedParent(p);
+    setShowDropdown(false);
+    setParentSearchQuery("");
+
+    formik.setFieldValue("parent_id", p.parent_id);
+    if (p.father_name) formik.setFieldValue("father_name", p.father_name);
+    if (p.father_contact_no) formik.setFieldValue("father_contact_no", p.father_contact_no);
+    if (p.father_aadhar) formik.setFieldValue("father_aadhar", p.father_aadhar);
+    if (p.mother_name) formik.setFieldValue("mother_name", p.mother_name);
+    if (p.mother_contact_no) formik.setFieldValue("mother_contact_no", p.mother_contact_no);
+    if (p.mother_aadhar) formik.setFieldValue("mother_aadhar", p.mother_aadhar);
+    if (p.guardian_name) formik.setFieldValue("guardian_name", p.guardian_name);
+    if (p.guardian_contact_no) formik.setFieldValue("guardian_contact_no", p.guardian_contact_no);
+    if (p.guardian_aadhar) formik.setFieldValue("guardian_aadhar", p.guardian_aadhar);
+    if (p.contact_no) formik.setFieldValue("contact_no", p.contact_no);
+    if (p.email) formik.setFieldValue("email", p.email);
+
+    if (onSelectParent) {
+      onSelectParent(p);
+    }
+  };
+
+  const handleClearParent = () => {
+    setSelectedParent(null);
+    formik.setFieldValue("parent_id", null);
+    if (onSelectParent) {
+      onSelectParent(null);
+    }
+  };
 
   const formik = useFormik({
     initialValues: initialState,
@@ -1099,6 +1168,175 @@ const StudentFormComponent = ({
           </span>
         </div>
 
+        {/* Sibling Admission / Parent Mode Toggle (Only in Create Mode) */}
+        {!userId && (
+          <div className="p-4 rounded-xl border border-indigo-100 dark:border-indigo-950/50 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/50 dark:from-[#181a24] dark:via-[#141416] dark:to-[#161822] space-y-3.5 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  Admission Category: Sibling or New Family?
+                </span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Link sibling to an existing parent account to avoid duplicate logins, or register a new family.
+                </p>
+              </div>
+
+              {/* Segmented Switch */}
+              <div className="inline-flex p-1 bg-slate-200/70 dark:bg-[#202022] rounded-xl self-start sm:self-auto border border-slate-300/50 dark:border-[#2a2a2e]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setParentType("new");
+                    handleClearParent();
+                  }}
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    parentType === "new"
+                      ? "bg-white dark:bg-[#121214] text-slate-900 dark:text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  👤 New Family
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setParentType("existing")}
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    parentType === "existing"
+                      ? "bg-indigo-600 text-white shadow-xs shadow-indigo-600/30"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  👨‍👩‍👧 Sibling Admission
+                </button>
+              </div>
+            </div>
+
+            {/* Sibling Search Section */}
+            {parentType === "existing" && !selectedParent && (
+              <div className="pt-2 border-t border-indigo-100/70 dark:border-indigo-950/40 relative">
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Search Existing Parent or Sibling
+                </label>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={parentSearchQuery}
+                    onChange={handleSearchInputChange}
+                    placeholder="Search by Father/Mother Name, Mobile No, Aadhaar, or Sibling Name..."
+                    className="w-full pl-10 pr-10 py-2.5 text-xs rounded-xl bg-white dark:bg-[#121214] border border-indigo-200 dark:border-indigo-900/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 shadow-2xs"
+                  />
+                  {isSearchingParent && (
+                    <RefreshCw className="w-3.5 h-3.5 text-indigo-500 animate-spin absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {showDropdown && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e32] rounded-xl shadow-xl max-h-72 overflow-y-auto custom-scrollbar p-1.5 divide-y divide-slate-100 dark:divide-[#252528]">
+                    {parentSearchResults.length === 0 && !isSearchingParent ? (
+                      <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                        No registered family found matching "{parentSearchQuery}". Try mobile number or Aadhaar.
+                      </div>
+                    ) : (
+                      parentSearchResults.map((p) => (
+                        <div
+                          key={p.parent_id}
+                          className="p-3 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 rounded-lg transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                                {p.father_name ? `Father: ${p.father_name}` : ""}
+                                {p.father_name && p.mother_name ? " • " : ""}
+                                {p.mother_name ? `Mother: ${p.mother_name}` : ""}
+                                {!p.father_name && !p.mother_name ? p.parent_username : ""}
+                              </span>
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300">
+                                User #{p.parent_id}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-2">
+                              {p.contact_no && <span>📞 {p.contact_no}</span>}
+                              {p.father_aadhar && <span>🪪 Aadhaar: {p.father_aadhar}</span>}
+                              {p.address?.street && <span>📍 {p.address.street}</span>}
+                            </div>
+                            {p.children && p.children.length > 0 && (
+                              <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
+                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase">
+                                  Enrolled Siblings:
+                                </span>
+                                {p.children.map((c) => (
+                                  <span
+                                    key={c.id}
+                                    className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60"
+                                  >
+                                    🎒 {c.name} {c.class_name ? `(${c.class_name}${c.section_name ? `-${c.section_name}` : ""})` : ""}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectParent(p)}
+                            className="px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-xs cursor-pointer shrink-0 self-end sm:self-auto"
+                          >
+                            Select Family
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Selected Parent Confirmation Banner */}
+            {selectedParent && (
+              <div className="pt-2 border-t border-emerald-200/70 dark:border-emerald-950/40">
+                <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/80 dark:bg-emerald-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="text-xs font-bold text-emerald-950 dark:text-emerald-200">
+                        Family Linked: {selectedParent.father_name || selectedParent.parent_username} & {selectedParent.mother_name || "Family"} (Parent User #{selectedParent.parent_id})
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
+                      Family records, contact numbers, and residential address have been auto-populated. This new student will be attached to the parent's existing login account.
+                    </p>
+                    {selectedParent.children && selectedParent.children.length > 0 && (
+                      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                        <span className="text-[10px] font-bold text-emerald-900 dark:text-emerald-200 uppercase">
+                          Siblings in School:
+                        </span>
+                        {selectedParent.children.map((c) => (
+                          <span
+                            key={c.id}
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/80 dark:bg-[#161616] text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          >
+                            🎒 {c.name} ({c.class_name || "Enrolled"})
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearParent}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-200 bg-white/90 dark:bg-[#1a1a1a] hover:bg-white border border-emerald-300/80 dark:border-emerald-800 rounded-lg transition-all cursor-pointer shrink-0 self-end sm:self-auto"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Change Family
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Mother's Details */}
         <div className="p-4 md:p-5 rounded-xl border border-slate-200/80 dark:border-[#282828] bg-slate-50/40 dark:bg-[#131313] space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-[#222]">
@@ -1330,6 +1568,7 @@ StudentFormComponent.propTypes = {
   updatedValues: PropTypes.object,
   iCardDetails: PropTypes.object,
   setICardDetails: PropTypes.func,
+  onSelectParent: PropTypes.func,
 };
 
 export default StudentFormComponent;

@@ -168,13 +168,15 @@ export const datagridColumns = (rolePriority = null, handleViewReportCard = null
                     >
                         <FileText className="w-4 h-4" />
                     </button>
-                    <button
-                        onClick={() => handleActionEdit(row.id, row.student_id, row.term)}
-                        className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer shadow-2xs"
-                        title="Edit Marksheet"
-                    >
-                        <Pencil className="w-4 h-4" />
-                    </button>
+                    {rolePriority <= 4 && (
+                        <button
+                            onClick={() => handleActionEdit(row.id, row.student_id, row.term)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer shadow-2xs"
+                            title="Edit Marksheet"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             )
         }] : [])

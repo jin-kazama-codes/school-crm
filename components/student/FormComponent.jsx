@@ -16,6 +16,7 @@ import { RotateCcw, Save, ArrowLeft, GraduationCap, CreditCard, Loader2 } from "
 import API from "../../apis";
 import AddressFormComponent from "../address/AddressFormComponent";
 import ICardModal from "../models/ICardModal";
+import StudentCredentialModal from "../models/StudentCredentialModal";
 import ImagePicker from "../image/ImagePicker";
 import Loader from "../common/Loader";
 import StudentFormComponent from "./StudentFormComponent";
@@ -54,6 +55,10 @@ const FormComponent = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [classData, setClassData] = useState([]);
     const [iCardDetails, setICardDetails] = useState({});
+    const [selectedExistingParent, setSelectedExistingParent] = useState(null);
+    const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
+    const [openCredModal, setOpenCredModal] = useState(false);
+    const [pendingRedirectUrl, setPendingRedirectUrl] = useState("");
 
 
     const formSubjectsInRedux = useSelector(state => state.allSubjects);
@@ -257,6 +262,112 @@ const FormComponent = () => {
         }
 
         const currentSchoolId = schoolInformation?.school_id || formData.studentData.values?.school_id;
+        const resolvedSchoolId = currentSchoolId;
+        const existingParentId = formData.studentData.values?.parent_id || selectedExistingParent?.parent_id;
+
+        // SIBLING ADMISSION: If linked to an existing parent, skip creating duplicate parent user!
+        if (existingParentId) {
+            API.StudentAPI.createStudent({
+                ...formData.studentData.values,
+                school_id: resolvedSchoolId,
+                parent_id: existingParentId,
+                password: password
+            })
+                .then(async ({ data: student }) => {
+                    const studentId = student?.data?.id || student?.data?.data?.id || student?.id;
+                    const studentSchoolId = student?.data?.school_id || resolvedSchoolId;
+
+                    if (!studentId && student?.status !== 'Success') {
+                        setIsSubmitting(false);
+                        toastAndNavigate(dispatch, true, "error", student?.msg || "Failed to create student", navigateTo, 0);
+                        return;
+                    }
+
+                    const childPromises = [];
+
+                    const addrPromise = API.AddressAPI.createAddress({
+                        ...formData.addressData.values,
+                        school_id: studentSchoolId,
+                        parent_id: studentId,
+                        parent: 'student'
+                    });
+                    childPromises.push(addrPromise);
+
+                    if (formData.imageData.values?.image?.length) {
+                        Array.from(formData.imageData.values.image).forEach((image) => {
+                            const imgPromise = (async () => {
+                                const formattedName = formatImageName(image.name);
+                                const res = await API.ImageAPI.uploadImageToSupabase({
+                                    image: image,
+                                    folder: `student/${formattedName}`,
+                                });
+                                if (res?.data?.status === "Success" || res?.data?.data) {
+                                    const imageUrl = res.data.data;
+                                    await API.ImageAPI.createImage({
+                                        image_src: imageUrl,
+                                        school_id: studentSchoolId,
+                                        parent_id: studentId,
+                                        parent: 'student',
+                                        type: 'normal'
+                                    });
+                                }
+                            })();
+                            childPromises.push(imgPromise);
+                        });
+                    }
+
+                    if (formData.parentImageData.values?.image?.length) {
+                        Array.from(formData.parentImageData.values.image).forEach((image) => {
+                            const parentImgPromise = (async () => {
+                                const formattedName = formatImageName(image.name);
+                                const res = await API.ImageAPI.uploadImageToSupabase({
+                                    image: image,
+                                    folder: `student/${formattedName}`,
+                                });
+                                if (res?.data?.status === "Success" || res?.data?.data) {
+                                    const imageUrl = res.data.data;
+                                    await API.ImageAPI.createImage({
+                                        image_src: imageUrl,
+                                        school_id: studentSchoolId,
+                                        parent_id: studentId,
+                                        parent: 'parent',
+                                        type: 'parent'
+                                    });
+                                }
+                            })();
+                            childPromises.push(parentImgPromise);
+                        });
+                    }
+
+                    try {
+                        await Promise.all(childPromises);
+                        setIsSubmitting(false);
+                        const targetClass = formData.studentData.values?.class || getLocalStorage('class') || '';
+                        if (formData.studentData.values?.class) {
+                            setLocalStorage('class', formData.studentData.values.class);
+                        }
+                        const studentData = student?.data?.data || student?.data;
+                        const creds = studentData?.student_credentials;
+                        if (creds) {
+                            setCreatedStudentCreds(creds);
+                            setPendingRedirectUrl(`/student/listing/${targetClass}`);
+                            setOpenCredModal(true);
+                        } else {
+                            toastAndNavigate(dispatch, true, "success", "Successfully Admitted & Linked to Family Account", navigateTo, `/student/listing/${targetClass}`);
+                        }
+                    } catch (err) {
+                        setIsSubmitting(false);
+                        toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
+                        console.log('Error in student create', err);
+                    }
+                })
+                .catch(err => {
+                    setIsSubmitting(false);
+                    toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
+                    console.log('Error in student create', err);
+                });
+            return;
+        }
 
         API.UserAPI.register({
             username: username,
@@ -358,7 +469,15 @@ const FormComponent = () => {
                                 if (formData.studentData.values?.class) {
                                     setLocalStorage('class', formData.studentData.values.class);
                                 }
-                                toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/student/listing/${targetClass}`);
+                                const studentData = student?.data?.data || student?.data;
+                                const creds = studentData?.student_credentials;
+                                if (creds) {
+                                    setCreatedStudentCreds(creds);
+                                    setPendingRedirectUrl(`/student/listing/${targetClass}`);
+                                    setOpenCredModal(true);
+                                } else {
+                                    toastAndNavigate(dispatch, true, "success", "Successfully Created", navigateTo, `/student/listing/${targetClass}`);
+                                }
                             } catch (err) {
                                 setIsSubmitting(false);
                                 toastAndNavigate(dispatch, true, "error", err ? err?.response?.data?.msg : "An Error Occurred", navigateTo, 0);
@@ -591,6 +710,19 @@ const FormComponent = () => {
                         updatedValues={updatedValues?.studentData}
                         iCardDetails={iCardDetails}
                         setICardDetails={setICardDetails}
+                        onSelectParent={(parent) => {
+                            setSelectedExistingParent(parent);
+                            if (parent?.address && addressFormRef.current?.formik) {
+                                addressFormRef.current.formik.setValues({
+                                    street: parent.address.street || "",
+                                    landmark: parent.address.landmark || "",
+                                    zipcode: parent.address.zipcode || "",
+                                    country: parent.address.country || 1,
+                                    state: parent.address.state || 0,
+                                    city: parent.address.city || 0,
+                                });
+                            }
+                        }}
                     />
 
                     <AddressFormComponent
@@ -744,6 +876,16 @@ const FormComponent = () => {
                     alerting={toastInfo.toastAlert}
                     severity={toastInfo.toastSeverity}
                     message={toastInfo.toastMessage}
+                />
+
+                <StudentCredentialModal
+                    open={openCredModal}
+                    onClose={() => {
+                        setOpenCredModal(false);
+                        navigateTo(pendingRedirectUrl || `/student/listing/${getLocalStorage('class') || ''}`);
+                    }}
+                    credentials={createdStudentCreds}
+                    studentName={`${formData.studentData?.values?.firstname || ''} ${formData.studentData?.values?.lastname || ''}`.trim()}
                 />
 
                 {isPopulating && (

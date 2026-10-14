@@ -88,28 +88,30 @@ const Login = () => {
           ) {
             toastAndNavigate(dispatch, true, "info", response?.data)
           } else {
+            const numRole = Number(response.data.role);
             const authInfo = {
               id: response.data.id,
               school_id: response.data.school_id,
               school_code: sanitizedData.school_code,
               token: response.data.token,
               role: response.data.role,
-              designation: response.data.designation,
+              rolePriority: response.data.rolePriority ?? numRole,
+              designation: response.data.designation || (numRole === 6 ? "student" : undefined),
               username: response.data.username,
               school: response.data.school_name,
               school_capacity: response.data.school_capacity,
-            }
+              student: response.data.student || null,
+            };
             setLocalStorage("auth", authInfo);
             if (response.data?.role) {
-              const numRole = Number(response.data.role);
               if (!isNaN(numRole)) {
-                setLocalStorage("userRole", { name: response.data.designation || response.data.role, priority: numRole });
+                setLocalStorage("userRole", { name: response.data.designation || (numRole === 6 ? "student" : response.data.role), priority: numRole });
               }
             }
             if (response.data?.school_info) {
               setLocalStorage("schoolInfo", response.data.school_info);
             }
-            let targetPath = getLocalStorage("navigatedPath") || "/";
+            let targetPath = getLocalStorage("navigatedPath") || (numRole === 6 ? "/assessment/listing" : "/");
             remLocalStorage("navigatedPath");
             if (typeof targetPath === "string" && targetPath.trim() !== "" && targetPath !== "/login" && targetPath !== "login") {
               if (!targetPath.startsWith("/")) targetPath = `/${targetPath}`;
@@ -118,7 +120,7 @@ const Login = () => {
                 targetPath = `/${parts[0]}/listing`;
               }
             } else {
-              targetPath = "/";
+              targetPath = numRole === 6 ? "/assessment/listing" : "/";
             }
             window.location.href = targetPath;
           }

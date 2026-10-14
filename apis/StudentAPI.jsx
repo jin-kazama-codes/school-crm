@@ -77,6 +77,35 @@ export const StudentAPI = {
       signal: cancel && cancelApiObject.getClassOfStudent ? cancelApiObject.getClassOfStudent.handleRequestCancellation().signal : undefined
     });
     return response;
+  },
+
+  /** Search parents by name, phone, aadhaar or existing student name for sibling linking
+   */
+  searchParents: async (search, cancel = false) => {
+    const { data: response } = await api.request({
+      url: `/search-parents?search=${encodeURIComponent(search)}`,
+      headers: {
+        "x-access-token": getLocalStorage("auth")?.token
+      },
+      method: "GET",
+      signal: cancel && cancelApiObject.searchParents ? cancelApiObject.searchParents.handleRequestCancellation().signal : undefined
+    });
+    return response;
+  },
+
+  /** On-demand generate or reset portal credentials for a student
+   */
+  generateStudentLogin: async (student_id, force = true, cancel = false) => {
+    const { data: response } = await api.request({
+      url: `/generate-student-login`,
+      headers: {
+        "x-access-token": getLocalStorage("auth")?.token
+      },
+      method: "POST",
+      data: { student_id, force },
+      signal: cancel && cancelApiObject.generateStudentLogin ? cancelApiObject.generateStudentLogin.handleRequestCancellation().signal : undefined
+    });
+    return response;
   }
 };
 

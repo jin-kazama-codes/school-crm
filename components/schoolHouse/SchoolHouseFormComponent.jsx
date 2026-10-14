@@ -11,7 +11,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
-import { Castle, UserCircle, Users, Paintbrush, ChevronDown } from "lucide-react";
+import { Castle, UserCircle, Users, Paintbrush, ChevronDown, Pipette } from "lucide-react";
 
 import API from "../../apis";
 import config from "../config";
@@ -23,6 +23,19 @@ import { setAllStudents, setStudents } from "../../redux/actions/StudentAction";
 import { setAllTeachers } from "../../redux/actions/TeacherAction";
 import { Utility } from "../utility";
 import { useCommon } from "../hooks/common";
+
+const PRESET_HOUSE_COLORS = [
+    { name: "Ruby Red", hex: "#EF4444" },
+    { name: "Crimson", hex: "#DC2626" },
+    { name: "Royal Blue", hex: "#2563EB" },
+    { name: "Sky Blue", hex: "#0EA5E9" },
+    { name: "Emerald Green", hex: "#10B981" },
+    { name: "Forest Green", hex: "#16A34A" },
+    { name: "Amber Gold", hex: "#F59E0B" },
+    { name: "Vibrant Orange", hex: "#F97316" },
+    { name: "Deep Purple", hex: "#8B5CF6" },
+    { name: "Rose Pink", hex: "#EC4899" },
+];
 
 const initialValues = {
     name: "",
@@ -37,8 +50,6 @@ const initialValues = {
     strength: "",
     status: "active"
 };
-let sectionObj = {};
-
 const SchoolHouseFormComponent = ({
     onChange,
     refId,
@@ -49,16 +60,19 @@ const SchoolHouseFormComponent = ({
 }) => {
     const [initialState, setInitialState] = useState(initialValues);
     const [classData, setClassData] = useState([]);
+    const [availableClasses, setAvailableClasses] = useState([]);
+    const [captainStudents, setCaptainStudents] = useState([]);
+    const [viceCaptainStudents, setViceCaptainStudents] = useState([]);
     
     const schoolClasses = useSelector(state => state.schoolClasses);
+    const allClasses = useSelector(state => state.allClasses);
     const schoolSections = useSelector(state => state.schoolSections);
-    const allFormStudents = useSelector(state => state.allStudents);
-    const allStudents = useSelector(state => state.allFormStudents);
+    const allSections = useSelector(state => state.allSections);
     const allTeachers = useSelector(state => state.allFormTeachers);
 
     const dispatch = useDispatch();
-    const { fetchAndSetSchoolData } = Utility();
-    const { getStudents, getPaginatedData } = useCommon();
+    const { fetchAndSetSchoolData, createUniqueDataArray } = Utility();
+    const { getPaginatedData } = useCommon();
 
     const formik = useFormik({
         initialValues: initialState,
@@ -83,15 +97,38 @@ const SchoolHouseFormComponent = ({
         }
     };
 
-    const getAndSetSections = (classId) => {
-        const classSections = classData?.filter(obj => obj.class_id === classId) || [];
-        const selectedSections = classSections.map(({ section_id, section_name }) => ({ section_id, section_name }));
-        sectionObj = {
-            ...sectionObj,
-            [classId]: selectedSections
-        };
-        dispatch(setSchoolSections(sectionObj));
+    // Resolves sections for a given class ID from classData or Redux fallback
+    const getSectionsForClass = (selectedClassId) => {
+        if (!selectedClassId) return [];
+        const classSections = (classData || []).filter(
+            (obj) => (obj.class_id ?? obj.id) == selectedClassId
+        );
+        const map = new Map();
+        classSections.forEach(({ section_id, section_name, id, name }) => {
+            const sId = section_id ?? id;
+            const sName = section_name ?? name;
+            if (sId && !map.has(String(sId))) {
+                map.set(String(sId), { section_id: sId, section_name: sName });
+            }
+        });
+        if (map.size === 0 && (allSections?.listData?.length || (Array.isArray(schoolSections?.listData) && schoolSections.listData.length))) {
+            const fallback = allSections?.listData?.length ? allSections.listData : schoolSections.listData;
+            fallback.forEach((s) => {
+                const sId = s.section_id ?? s.id;
+                const sName = s.section_name ?? s.name;
+                if (sId && !map.has(String(sId))) {
+                    map.set(String(sId), { section_id: sId, section_name: sName });
+                }
+            });
+        }
+        return Array.from(map.values());
     };
+
+    const classesList = availableClasses.length 
+        ? availableClasses 
+        : (schoolClasses?.listData?.length 
+            ? schoolClasses.listData 
+            : (allClasses?.listData?.length ? allClasses.listData : []));
 
     useEffect(() => {
         if (reset) {
@@ -108,7 +145,20 @@ const SchoolHouseFormComponent = ({
 
     useEffect(() => {
         if (updatedValues) {
-            setInitialState(updatedValues);
+            setInitialState({
+                name: updatedValues.name || "",
+                color_code: updatedValues.color_code || "",
+                captain: updatedValues.captain || "",
+                captainClassId: updatedValues.captainClassId || "",
+                captainSectionId: updatedValues.captainSectionId || "",
+                vice_captain: updatedValues.vice_captain || "",
+                viceCaptainClassId: updatedValues.viceCaptainClassId || "",
+                viceCaptainSectionId: updatedValues.viceCaptainSectionId || "",
+                teacher_incharge: updatedValues.teacher_incharge || "",
+                strength: updatedValues.strength !== null && updatedValues.strength !== undefined ? updatedValues.strength : "",
+                status: updatedValues.status || "active",
+                id: updatedValues.id
+            });
         }
     }, [updatedValues]);
 
@@ -118,31 +168,51 @@ const SchoolHouseFormComponent = ({
         }
     }, []);
 
+    // Always fetch school class/section mapping on mount
     useEffect(() => {
-        if (!schoolClasses?.listData?.length || !schoolSections?.listData?.length) {
-            fetchAndSetSchoolData(dispatch, setSchoolClasses, setSchoolSections, setClassData);
-        }
+        API.SchoolAPI.getSchoolClasses()
+            .then(res => {
+                if (res?.status === 'Success' && Array.isArray(res.data)) {
+                    setClassData(res.data);
+                    const uniqueClasses = createUniqueDataArray(res.data, 'class_id', 'class_name');
+                    setAvailableClasses(uniqueClasses);
+                    dispatch(setSchoolClasses(uniqueClasses));
+                    const uniqueSections = createUniqueDataArray(res.data, 'section_id', 'section_name');
+                    dispatch(setSchoolSections(uniqueSections));
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching school classes:", err);
+            });
     }, []);
 
+    // Dynamically load students when Captain Class & Section are selected
     useEffect(() => {
         if (formik.values.captainClassId && formik.values.captainSectionId) {
-            getStudents(formik.values.captainClassId, formik.values.captainSectionId, setAllStudents, API);
+            API.StudentAPI.getAll({ classId: formik.values.captainClassId, sectionId: formik.values.captainSectionId }, 0, 100)
+                .then(res => {
+                    const rows = res?.data?.rows || (Array.isArray(res?.data) ? res.data : []);
+                    setCaptainStudents(rows);
+                })
+                .catch(() => setCaptainStudents([]));
+        } else {
+            setCaptainStudents([]);
         }
     }, [formik.values.captainClassId, formik.values.captainSectionId]);
 
-    useEffect(() => {
-        getAndSetSections(formik.values.captainClassId);
-    }, [formik.values.captainClassId, classData?.length]);
-
+    // Dynamically load students when Vice Captain Class & Section are selected
     useEffect(() => {
         if (formik.values.viceCaptainClassId && formik.values.viceCaptainSectionId) {
-            getStudents(formik.values.viceCaptainClassId, formik.values.viceCaptainSectionId, setStudents, API);
+            API.StudentAPI.getAll({ classId: formik.values.viceCaptainClassId, sectionId: formik.values.viceCaptainSectionId }, 0, 100)
+                .then(res => {
+                    const rows = res?.data?.rows || (Array.isArray(res?.data) ? res.data : []);
+                    setViceCaptainStudents(rows);
+                })
+                .catch(() => setViceCaptainStudents([]));
+        } else {
+            setViceCaptainStudents([]);
         }
     }, [formik.values.viceCaptainClassId, formik.values.viceCaptainSectionId]);
-
-    useEffect(() => {
-        getAndSetSections(formik.values.viceCaptainClassId);
-    }, [formik.values.viceCaptainClassId, classData?.length]);
 
     const inputClasses =
         "w-full pl-10 pr-3.5 py-2.5 text-sm bg-white dark:bg-[#121212] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.4)] focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-400/20 focus:border-emerald-500 dark:focus:border-emerald-400 transition-all outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500";
@@ -181,7 +251,7 @@ const SchoolHouseFormComponent = ({
                                 name="name"
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
-                                value={formik.values.name}
+                                value={formik.values.name || ""}
                                 className={`${inputClasses} ${
                                     formik.touched.name && formik.errors.name
                                         ? "border-rose-400 ring-1 ring-rose-400"
@@ -197,22 +267,86 @@ const SchoolHouseFormComponent = ({
 
                     {/* Color Code */}
                     <div>
-                        <label className={labelClasses}>Color Code</label>
-                        <div className="relative">
-                            <Paintbrush className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                name="color_code"
-                                onBlur={formik.handleBlur}
-                                onChange={formik.handleChange}
-                                value={formik.values.color_code}
-                                className={`${inputClasses} ${
-                                    formik.touched.color_code && formik.errors.color_code
-                                        ? "border-rose-400 ring-1 ring-rose-400"
-                                        : ""
-                                }`}
-                                placeholder="e.g., #FF5733"
-                            />
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className={labelClasses}>House Color*</label>
+                            {formik.values.color_code && (
+                                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#202020] text-slate-700 dark:text-slate-300">
+                                    {formik.values.color_code.toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                        <div className="space-y-2.5">
+                            <div className="relative flex items-center">
+                                {/* Color Swatch Trigger */}
+                                <label 
+                                    htmlFor="house-color-picker" 
+                                    className="absolute left-2 z-10 flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs border border-slate-200 dark:border-white/10 overflow-hidden"
+                                    style={{ backgroundColor: formik.values.color_code || "#6366F1" }}
+                                    title="Click to open Color Picker"
+                                >
+                                    <input
+                                        id="house-color-picker"
+                                        type="color"
+                                        value={formik.values.color_code && /^#[0-9A-Fa-f]{6}$/.test(formik.values.color_code) ? formik.values.color_code : "#6366F1"}
+                                        onChange={(e) => {
+                                            formik.setFieldValue("color_code", e.target.value);
+                                            formik.setFieldTouched("color_code", true, false);
+                                        }}
+                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                    />
+                                    <Pipette className="w-3.5 h-3.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] pointer-events-none" />
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="color_code"
+                                    onBlur={formik.handleBlur}
+                                    onChange={formik.handleChange}
+                                    value={formik.values.color_code || ""}
+                                    className={`${inputClasses} !pl-11 !pr-24 ${
+                                        formik.touched.color_code && formik.errors.color_code
+                                            ? "border-rose-400 ring-1 ring-rose-400"
+                                            : ""
+                                    }`}
+                                    placeholder="#EF4444 or Pick"
+                                />
+
+                                <label
+                                    htmlFor="house-color-picker"
+                                    className="absolute right-2 px-2.5 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-[#252525] dark:hover:bg-[#303030] rounded-lg transition-all cursor-pointer select-none border border-slate-200/60 dark:border-[#333]"
+                                >
+                                    Pick Color
+                                </label>
+                            </div>
+
+                            {/* Preset Color Palette Chips */}
+                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 mr-1 font-medium">Presets:</span>
+                                {PRESET_HOUSE_COLORS.map(c => {
+                                    const isSelected = formik.values.color_code?.toLowerCase() === c.hex.toLowerCase();
+                                    return (
+                                        <button
+                                            key={c.hex}
+                                            type="button"
+                                            onClick={() => {
+                                                formik.setFieldValue("color_code", c.hex);
+                                                formik.setFieldTouched("color_code", true, false);
+                                            }}
+                                            title={`${c.name} (${c.hex})`}
+                                            className={`w-5 h-5 rounded-full transition-all duration-150 transform hover:scale-125 cursor-pointer shadow-xs relative flex items-center justify-center ${
+                                                isSelected 
+                                                    ? "ring-2 ring-offset-2 ring-emerald-500 scale-110 dark:ring-offset-[#161616]" 
+                                                    : "hover:ring-1 hover:ring-slate-300 dark:hover:ring-slate-600"
+                                            }`}
+                                            style={{ backgroundColor: c.hex }}
+                                        >
+                                            {isSelected && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white shadow-xs"></span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                         {formik.touched.color_code && formik.errors.color_code && (
                             <p className={errorClasses}>{formik.errors.color_code}</p>
@@ -229,7 +363,7 @@ const SchoolHouseFormComponent = ({
                                 name="strength"
                                 onBlur={formik.handleBlur}
                                 onChange={formik.handleChange}
-                                value={formik.values.strength}
+                                value={formik.values.strength ?? ""}
                                 className={`${inputClasses} ${
                                     formik.touched.strength && formik.errors.strength
                                         ? "border-rose-400 ring-1 ring-rose-400"
@@ -249,7 +383,7 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="status"
-                                value={formik.values.status}
+                                value={formik.values.status || "active"}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -277,7 +411,7 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="teacher_incharge"
-                                value={formik.values.teacher_incharge || ''}
+                                value={formik.values.teacher_incharge || ""}
                                 onChange={event => formik.setFieldValue("teacher_incharge", event.target.value)}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -321,15 +455,11 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="captainClassId"
-                                value={formik.values.captainClassId}
+                                value={formik.values.captainClassId || ""}
                                 onChange={event => {
                                     formik.setFieldValue("captainClassId", event.target.value);
-                                    if (formik.values.captainSectionId) {
-                                        formik.setFieldValue("captainSectionId", '');
-                                    }
-                                    if (formik.values.captain) {
-                                        formik.setFieldValue("captain", '');
-                                    }
+                                    formik.setFieldValue("captainSectionId", "");
+                                    formik.setFieldValue("captain", "");
                                 }}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -339,9 +469,9 @@ const SchoolHouseFormComponent = ({
                                 }`}
                             >
                                 <option value="" disabled>Select Class</option>
-                                {schoolClasses?.listData?.map(cls => (
-                                    <option value={cls.class_id} key={cls.class_id}>
-                                        {cls.class_name}
+                                {classesList?.map(cls => (
+                                    <option value={cls.class_id ?? cls.id} key={cls.class_id ?? cls.id}>
+                                        {cls.class_name ?? cls.name}
                                     </option>
                                 ))}
                             </select>
@@ -358,12 +488,10 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="captainSectionId"
-                                value={formik.values.captainSectionId}
+                                value={formik.values.captainSectionId || ""}
                                 onChange={event => {
                                     formik.setFieldValue("captainSectionId", event.target.value);
-                                    if (formik.values.captain) {
-                                        formik.setFieldValue("captain", '');
-                                    }
+                                    formik.setFieldValue("captain", "");
                                 }}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -373,7 +501,7 @@ const SchoolHouseFormComponent = ({
                                 }`}
                             >
                                 <option value="" disabled>Select Section</option>
-                                {schoolSections?.listData?.[formik.values.captainClassId]?.map(section => (
+                                {getSectionsForClass(formik.values.captainClassId).map(section => (
                                     <option value={section.section_id} key={section.section_id}>
                                         {section.section_name}
                                     </option>
@@ -392,7 +520,7 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="captain"
-                                value={formik.values.captain}
+                                value={formik.values.captain || ""}
                                 onChange={event => formik.setFieldValue("captain", event.target.value)}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -402,11 +530,16 @@ const SchoolHouseFormComponent = ({
                                 }`}
                             >
                                 <option value="" disabled>Select Captain</option>
-                                {allStudents?.listData?.rows?.map(item => (
-                                    <option value={item.id} key={item.id}>
-                                        {`${item.firstname.charAt(0).toUpperCase() + item.firstname.slice(1)} ${item.lastname.charAt(0).toUpperCase() + item.lastname.slice(1)}`}
-                                    </option>
-                                ))}
+                                {captainStudents.map(item => {
+                                    const fn = item.firstname ? (item.firstname.charAt(0).toUpperCase() + item.firstname.slice(1)) : "";
+                                    const ln = item.lastname ? (item.lastname.charAt(0).toUpperCase() + item.lastname.slice(1)) : "";
+                                    const enroll = item.enrollment_no ? ` (${item.enrollment_no})` : "";
+                                    return (
+                                        <option value={item.id} key={item.id}>
+                                            {`${fn} ${ln}${enroll}`}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
@@ -436,15 +569,11 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="viceCaptainClassId"
-                                value={formik.values.viceCaptainClassId}
+                                value={formik.values.viceCaptainClassId || ""}
                                 onChange={event => {
                                     formik.setFieldValue("viceCaptainClassId", event.target.value);
-                                    if (formik.values.viceCaptainSectionId) {
-                                        formik.setFieldValue("viceCaptainSectionId", '');
-                                    }
-                                    if (formik.values.vice_captain) {
-                                        formik.setFieldValue("vice_captain", '');
-                                    }
+                                    formik.setFieldValue("viceCaptainSectionId", "");
+                                    formik.setFieldValue("vice_captain", "");
                                 }}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -454,9 +583,9 @@ const SchoolHouseFormComponent = ({
                                 }`}
                             >
                                 <option value="" disabled>Select Class</option>
-                                {schoolClasses?.listData?.map(cls => (
-                                    <option value={cls.class_id} key={cls.class_id}>
-                                        {cls.class_name}
+                                {classesList?.map(cls => (
+                                    <option value={cls.class_id ?? cls.id} key={cls.class_id ?? cls.id}>
+                                        {cls.class_name ?? cls.name}
                                     </option>
                                 ))}
                             </select>
@@ -473,12 +602,10 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="viceCaptainSectionId"
-                                value={formik.values.viceCaptainSectionId}
+                                value={formik.values.viceCaptainSectionId || ""}
                                 onChange={event => {
                                     formik.setFieldValue("viceCaptainSectionId", event.target.value);
-                                    if (formik.values.vice_captain) {
-                                        formik.setFieldValue("vice_captain", '');
-                                    }
+                                    formik.setFieldValue("vice_captain", "");
                                 }}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -488,7 +615,7 @@ const SchoolHouseFormComponent = ({
                                 }`}
                             >
                                 <option value="" disabled>Select Section</option>
-                                {schoolSections?.listData?.[formik.values.viceCaptainClassId]?.map(section => (
+                                {getSectionsForClass(formik.values.viceCaptainClassId).map(section => (
                                     <option value={section.section_id} key={section.section_id}>
                                         {section.section_name}
                                     </option>
@@ -507,7 +634,7 @@ const SchoolHouseFormComponent = ({
                         <div className="relative">
                             <select
                                 name="vice_captain"
-                                value={formik.values.vice_captain}
+                                value={formik.values.vice_captain || ""}
                                 onChange={event => formik.setFieldValue("vice_captain", event.target.value)}
                                 onBlur={formik.handleBlur}
                                 className={`${selectClasses} pr-9 ${
@@ -517,11 +644,16 @@ const SchoolHouseFormComponent = ({
                                 }`}
                             >
                                 <option value="" disabled>Select Vice Captain</option>
-                                {allFormStudents?.listData?.rows?.map(item => (
-                                    <option value={item.id} key={item.id}>
-                                        {`${item.firstname.charAt(0).toUpperCase() + item.firstname.slice(1)} ${item.lastname.charAt(0).toUpperCase() + item.lastname.slice(1)}`}
-                                    </option>
-                                ))}
+                                {viceCaptainStudents.map(item => {
+                                    const fn = item.firstname ? (item.firstname.charAt(0).toUpperCase() + item.firstname.slice(1)) : "";
+                                    const ln = item.lastname ? (item.lastname.charAt(0).toUpperCase() + item.lastname.slice(1)) : "";
+                                    const enroll = item.enrollment_no ? ` (${item.enrollment_no})` : "";
+                                    return (
+                                        <option value={item.id} key={item.id}>
+                                            {`${fn} ${ln}${enroll}`}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>

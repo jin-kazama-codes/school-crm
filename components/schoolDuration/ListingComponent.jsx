@@ -15,13 +15,13 @@ import { Plus } from "lucide-react";
 import API from "../../apis";
 import Search from "../common/Search";
 import ServerPaginationGrid from '../common/Datagrid';
+import SchoolDurationDossierModal from "./SchoolDurationDossierModal";
 
 import { datagridColumns } from "./SchoolDurationConfig";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
 import { setSchoolDurations } from "../../redux/actions/SchoolDurationAction";
 import { useCommon } from "../hooks/common";
 import { Utility } from "../utility";
-
 
 const pageSizeOptions = [10, 20, 50];
 
@@ -35,6 +35,8 @@ const ListingComponent = ({ rolePriority = null }) => {
     const [searchFlag, setSearchFlag] = useState({ search: false, searching: false });
     const [oldPagination, setOldPagination] = useState();
     const [reloadBtn, setReloadBtn] = useState(null);
+    const [isDossierOpen, setIsDossierOpen] = useState(false);
+    const [selectedRecord, setSelectedRecord] = useState(null);
 
     const { getPaginatedData } = useCommon();
     const { getLocalStorage } = Utility();
@@ -48,10 +50,18 @@ const ListingComponent = ({ rolePriority = null }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const handleViewClick = (row) => {
+        setSelectedRecord(row);
+        setIsDossierOpen(true);
+    };
+
+    const handleEditClick = (id) => {
+        navigateTo(`/school-duration/update/${id}`, { state: { id } });
+    };
+
     return (
         <div 
             className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200"
-            
         >
             <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-sm p-5">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -73,7 +83,7 @@ const ListingComponent = ({ rolePriority = null }) => {
                     {rolePriority > 1 && (
                         <button
                             onClick={() => { navigateTo(`/school-duration/create`) }}
-                            className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/30 transition-all duration-200 whitespace-nowrap"
+                            className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/30 transition-all duration-200 whitespace-nowrap cursor-pointer"
                         >
                             <Plus className="w-5 h-5" />
                             Create New {selected}
@@ -83,19 +93,30 @@ const ListingComponent = ({ rolePriority = null }) => {
             </div>
 
             <ServerPaginationGrid
-                    action={setSchoolDurations}
-                    api={API.SchoolDurationAPI}
-                    getQuery={getPaginatedData}
-                    columns={datagridColumns(rolePriority)}
-                    rows={listData?.rows || listData?.data || []}
-                    count={listData?.count}
-                    loading={loading}
-                    selected={selected}
-                    pageSizeOptions={pageSizeOptions}
-                    setOldPagination={setOldPagination}
-                    searchFlag={searchFlag}
-                    setSearchFlag={setSearchFlag}
-                />
+                action={setSchoolDurations}
+                api={API.SchoolDurationAPI}
+                getQuery={getPaginatedData}
+                columns={datagridColumns(rolePriority, handleViewClick, handleEditClick)}
+                rows={listData?.rows || listData?.data || []}
+                count={listData?.count}
+                loading={loading}
+                selected={selected}
+                pageSizeOptions={pageSizeOptions}
+                setOldPagination={setOldPagination}
+                searchFlag={searchFlag}
+                setSearchFlag={setSearchFlag}
+            />
+
+            {/* School Duration Dossier Modal */}
+            <SchoolDurationDossierModal
+                isOpen={isDossierOpen}
+                onClose={() => {
+                    setIsDossierOpen(false);
+                    setSelectedRecord(null);
+                }}
+                record={selectedRecord}
+                rolePriority={rolePriority}
+            />
         </div>
     );
 };

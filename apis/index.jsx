@@ -35,10 +35,12 @@ import { TeacherAPI } from "./TeacherAPI";
 import { UserAPI } from "./UserAPI";
 import { UserRoleAPI } from "./UserRoleAPI";
 import { AttendanceAPI } from "./AttendanceAPI";
+import { AssessmentAPI } from "./AssessmentAPI";
 
 export default {
     AddressAPI,
     AmenityAPI,
+    AssessmentAPI,
     AttendanceAPI,
     BusAPI,
     CityAPI,

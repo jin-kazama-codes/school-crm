@@ -32,6 +32,9 @@ function createPrismaClient() {
   // Ensure payment table discount_percent accepts decimals (Float)
   pool.query(`ALTER TABLE "payment" ALTER COLUMN "discount_percent" TYPE DOUBLE PRECISION USING "discount_percent"::double precision;`).catch(() => {});
 
+  // Ensure attendance table has remark column
+  pool.query(`ALTER TABLE "attendance" ADD COLUMN IF NOT EXISTS "remark" TEXT;`).catch(() => {});
+
   const adapter = new PrismaPg(pool);
   return new PrismaClient({
     adapter,
@@ -39,7 +42,12 @@ function createPrismaClient() {
   });
 }
 
-const prisma = global.prisma || createPrismaClient();
+// Ensure fresh PrismaClient instance on reload in development
+if (process.env.NODE_ENV !== "production") {
+  global.prisma = undefined;
+}
+
+const prisma = createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   global.prisma = prisma;

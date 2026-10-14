@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "@/lib/routerAdapter";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
-import { PlusCircle, BookOpen, Layers, ChevronDown } from "lucide-react";
+import { PlusCircle, BookOpen, Layers, ChevronDown, FileCheck, Award, Sparkles } from "lucide-react";
 
 import API from "../../apis";
 import Search from "../common/Search";
@@ -10,6 +10,7 @@ import ServerPaginationGrid from "../common/Datagrid";
 
 import { datagridColumns } from "./MarksheetConfig";
 import MarksheetReportCardModal from "./MarksheetReportCardModal";
+import ExamPapersLedgerTab from "./ExamPapersLedgerTab";
 import { setMenuItem } from "../../redux/actions/NavigationAction";
 import { setMarksheets, setMarksheetClassData } from "../../redux/actions/MarksheetAction";
 import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
@@ -37,6 +38,7 @@ const ListingComponent = ({ rolePriority = null }) => {
   const navigateTo = useNavigate();
   const dispatch = useDispatch();
 
+  const [activeView, setActiveView] = useState("reportCards"); // "reportCards" | "examLedger"
   const [reportCardOpen, setReportCardOpen] = useState(false);
   const [selectedMarksheet, setSelectedMarksheet] = useState(null);
 
@@ -204,127 +206,286 @@ const ListingComponent = ({ rolePriority = null }) => {
   }, []);
 
   useEffect(() => {
-    dispatch(setMenuItem("Marksheet"));
+    dispatch(setMenuItem("Theory Results & Marksheet"));
   }, []);
 
+  const columns = datagridColumns(rolePriority, (row) => {
+    setSelectedMarksheet(row);
+    setReportCardOpen(true);
+  });
+
   return (
-    <div 
-        className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200"
-    >
-        <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-sm p-5">
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-                <h2 className="text-xl sm:text-2xl font-extrabold font-display text-slate-800 dark:text-white tracking-tight capitalize shrink-0 leading-tight">
-                    {selected}
-                </h2>
-                
-                <div className="flex-1 w-full flex flex-col md:flex-row items-center gap-3 xl:px-6">
-                    <div className="w-full max-w-md">
-                        <Search
-                            action={setMarksheets}
-                            api={API.MarksheetAPI}
-                            getSearchData={getPaginatedData}
-                            oldPagination={oldPagination}
-                            reloadBtn={reloadBtn}
-                            setSearchFlag={setSearchFlag}
-                        />
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 shrink-0">
-                        {/* Class Dropdown */}
-                        <div className="relative flex items-center min-w-[160px] w-full sm:w-auto">
-                            <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
-                            <select
-                                value={classSectionObj?.class_id ?? ""}
-                                onChange={(event) =>
-                                    setClassSectionObj((prev) => ({
-                                      ...prev,
-                                      class_id: event.target.value ? Number(event.target.value) : "",
-                                      section_id: "",
-                                    }))
-                                }
-                                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all cursor-pointer shadow-2xs appearance-none"
-                            >
-                                <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Class</option>
-                                {classList.map((cls) => (
-                                    <option 
-                                        value={cls.id} 
-                                        key={`class-${cls.id}`}
-                                        className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
-                                    >
-                                        {cls.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
-                        </div>
-
-                        {/* Section Dropdown */}
-                        <div className="relative flex items-center min-w-[160px] w-full sm:w-auto">
-                            <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400 absolute left-3.5 pointer-events-none z-10" />
-                            <select
-                                value={classSectionObj?.section_id ?? ""}
-                                onChange={(event) =>
-                                    setClassSectionObj((prev) => ({
-                                      ...prev,
-                                      section_id: event.target.value ? Number(event.target.value) : "",
-                                    }))
-                                }
-                                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all cursor-pointer shadow-2xs appearance-none"
-                            >
-                                <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Section</option>
-                                {sectionList.map((sec) => (
-                                    <option 
-                                        value={sec.id} 
-                                        key={`section-${sec.id}`}
-                                        className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
-                                    >
-                                        {sec.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
-                        </div>
-                    </div>
-                </div>
-
-                {rolePriority > 1 && (
-                    <button
-                        onClick={() => navigateTo(`/marksheet/create`)}
-                        disabled={!classSectionObj?.class_id || !classSectionObj?.section_id}
-                        className="w-full xl:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-200 shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5 whitespace-nowrap shrink-0"
-                    >
-                        <PlusCircle className="w-5 h-5" />
-                        Create New {selected}
-                    </button>
-                )}
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 w-full animate-in fade-in duration-200">
+      {/* Top Banner & Context Controls (Matching Question Bank pattern) */}
+      <div className="bg-white dark:bg-[#141414] border border-slate-200/80 dark:border-[#222] rounded-3xl p-6 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          {/* School & Module Title */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>• Student Results & Evaluation</span>
             </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white mt-1">
+              Theory Results & Marksheet
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+              View theory examination marks, evaluate student question attempts, and generate official cumulative report cards.
+            </p>
+          </div>
+
+          {/* Cascading Class & Section Pickers */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-[#1c1c1c] p-2.5 rounded-2xl border border-slate-200/80 dark:border-[#2a2a2a]">
+              {/* Class Dropdown */}
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
+                title="Select target Class"
+              >
+                <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                    Class
+                  </span>
+                  <select
+                    value={classSectionObj?.class_id ?? ""}
+                    onChange={(e) =>
+                      setClassSectionObj({
+                        class_id: e.target.value ? Number(e.target.value) : "",
+                        section_id: "",
+                      })
+                    }
+                    className="bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 cursor-pointer"
+                  >
+                    <option value="">Select Class</option>
+                    {classList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Section Dropdown */}
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all ${!classSectionObj?.class_id
+                  ? "bg-slate-100 dark:bg-[#1f1f1f] border-slate-300/80 dark:border-[#333] opacity-80"
+                  : "bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
+                  }`}
+                title={!classSectionObj?.class_id ? "Please select a Class first" : "Select target Section"}
+              >
+                <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                    Section
+                  </span>
+                  <select
+                    value={classSectionObj?.section_id ?? ""}
+                    disabled={!classSectionObj?.class_id}
+                    onChange={(e) =>
+                      setClassSectionObj((prev) => ({
+                        ...prev,
+                        section_id: e.target.value ? Number(e.target.value) : "",
+                      }))
+                    }
+                    className={`bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 ${!classSectionObj?.class_id ? "cursor-not-allowed opacity-90" : "cursor-pointer"
+                      }`}
+                  >
+                    <option value="">{classSectionObj?.class_id ? "Select Section" : "Select Class First"}</option>
+                    {sectionList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <ServerPaginationGrid
-                action={setMarksheets}
-                api={API.MarksheetAPI}
-                getQuery={getPaginatedData}
-                columns={datagridColumns(rolePriority, (row) => {
-                    setSelectedMarksheet(row);
-                    setReportCardOpen(true);
-                })}
-                rows={listData?.rows || []}
-                count={listData?.count || 0}
-                loading={loading}
-                selected={selected}
-                pageSizeOptions={pageSizeOptions}
-                setOldPagination={setOldPagination}
-                searchFlag={searchFlag}
-                setSearchFlag={setSearchFlag}
-                condition={classConditionObj}
-            />
+        {/* Workflow Tabs Row */}
+        <div className="flex items-center mt-6 pt-4 border-t border-slate-100 dark:border-[#202020] overflow-x-auto custom-scrollbar">
+          <div className="inline-flex p-1.5 bg-slate-100/80 dark:bg-[#161616] rounded-2xl border border-slate-200/70 dark:border-[#262626] gap-1.5 max-w-full">
+            {[
+              {
+                id: "reportCards",
+                label: "1. Cumulative Report Cards",
+                subtitle: "Official student transcripts & grades",
+                tooltip: "View student report cards, aggregate grades, and print A4 report cards",
+                icon: FileCheck,
+                count: listData?.count,
+              },
+              {
+                id: "examLedger",
+                label: "2. Exam Papers & Theory Ledger",
+                subtitle: "Exam papers, question scoring & live sync",
+                tooltip: "Evaluate student answer sheets by exam paper with question-level breakdown and auto-sync",
+                icon: Award,
+              },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeView === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveView(tab.id)}
+                  title={tab.tooltip}
+                  className={`group flex items-center gap-3 px-3.5 py-2 rounded-xl transition-all duration-200 cursor-pointer text-left shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 ring-0 select-none ${isActive
+                    ? "bg-white dark:bg-[#242424] text-slate-900 dark:text-white shadow-xs border border-slate-200/90 dark:border-[#333333]"
+                    : "border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-[#1e1e1e]"
+                    }`}
+                >
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive
+                      ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400"
+                      : "bg-slate-200/60 dark:bg-[#202020] text-slate-500 dark:text-zinc-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200"
+                      }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col pr-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold tracking-tight ${isActive ? "text-slate-900 dark:text-white" : "text-slate-700 dark:text-zinc-300"}`}>
+                        {tab.label}
+                      </span>
+                      {tab.count !== undefined && (
+                        <span
+                          className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${isActive
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                            : "bg-slate-200/70 text-slate-600 dark:bg-[#252525] dark:text-zinc-400"
+                            }`}
+                        >
+                          {tab.count}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[10.5px] leading-tight ${isActive
+                        ? "text-emerald-600 dark:text-emerald-400 font-semibold"
+                        : "text-slate-400 dark:text-zinc-500"
+                        }`}
+                    >
+                      {tab.subtitle}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
-        <MarksheetReportCardModal
-            open={reportCardOpen}
-            setOpen={setReportCardOpen}
-            detail={selectedMarksheet}
-            allSubjects={allSubjects?.listData || []}
+      {/* ─── TAB 1: CUMULATIVE REPORT CARDS VIEW ─── */}
+      {activeView === "reportCards" && (
+        <>
+          <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-slate-100 dark:border-[#1a1a1a] shadow-xs p-4">
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+              <div className="flex items-center gap-2.5 shrink-0">
+                <span className="font-extrabold text-slate-800 dark:text-white text-sm sm:text-base">
+                  Marksheet Ledger
+                </span>
+                {classSectionObj?.class_id && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                    Filtered
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 w-full flex flex-col sm:flex-row items-center justify-end gap-3">
+                <div className="w-full sm:max-w-md">
+                  <Search
+                    action={setMarksheets}
+                    api={API.MarksheetAPI}
+                    getSearchData={getPaginatedData}
+                    oldPagination={oldPagination}
+                    reloadBtn={reloadBtn}
+                    setSearchFlag={setSearchFlag}
+                  />
+                </div>
+
+                {rolePriority > 1 && rolePriority <= 4 && (
+                  <button
+                    onClick={() => navigateTo(`/marksheet/create`, { state: { class_id: classSectionObj?.class_id, section_id: classSectionObj?.section_id } })}
+                    disabled={!classSectionObj?.class_id || !classSectionObj?.section_id}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-[#252525] disabled:text-slate-500 disabled:cursor-not-allowed text-white rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5 whitespace-nowrap cursor-pointer shrink-0"
+                    title={
+                      !classSectionObj?.class_id || !classSectionObj?.section_id
+                        ? "Select Class and Section above to create a marksheet"
+                        : "Create new student marksheet"
+                    }
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Create New Marksheet</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <ServerPaginationGrid
+            action={setMarksheets}
+            api={API.MarksheetAPI}
+            getQuery={getPaginatedData}
+            columns={columns}
+            rows={listData?.rows || []}
+            count={listData?.count || 0}
+            loading={loading}
+            selected={selected}
+            pageSizeOptions={pageSizeOptions}
+            setOldPagination={setOldPagination}
+            searchFlag={searchFlag}
+            setSearchFlag={setSearchFlag}
+            condition={classConditionObj}
+          />
+        </>
+      )}
+
+      {/* ─── TAB 2: EXAM PAPERS & THEORY LEDGER VIEW ─── */}
+      {activeView === "examLedger" && (
+        <ExamPapersLedgerTab
+          classId={classSectionObj?.class_id}
+          sectionId={classSectionObj?.section_id}
+          classList={classList}
+          sectionList={sectionList}
+          onClassChange={(cId) =>
+            setClassSectionObj((prev) => ({
+              ...prev,
+              class_id: cId ? Number(cId) : "",
+              section_id: "",
+            }))
+          }
+          onSectionChange={(sId) =>
+            setClassSectionObj((prev) => ({
+              ...prev,
+              section_id: sId ? Number(sId) : "",
+            }))
+          }
+          onViewReportCard={(st) => {
+            const existingRow = listData?.rows?.find((row) => row.student_id === st.id);
+            if (existingRow) {
+              setSelectedMarksheet(existingRow);
+            } else {
+              setSelectedMarksheet({
+                ...st,
+                student_id: st.id,
+                student_name: st.name || st.student_name,
+                class_id: classSectionObj?.class_id,
+                section_id: classSectionObj?.section_id,
+              });
+            }
+            setReportCardOpen(true);
+          }}
         />
+      )}
+
+      <MarksheetReportCardModal
+        open={reportCardOpen}
+        setOpen={setReportCardOpen}
+        detail={selectedMarksheet}
+        allSubjects={allSubjects?.listData || []}
+      />
     </div>
   );
 };
