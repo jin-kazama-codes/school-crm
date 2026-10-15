@@ -4,18 +4,21 @@ export const loginSchema = yup.object().shape({
   email: yup
     .string()
     .trim()
-    .required("Email is required")
-    .email("Please enter a valid email address"),
+    .required("Email, Username or Enrollment No is required")
+    .test(
+      "is-valid-email-or-username",
+      "Please enter a valid email or username / enrollment number",
+      (value) => {
+        if (!value) return false;
+        if (value.includes("@")) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        }
+        return /^[a-zA-Z0-9_.\-]+$/.test(value) && value.length >= 3;
+      }
+    ),
   password: yup
     .string()
-    .trim()
-    .required("Password is required")
-    .min(8, "Password Must Be 8 Characters Long")
-    .max(20, "Password cannot be more than 20 characters")
-    .matches(/[A-Z]/, "Password Must Contain At Least 1 Uppercase Letter")
-    .matches(/[a-z]/, "Password Must Contain At Least 1 Lowercase Letter")
-    .matches(/[0-9]/, "Password Must Contain At Least 1 Number")
-    .matches(/[^\w]/, "Password Must Contain At Least 1 Special Character"),
+    .required("Password is required"),
   school_code: yup.string().trim().nullable(),
 });
 

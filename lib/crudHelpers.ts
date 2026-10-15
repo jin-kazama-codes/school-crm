@@ -545,7 +545,8 @@ export async function provisionStudentUser(
     }
 
     const username = String(student.enrollment_no || student.id);
-    const rawPassword = `${(student.firstname || "Student").trim().replace(/\s+/g, "")}@${school?.school_code || "DEMO"}`;
+    const schoolCode = school?.school_code || (student.school_id ? `SCH${1000 + student.school_id - 1}` : "SCH1000");
+    const rawPassword = `${(student.firstname || "Student").trim().replace(/\s+/g, "")}@${schoolCode}`;
     const hashedPassword = await Utility.createHash(rawPassword);
 
     let studentUser = null;

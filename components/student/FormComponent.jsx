@@ -64,6 +64,7 @@ const FormComponent = () => {
     const formSubjectsInRedux = useSelector(state => state.allSubjects);
     const selected = useSelector(state => state.menuItems.selected);
     const toastInfo = useSelector(state => state.toastInfo);
+    const allSchools = useSelector(state => state.allSchools);
 
     const studentFormRef = useRef();
     const addressFormRef = useRef();
@@ -254,7 +255,11 @@ const FormComponent = () => {
         setIsSubmitting(true);
         const username = await formateName(formData.studentData.values?.father_name || formData.studentData.values?.mother_name ||
             formData.studentData.values?.guardian);
-        const password = await generateNormalPassword(username, schoolInformation?.school_code || 'DEMO');
+        const resolvedSchoolCode =
+            schoolInformation?.school_code ||
+            allSchools?.listData?.find(s => s.id === (schoolInformation?.school_id || formData.studentData.values?.school_id))?.school_code ||
+            'SCH1000';
+        const password = await generateNormalPassword(username, resolvedSchoolCode);
 
         formData.studentData.values = {
             ...formData.studentData.values,

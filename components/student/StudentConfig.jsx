@@ -1,61 +1,33 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-/* eslint-disable react-hooks/exhaustive-deps */
-/**
- * Copyright © 2023, School CRM Inc. ALL RIGHTS RESERVED.
- *
- * This software is the confidential information of School CRM Inc., and is licensed as
- * restricted rights software. The use,reproduction, or disclosure of this software is subject to
- * restrictions set forth in your license agreement with School CRM.
- */
-
-import { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "@/lib/routerAdapter";
 import { Pencil, Eye, KeyRound, GraduationCap } from 'lucide-react';
-
-import API from "../../apis";
-import { setAllClasses, setSchoolClasses } from "../../redux/actions/ClassAction";
-import { setAllSections, setSchoolSections } from "../../redux/actions/SectionAction";
-import { Utility } from "../utility";
 
 export const datagridColumns = (
     rolePriority = null,
     setOpen = null,
     setSelectedId = null,
     onGenerateLogin = null,
-    loadingLoginId = null
+    loadingLoginId = null,
+    classes = [],
+    sections = [],
+    navigateTo = null,
+    utils = {}
 ) => {
-    const schoolClasses = useSelector(state => state.schoolClasses);
-    const allClasses = useSelector(state => state.allClasses);
-    const schoolSections = useSelector(state => state.schoolSections);
-    const allSections = useSelector(state => state.allSections);
-
-    const dispatch = useDispatch();
-    const navigateTo = useNavigate();
-    const { appendSuffix, findById, fetchAndSetAll, fetchAndSetSchoolData, getLocalStorage, capitalizeEveryWord, formatDate, formatBloodGroup } = Utility();
+    const {
+        appendSuffix = (val) => val,
+        capitalizeEveryWord = (val) => val || '',
+        formatDate = (val) => val || '-',
+        formatBloodGroup = (val) => val || '-'
+    } = utils || {};
 
     const handleActionEdit = (id) => {
-        navigateTo(`/student/update/${id}`, { state: { id: id } });
+        if (navigateTo) {
+            navigateTo(`/student/update/${id}`, { state: { id: id } });
+        }
     };
 
     const handleActionShow = (id) => {
         if (setOpen) setOpen(true);
         if (setSelectedId) setSelectedId(id);
     };
-
-    useEffect(() => {
-        if (!getLocalStorage("schoolInfo")) {
-            if (!allClasses?.listData?.length) {
-                fetchAndSetAll(dispatch, setAllClasses, API.ClassAPI);
-            }
-            if (!allSections?.listData?.length) {
-                fetchAndSetAll(dispatch, setAllSections, API.SectionAPI);
-            }
-        }
-        if (getLocalStorage("schoolInfo") && (!schoolClasses?.listData?.length || !schoolSections?.listData?.length)) {
-            fetchAndSetSchoolData(dispatch, setSchoolClasses, setSchoolSections);
-        }
-    }, [schoolClasses?.listData?.length, schoolSections?.listData?.length, allClasses?.listData?.length, allSections?.listData?.length]);
 
     const columns = [
         {
@@ -93,20 +65,26 @@ export const datagridColumns = (
             align: "center",
             flex: 0.9,
             minWidth: 110,
-            renderCell: (params) => {
-                let className;
-                let sectionName;
+            renderCell: ({ row }) => {
+                // 1. Direct server-enriched names (instant zero-latency rendering)
+                let className = row?.class_name;
+                let sectionName = row?.section_name;
 
-                if (allClasses.listData.length && allSections.listData.length) {
-                    className = findById(params?.row?.class, allClasses?.listData)?.class_name;
-                    sectionName = findById(params?.row?.section, allSections?.listData)?.section_name;
-                } else if (schoolClasses.listData.length && schoolSections.listData.length) {
-                    className = findById(params?.row?.class, schoolClasses?.listData)?.class_name;
-                    sectionName = findById(params?.row?.section, schoolSections?.listData)?.section_name;
-                } 
+                // 2. Client fallback lookup if server hasn't populated them
+                if (!className && row?.class && classes?.length) {
+                    const found = classes.find((c) => (c?.id === row.class || c?.class_id === row.class));
+                    className = found?.class_name || found?.name;
+                }
+                if (!sectionName && row?.section && sections?.length) {
+                    const found = sections.find((s) => (s?.id === row.section || s?.section_id === row.section));
+                    sectionName = found?.section_name || found?.name;
+                }
+
+                if (!className) return <span className="text-slate-400 font-medium">-</span>;
+
                 return (
                     <div className="font-semibold text-slate-700 dark:text-slate-200">
-                        {className ? appendSuffix(className) : '-'} {sectionName ? `(${sectionName})` : ''}
+                        {appendSuffix(className)} {sectionName ? `(${sectionName})` : ''}
                     </div>
                 );
             }

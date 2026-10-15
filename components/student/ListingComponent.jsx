@@ -80,6 +80,20 @@ const ListingComponent = ({ rolePriority = null }) => {
     }
   }, [URLParams?.classId]);
 
+  // Fetch master classes and sections if not already in Redux store
+  useEffect(() => {
+    if (!getLocalStorage("schoolInfo")) {
+      if (!allClasses?.listData?.length) {
+        fetchAndSetAll(dispatch, setAllClasses, API.ClassAPI);
+      }
+      if (!allSections?.listData?.length) {
+        fetchAndSetAll(dispatch, setAllSections, API.SectionAPI);
+      }
+    } else if (!schoolClasses?.listData?.length) {
+      fetchAndSetSchoolData(dispatch, setSchoolClasses, setSchoolSections);
+    }
+  }, []);
+
   // Revisit for pagination
   const [searchFlag, setSearchFlag] = useState({
     search: false,
@@ -331,6 +345,30 @@ const ListingComponent = ({ rolePriority = null }) => {
     Gender: studentDetail?.studentData?.gender,
   };
 
+  const activeClasses = schoolClasses?.listData?.length ? schoolClasses.listData : (allClasses?.listData || []);
+  const activeSections = schoolSections?.listData?.length ? schoolSections.listData : (allSections?.listData || []);
+
+  const columns = useMemo(() => {
+    return datagridColumns(
+      rolePriority,
+      setOpenModal,
+      setSelectedStudentId,
+      handleGenerateLogin,
+      loadingLoginId,
+      activeClasses,
+      activeSections,
+      navigateTo,
+      { appendSuffix, capitalizeEveryWord, formatDate, formatBloodGroup }
+    );
+  }, [
+    rolePriority,
+    handleGenerateLogin,
+    loadingLoginId,
+    activeClasses,
+    activeSections,
+    navigateTo
+  ]);
+
   return (
     <div 
         className="p-4 sm:p-6 lg:p-8 space-y-5 w-full animate-in fade-in duration-200"
@@ -478,7 +516,7 @@ const ListingComponent = ({ rolePriority = null }) => {
         action={setStudents}
         api={API.StudentAPI}
         getQuery={getPaginatedData}
-        columns={datagridColumns(rolePriority, setOpenModal, setSelectedStudentId, handleGenerateLogin, loadingLoginId)}
+        columns={columns}
         rolePriority={rolePriority}
         condition={classConditionObj}
         importBtn={importBtn}

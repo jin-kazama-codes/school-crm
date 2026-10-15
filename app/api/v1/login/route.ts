@@ -61,18 +61,63 @@ export async function POST(request: NextRequest) {
       }
 
       if (isMatch) {
+        let studentProfile: any = null;
+        if (user.role === 6) {
+          const enrollNum = user.username ? parseInt(user.username, 10) : NaN;
+          const rawStudent = await prisma.student.findFirst({
+            where: {
+              OR: [
+                { user_id: user.id },
+                ...(!isNaN(enrollNum) ? [{ enrollment_no: enrollNum }] : []),
+              ],
+            },
+            select: {
+              id: true,
+              school_id: true,
+              firstname: true,
+              lastname: true,
+              class: true,
+              section: true,
+              roll_no: true,
+              enrollment_no: true,
+            },
+          });
+
+          if (rawStudent) {
+            const classRec = rawStudent.class ? await prisma.school_class.findUnique({ where: { id: rawStudent.class } }) : null;
+            const secRec = rawStudent.section ? await prisma.section.findUnique({ where: { id: rawStudent.section } }) : null;
+            const imgRec = await prisma.image.findFirst({
+              where: { parent: "student" as any, parent_id: rawStudent.id },
+              orderBy: { id: "desc" },
+            });
+            const fullName = `${rawStudent.firstname || ""} ${rawStudent.lastname || ""}`.trim();
+
+            studentProfile = {
+              ...rawStudent,
+              fullName: fullName || "Student",
+              name: fullName || "Student",
+              class_name: classRec?.name || (rawStudent.class ? String(rawStudent.class) : null),
+              section_name: secRec?.name || (rawStudent.section ? String(rawStudent.section) : null),
+              photo_url: imgRec?.image_src || null,
+            };
+          }
+        }
+
         const token = Utility.getSignedToken(user.id);
         return NextResponse.json(
           Utility.formatResponse(200, {
             token,
             school_info: encrypted_school_info,
             school_name: school.name,
+            school_code: school.school_code,
             school_capacity: school.capacity,
             school_id: school.id,
             id: user.id,
             role: user.role,
-            designation: user.designation,
+            rolePriority: user.role,
+            designation: user.designation || (user.role === 6 ? "student" : undefined),
             username: user.username,
+            student: studentProfile,
           }),
           { status: 200 }
         );

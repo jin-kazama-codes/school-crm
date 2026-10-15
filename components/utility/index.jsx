@@ -428,17 +428,19 @@ export const Utility = () => {
     };
 
     /** Gets user initials from the first and last name stored in auth information.
+     * @param {string} [overrideName] - Optional name string to get initials for.
      * @returns {string} - User initials.
      */
-    const getInitials = () => {
+    const getInitials = (overrideName) => {
         const authInfo = getLocalStorage("auth");
-        const rawName = String(authInfo?.username || '').trim();
+        let rawName = overrideName || (authInfo?.student?.fullName || authInfo?.name || authInfo?.username || '');
+        rawName = String(rawName).trim();
         if (rawName) {
-            const parts = rawName.split(" ");
+            const parts = rawName.split(" ").filter(Boolean);
             const firstNameInitial = parts[0]?.[0]?.toUpperCase() || '';
-            const lastNameInitial = parts[1]?.[0]?.toUpperCase() || '';
+            const lastNameInitial = parts.length > 1 ? parts[parts.length - 1]?.[0]?.toUpperCase() || '' : '';
 
-            return `${firstNameInitial} ${lastNameInitial}`.trim() || 'U';
+            return `${firstNameInitial}${lastNameInitial}`.trim() || firstNameInitial || 'U';
         }
         return 'U';
     };
@@ -467,8 +469,15 @@ export const Utility = () => {
 
         const formattedRole = roleStr ? roleStr.charAt(0).toUpperCase() + roleStr.slice(1) : '';
 
+        let resolvedUsername = `${firstName} ${lastName}`.trim() || rawUsername || 'User';
+        if (authInfo?.student?.fullName) {
+            resolvedUsername = authInfo.student.fullName;
+        } else if (authInfo?.student?.firstname) {
+            resolvedUsername = `${authInfo.student.firstname || ""} ${authInfo.student.lastname || ""}`.trim();
+        }
+
         return {
-            username: `${firstName} ${lastName}`.trim() || rawUsername || 'User',
+            username: resolvedUsername,
             role: formattedRole,
         };
     };

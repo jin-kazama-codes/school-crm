@@ -57,10 +57,14 @@ const ListingComponent = ({ rolePriority = null }) => {
   const questionsStore = useSelector((state) => state.allQuestions);
   const examPapersStore = useSelector((state) => state.allExamPapers);
 
+  const isStudent = rolePriority === 6 || authInfo?.role === 6 || authInfo?.rolePriority === 6;
+  const studentClass = authInfo?.student?.class ? String(authInfo.student.class) : "";
+  const studentSection = authInfo?.student?.section ? String(authInfo.student.section) : "";
+
   // Local State
-  const [activeTab, setActiveTab] = useState(rolePriority === 6 ? "publish" : "bank"); // 'bank' | 'design' | 'publish'
-  const [selectedClass, setSelectedClass] = useState("");
-  const [selectedSection, setSelectedSection] = useState("");
+  const [activeTab, setActiveTab] = useState(isStudent ? "publish" : "bank"); // 'bank' | 'design' | 'publish'
+  const [selectedClass, setSelectedClass] = useState(isStudent ? studentClass : "");
+  const [selectedSection, setSelectedSection] = useState(isStudent ? studentSection : "");
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [classData, setClassData] = useState([]);
@@ -233,10 +237,12 @@ const ListingComponent = ({ rolePriority = null }) => {
     return allSubjects.listData;
   }, [selectedClass, selectedSection, classData, allSubjects?.listData, findMultipleById]);
 
-  // Reset section when class changes
+  // Reset section when class changes (teachers/admins only)
   useEffect(() => {
-    setSelectedSection("");
-  }, [selectedClass]);
+    if (!isStudent) {
+      setSelectedSection("");
+    }
+  }, [selectedClass, isStudent]);
 
   // ─── Fetch Question Bank ──────────────────────────────────────────────────
   const fetchQuestions = useCallback(async () => {
@@ -447,121 +453,123 @@ const ListingComponent = ({ rolePriority = null }) => {
           </div>
 
           {/* Cascading Class & Section Pickers */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-[#1c1c1c] p-2.5 rounded-2xl border border-slate-200/80 dark:border-[#2a2a2a]">
-              {/* Class Dropdown */}
-              <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all ${activeTab !== "bank"
-                  ? "bg-slate-100 dark:bg-[#1f1f1f] border-slate-300/80 dark:border-[#333] opacity-85"
-                  : "bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
-                  }`}
-                title={
-                  activeTab !== "bank"
-                    ? "Class is locked for this workflow. Switch to Tab 1 to change Class."
-                    : "Select target Class"
-                }
-              >
-                {activeTab !== "bank" ? (
-                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                ) : (
-                  <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                )}
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                      Class
-                    </span>
-                    {activeTab !== "bank" && (
-                      <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                        Locked
+          {!isStudent && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-[#1c1c1c] p-2.5 rounded-2xl border border-slate-200/80 dark:border-[#2a2a2a]">
+                {/* Class Dropdown */}
+                <div
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all ${activeTab !== "bank"
+                    ? "bg-slate-100 dark:bg-[#1f1f1f] border-slate-300/80 dark:border-[#333] opacity-85"
+                    : "bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
+                    }`}
+                  title={
+                    activeTab !== "bank"
+                      ? "Class is locked for this workflow. Switch to Tab 1 to change Class."
+                      : "Select target Class"
+                  }
+                >
+                  {activeTab !== "bank" ? (
+                    <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                        Class
                       </span>
-                    )}
+                      {activeTab !== "bank" && (
+                        <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                          Locked
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={selectedClass}
+                      disabled={activeTab !== "bank"}
+                      onChange={(e) => {
+                        setSelectedClass(e.target.value);
+                        setPage(0);
+                      }}
+                      className={`bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 ${activeTab !== "bank" ? "cursor-not-allowed opacity-90" : "cursor-pointer"
+                        }`}
+                    >
+                      <option value="">Select Class</option>
+                      {classList.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    value={selectedClass}
-                    disabled={activeTab !== "bank"}
-                    onChange={(e) => {
-                      setSelectedClass(e.target.value);
-                      setPage(0);
-                    }}
-                    className={`bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 ${activeTab !== "bank" ? "cursor-not-allowed opacity-90" : "cursor-pointer"
-                      }`}
-                  >
-                    <option value="">Select Class</option>
-                    {classList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                </div>
+
+                {/* Section Dropdown */}
+                <div
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all ${activeTab !== "bank"
+                    ? "bg-slate-100 dark:bg-[#1f1f1f] border-slate-300/80 dark:border-[#333] opacity-85"
+                    : "bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
+                    }`}
+                  title={
+                    activeTab !== "bank"
+                      ? "Section is locked for this workflow. Switch to Tab 1 to change Section."
+                      : !selectedClass
+                        ? "Please select a Class first"
+                        : "Select target Section"
+                  }
+                >
+                  {activeTab !== "bank" ? (
+                    <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  )}
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                        Section
+                      </span>
+                      {activeTab !== "bank" && (
+                        <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                          Locked
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={selectedSection}
+                      disabled={activeTab !== "bank" || !selectedClass}
+                      onChange={(e) => {
+                        setSelectedSection(e.target.value);
+                        setPage(0);
+                      }}
+                      className={`bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 ${activeTab !== "bank" || !selectedClass
+                        ? "cursor-not-allowed opacity-90"
+                        : "cursor-pointer"
+                        }`}
+                    >
+                      <option value="">{selectedClass ? "Select Section" : "Select Class First"}</option>
+                      {sectionList.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              {/* Section Dropdown */}
-              <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all ${activeTab !== "bank"
-                  ? "bg-slate-100 dark:bg-[#1f1f1f] border-slate-300/80 dark:border-[#333] opacity-85"
-                  : "bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
-                  }`}
-                title={
-                  activeTab !== "bank"
-                    ? "Section is locked for this workflow. Switch to Tab 1 to change Section."
-                    : !selectedClass
-                      ? "Please select a Class first"
-                      : "Select target Section"
-                }
-              >
-                {activeTab !== "bank" ? (
-                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                ) : (
-                  <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                )}
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                      Section
-                    </span>
-                    {activeTab !== "bank" && (
-                      <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                        Locked
-                      </span>
-                    )}
-                  </div>
-                  <select
-                    value={selectedSection}
-                    disabled={activeTab !== "bank" || !selectedClass}
-                    onChange={(e) => {
-                      setSelectedSection(e.target.value);
-                      setPage(0);
-                    }}
-                    className={`bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 ${activeTab !== "bank" || !selectedClass
-                      ? "cursor-not-allowed opacity-90"
-                      : "cursor-pointer"
-                      }`}
-                  >
-                    <option value="">{selectedClass ? "Select Section" : "Select Class First"}</option>
-                    {sectionList.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              {/* Quick helper when locked */}
+              {activeTab !== "bank" && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("bank")}
+                  className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer flex items-center gap-1 px-2"
+                  title="Click to go to Tab 1 and choose a different Class/Section"
+                >
+                  <span>Change Class/Section in Tab 1 &rarr;</span>
+                </button>
+              )}
             </div>
-
-            {/* Quick helper when locked */}
-            {activeTab !== "bank" && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("bank")}
-                className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer flex items-center gap-1 px-2"
-                title="Click to go to Tab 1 and choose a different Class/Section"
-              >
-                <span>Change Class/Section in Tab 1 &rarr;</span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* 3 Main Workflow Tabs (Modern Compact Segmented Design) */}

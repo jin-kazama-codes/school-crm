@@ -22,9 +22,24 @@ import { Utility } from "../utility";
 const pageSizeOptions = [10, 20, 50];
 
 const ListingComponent = ({ rolePriority = null }) => {
+  const {
+    getLocalStorage,
+    fetchAndSetAll,
+    fetchAndSetSchoolData,
+    findMultipleById,
+    appendSuffix,
+    capitalizeEveryWord,
+  } = Utility();
+
+  const authInfo = getLocalStorage("auth") || {};
+  const isStudent = rolePriority === 6 || authInfo?.role === 6 || authInfo?.rolePriority === 6;
+  const studentClass = authInfo?.student?.class ? Number(authInfo.student.class) : "";
+  const studentSection = authInfo?.student?.section ? Number(authInfo.student.section) : "";
+  const studentId = authInfo?.student?.id ? Number(authInfo.student.id) : null;
+
   const [classSectionObj, setClassSectionObj] = useState({
-    class_id: "",
-    section_id: "",
+    class_id: isStudent ? studentClass : "",
+    section_id: isStudent ? studentSection : "",
   });
   const [classData, setClassData] = useState([]);
   const schoolClasses = useSelector((state) => state.schoolClasses);
@@ -54,14 +69,6 @@ const ListingComponent = ({ rolePriority = null }) => {
   }, []);
 
   const { getPaginatedData } = useCommon();
-  const {
-    getLocalStorage,
-    fetchAndSetAll,
-    fetchAndSetSchoolData,
-    findMultipleById,
-    appendSuffix,
-    capitalizeEveryWord,
-  } = Utility();
 
   // Deduplicated class list supporting both { class_id, class_name } and { id, name }
   const classList = useMemo(() => {
@@ -118,8 +125,12 @@ const ListingComponent = ({ rolePriority = null }) => {
     const obj = {};
     if (classSectionObj?.class_id) obj.classId = classSectionObj.class_id;
     if (classSectionObj?.section_id) obj.sectionId = classSectionObj.section_id;
+    if (isStudent && studentId) {
+      obj.studentId = studentId;
+      obj.student_id = studentId;
+    }
     return Object.keys(obj).length > 0 ? obj : null;
-  }, [classSectionObj?.class_id, classSectionObj?.section_id]);
+  }, [classSectionObj?.class_id, classSectionObj?.section_id, isStudent, studentId]);
 
   useEffect(() => {
     getPaginatedData(
@@ -234,74 +245,76 @@ const ListingComponent = ({ rolePriority = null }) => {
           </div>
 
           {/* Cascading Class & Section Pickers */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-[#1c1c1c] p-2.5 rounded-2xl border border-slate-200/80 dark:border-[#2a2a2a]">
-              {/* Class Dropdown */}
-              <div
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
-                title="Select target Class"
-              >
-                <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                    Class
-                  </span>
-                  <select
-                    value={classSectionObj?.class_id ?? ""}
-                    onChange={(e) =>
-                      setClassSectionObj({
-                        class_id: e.target.value ? Number(e.target.value) : "",
-                        section_id: "",
-                      })
-                    }
-                    className="bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 cursor-pointer"
-                  >
-                    <option value="">Select Class</option>
-                    {classList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+          {!isStudent && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-[#1c1c1c] p-2.5 rounded-2xl border border-slate-200/80 dark:border-[#2a2a2a]">
+                {/* Class Dropdown */}
+                <div
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
+                  title="Select target Class"
+                >
+                  <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                      Class
+                    </span>
+                    <select
+                      value={classSectionObj?.class_id ?? ""}
+                      onChange={(e) =>
+                        setClassSectionObj({
+                          class_id: e.target.value ? Number(e.target.value) : "",
+                          section_id: "",
+                        })
+                      }
+                      className="bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 cursor-pointer"
+                    >
+                      <option value="">Select Class</option>
+                      {classList.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              {/* Section Dropdown */}
-              <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all ${!classSectionObj?.class_id
-                  ? "bg-slate-100 dark:bg-[#1f1f1f] border-slate-300/80 dark:border-[#333] opacity-80"
-                  : "bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
-                  }`}
-                title={!classSectionObj?.class_id ? "Please select a Class first" : "Select target Section"}
-              >
-                <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                    Section
-                  </span>
-                  <select
-                    value={classSectionObj?.section_id ?? ""}
-                    disabled={!classSectionObj?.class_id}
-                    onChange={(e) =>
-                      setClassSectionObj((prev) => ({
-                        ...prev,
-                        section_id: e.target.value ? Number(e.target.value) : "",
-                      }))
-                    }
-                    className={`bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 ${!classSectionObj?.class_id ? "cursor-not-allowed opacity-90" : "cursor-pointer"
-                      }`}
-                  >
-                    <option value="">{classSectionObj?.class_id ? "Select Section" : "Select Class First"}</option>
-                    {sectionList.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                {/* Section Dropdown */}
+                <div
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-xs transition-all ${!classSectionObj?.class_id
+                    ? "bg-slate-100 dark:bg-[#1f1f1f] border-slate-300/80 dark:border-[#333] opacity-80"
+                    : "bg-white dark:bg-[#252525] border-slate-200 dark:border-[#333]"
+                    }`}
+                  title={!classSectionObj?.class_id ? "Please select a Class first" : "Select target Section"}
+                >
+                  <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                      Section
+                    </span>
+                    <select
+                      value={classSectionObj?.section_id ?? ""}
+                      disabled={!classSectionObj?.class_id}
+                      onChange={(e) =>
+                        setClassSectionObj((prev) => ({
+                          ...prev,
+                          section_id: e.target.value ? Number(e.target.value) : "",
+                        }))
+                      }
+                      className={`bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none pr-2 ${!classSectionObj?.class_id ? "cursor-not-allowed opacity-90" : "cursor-pointer"
+                        }`}
+                    >
+                      <option value="">{classSectionObj?.class_id ? "Select Section" : "Select Class First"}</option>
+                      {sectionList.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Workflow Tabs Row */}
@@ -310,19 +323,21 @@ const ListingComponent = ({ rolePriority = null }) => {
             {[
               {
                 id: "reportCards",
-                label: "1. Cumulative Report Cards",
+                label: isStudent ? "Cumulative Report Cards" : "1. Cumulative Report Cards",
                 subtitle: "Official student transcripts & grades",
                 tooltip: "View student report cards, aggregate grades, and print A4 report cards",
                 icon: FileCheck,
                 count: listData?.count,
               },
-              {
-                id: "examLedger",
-                label: "2. Exam Papers & Theory Ledger",
-                subtitle: "Exam papers, question scoring & live sync",
-                tooltip: "Evaluate student answer sheets by exam paper with question-level breakdown and auto-sync",
-                icon: Award,
-              },
+              ...(!isStudent ? [
+                {
+                  id: "examLedger",
+                  label: "2. Exam Papers & Theory Ledger",
+                  subtitle: "Exam papers, question scoring & live sync",
+                  tooltip: "Evaluate student answer sheets by exam paper with question-level breakdown and auto-sync",
+                  icon: Award,
+                }
+              ] : []),
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeView === tab.id;

@@ -31,10 +31,30 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
     : (schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : null);
 
   try {
+    let scopedParent = parent;
+    let scopedParentId = parentId ? parseInt(parentId, 10) : null;
+
+    if (userId > 0) {
+      const authUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      if (authUser?.role === 6) {
+        const studentRec = await prisma.student.findFirst({
+          where: { user_id: userId },
+          select: { id: true },
+        });
+        if (studentRec) {
+          scopedParent = "student";
+          scopedParentId = studentRec.id;
+        }
+      }
+    }
+
     const searchWild = `%${search}%`;
     const schoolClause = schoolId ? Prisma.sql`AND a.school_id = ${schoolId}` : Prisma.sql``;
-    const parentClause = parent ? Prisma.sql`AND LOWER(a.parent::text) = LOWER(${parent})` : Prisma.sql``;
-    const parentIdClause = parentId ? Prisma.sql`AND a.parent_id = ${parseInt(parentId, 10)}` : Prisma.sql``;
+    const parentClause = scopedParent ? Prisma.sql`AND LOWER(a.parent::text) = LOWER(${scopedParent})` : Prisma.sql``;
+    const parentIdClause = scopedParentId ? Prisma.sql`AND a.parent_id = ${scopedParentId}` : Prisma.sql``;
     const classClause = classId ? Prisma.sql`AND a.class_id = ${parseInt(classId, 10)}` : Prisma.sql``;
     const sectionClause = sectionId ? Prisma.sql`AND a.section_id = ${parseInt(sectionId, 10)}` : Prisma.sql``;
     const statusClause = status ? Prisma.sql`AND LOWER(a.status::text) = LOWER(${status})` : Prisma.sql``;
@@ -143,7 +163,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
       const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
       return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
     }
-    return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+    return NextResponse.json(Utility.formatResponse(200, { count: 0, rows: [] }), { status: 200 });
   } catch (err) {
     return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
   }

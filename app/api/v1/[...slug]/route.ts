@@ -83,6 +83,327 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
     return new NextResponse("API Working Fine.", { status: 200 });
   }
 
+  // ─── Student Profile (Public / Private Dual Resolver: Enrollment No or Student ID) ──
+  if (endpoint === "student-profile" || endpoint.startsWith("student-profile/")) {
+    try {
+      const { searchParams } = new URL(req.url);
+      let identifier = searchParams.get("identifier") || searchParams.get("id") || "";
+      if (!identifier && endpoint.startsWith("student-profile/")) {
+        identifier = endpoint.replace("student-profile/", "").trim();
+      }
+      const isPublic = searchParams.get("public") === "true";
+
+      if (!identifier) {
+        return NextResponse.json(Utility.formatResponse(400, "Identifier (enrollment number or student ID) is required"), { status: 400 });
+      }
+
+      const numId = parseInt(identifier, 10);
+      const studentFilter: any[] = [];
+      if (!isNaN(numId)) {
+        studentFilter.push({ enrollment_no: numId });
+        studentFilter.push({ id: numId });
+      }
+
+      const student = await prisma.student.findFirst({
+        where: {
+          OR: studentFilter.length > 0 ? studentFilter : [{ id: -1 }],
+        },
+      });
+
+      if (!student) {
+        return NextResponse.json(Utility.formatResponse(404, "Student not found"), { status: 404 });
+      }
+
+      // School info
+      const school = student.school_id
+        ? await prisma.school.findUnique({
+            where: { id: student.school_id },
+            select: {
+              id: true,
+              name: true,
+              school_code: true,
+              email: true,
+              contact_no_1: true,
+              contact_no_2: true,
+              board: true,
+              affiliation_no: true,
+              principal: true,
+              director: true,
+            },
+          })
+        : null;
+
+      const schoolAddr = school?.id ? await prisma.address.findFirst({
+        where: { parent: "school" as any, parent_id: school.id },
+      }) : null;
+
+      // Class and Section
+      const classRecord = student.class ? await prisma.school_class.findUnique({ where: { id: student.class } }) : null;
+      const sectionRecord = student.section ? await prisma.section.findUnique({ where: { id: student.section } }) : null;
+
+      // Student Image
+      const studentImg = await prisma.image.findFirst({
+        where: {
+          parent: "student" as any,
+          parent_id: student.id,
+        },
+        orderBy: { id: "desc" },
+      });
+
+      // Student Address
+      const studentAddr = await prisma.address.findFirst({
+        where: {
+          OR: [
+            { parent: "student" as any, parent_id: student.id },
+            ...(student.parent_id ? [{ parent: "user" as any, parent_id: student.parent_id }] : []),
+          ],
+        },
+        orderBy: { id: "desc" },
+      });
+
+      // City / State / Country names
+      let cityName = "";
+      let stateName = "";
+      let countryName = "";
+      if (studentAddr?.city) {
+        const city = await prisma.city.findUnique({ where: { id: studentAddr.city } });
+        if (city?.name) cityName = city.name;
+      }
+      if (studentAddr?.state) {
+        const state = await prisma.state.findUnique({ where: { id: studentAddr.state } });
+        if (state?.name) stateName = state.name;
+      }
+      if (studentAddr?.country) {
+        const country = await prisma.country.findUnique({ where: { id: studentAddr.country } });
+        if (country?.name) countryName = country.name;
+      }
+
+      // Attendance statistics
+      const attendanceRows = await prisma.attendance.findMany({
+        where: {
+          parent: "student" as any,
+          parent_id: student.id,
+        },
+        select: {
+          id: true,
+          status: true,
+          date: true,
+          remark: true,
+        },
+        orderBy: { date: "desc" },
+      });
+
+      const totalAttendance = attendanceRows.length;
+      const presentCount = attendanceRows.filter((a) => String(a.status).toLowerCase() === "present").length;
+      const lateCount = attendanceRows.filter((a) => String(a.status).toLowerCase() === "late").length;
+      const absentCount = attendanceRows.filter((a) => String(a.status).toLowerCase() === "absent").length;
+      const halfDayCount = attendanceRows.filter((a) => String(a.status).toLowerCase() === "halfday" || String(a.status).toLowerCase() === "half_day").length;
+      const attendancePercentage = totalAttendance > 0 ? Number(((presentCount / totalAttendance) * 100).toFixed(1)) : 100.0;
+
+      // Marksheets
+      const marksheets = await prisma.marksheet.findMany({
+        where: {
+          student_id: student.id,
+        },
+        orderBy: { id: "desc" },
+        take: 5,
+      });
+
+      // Latest Payment
+      const latestPayment = await prisma.payment.findFirst({
+        where: {
+          student_id: student.id,
+        },
+        orderBy: { id: "desc" },
+      });
+
+      let paymentMethodName = "Digital / Bank";
+      if (latestPayment?.method) {
+        const pMethod = await prisma.payment_method.findUnique({ where: { id: latestPayment.method } });
+        if (pMethod?.name) paymentMethodName = pMethod.name;
+      }
+
+      // House name and color lookup from school_house table
+      let houseName = "";
+      let houseColorCode: string | null = null;
+      if (student.house) {
+        const houseId = parseInt(String(student.house), 10);
+        if (!isNaN(houseId)) {
+          const houseRec = await prisma.school_house.findUnique({ where: { id: houseId } });
+          if (houseRec?.name) houseName = houseRec.name;
+          if (houseRec?.color_code) houseColorCode = houseRec.color_code.trim();
+        }
+        if (!houseName) houseName = String(student.house);
+        if (!houseColorCode) {
+          const houseRecByName = await prisma.school_house.findFirst({
+            where: {
+              name: { equals: houseName, mode: "insensitive" },
+              ...(student.school_id ? { school_id: student.school_id } : {}),
+            },
+          });
+          if (houseRecByName?.color_code) {
+            houseColorCode = houseRecByName.color_code.trim();
+          }
+        }
+      }
+
+      // Timetable
+      let timetableSlots: any[] = [];
+      if (student.class && student.section) {
+        const schoolFilter = student.school_id
+          ? Prisma.sql`AND tt.school_id = ${student.school_id}`
+          : Prisma.sql``;
+
+        timetableSlots = await prisma.$queryRaw<any[]>(Prisma.sql`
+          SELECT
+            tt.id,
+            tt.day::text AS day,
+            tt.period,
+            tt.duration,
+            tt.batch,
+            sub.name AS subject_name
+          FROM timetable tt
+          LEFT JOIN subject sub ON sub.id = tt.subject_id
+          WHERE tt.class_id = ${student.class}
+            AND tt.section_id = ${student.section}
+            ${schoolFilter}
+          ORDER BY
+            CASE LOWER(tt.day::text)
+              WHEN 'monday' THEN 1
+              WHEN 'tuesday' THEN 2
+              WHEN 'wednesday' THEN 3
+              WHEN 'thursday' THEN 4
+              WHEN 'friday' THEN 5
+              WHEN 'saturday' THEN 6
+              WHEN 'sunday' THEN 7
+              ELSE 8
+            END ASC,
+            tt.period ASC
+          LIMIT 100
+        `);
+      }
+
+      const maskPhone = (phone: any) => {
+        if (!phone) return null;
+        const str = String(phone);
+        if (str.length <= 4) return "••••";
+        return str.slice(0, 2) + "••••••" + str.slice(-2);
+      };
+
+      const payload = {
+        id: student.id,
+        enrollment_no: student.enrollment_no,
+        roll_no: student.roll_no,
+        firstname: student.firstname,
+        lastname: student.lastname,
+        fullName: `${student.firstname || ""} ${student.lastname || ""}`.trim(),
+        dob: student.dob,
+        gender: student.gender,
+        blood_group: student.blood_group,
+        religion: student.religion,
+        nationality: student.nationality,
+        aadhaar_no: student.aadhaar_no ? (isPublic ? "••••••••" + String(student.aadhaar_no).slice(-4) : String(student.aadhaar_no)) : null,
+        birth_mark: student.birth_mark,
+        caste_group: student.caste_group,
+        admission_type: student.admission_type || "regular",
+        is_specially_abled: Boolean(student.is_specially_abled),
+        is_taking_bus: Boolean(student.is_taking_bus),
+        is_fee_waiver: Boolean(student.is_fee_waiver),
+        fee_waiver_type: student.fee_waiver_type,
+        waived_fees: student.waived_fees ? Number(student.waived_fees) : 0,
+        session: student.session || "2025-2026",
+        admission_date: student.admission_date || student.created_at,
+        class_id: student.class,
+        class_name: classRecord?.name || "V",
+        section_id: student.section,
+        section_name: sectionRecord?.name || "A",
+        house: houseName || "Yellow House",
+        house_name: houseName || "Yellow House",
+        house_color: houseColorCode || null,
+        house_color_code: houseColorCode || null,
+        photo_url: studentImg?.image_src || null,
+        school: school ? {
+          id: school.id,
+          name: school.name,
+          school_code: school.school_code,
+          email: school.email,
+          contact_no: school.contact_no_1 || school.contact_no_2,
+          address: schoolAddr?.street || "Main Campus Road",
+          city: cityName || "New Delhi",
+          state: stateName || "Delhi",
+          affiliation: school.affiliation_no ? `${school.board || "CBSE"} Affiliated • ${school.affiliation_no}` : (school.board || "CBSE Affiliated"),
+          principal: school.principal,
+          director: school.director,
+        } : null,
+        address: studentAddr ? {
+          street: isPublic ? "••••••••••••••" : studentAddr.street,
+          landmark: isPublic ? null : studentAddr.landmark,
+          city: cityName || "New Delhi",
+          state: stateName || "Delhi",
+          country: countryName || "India",
+          zipcode: isPublic ? "••••••" : studentAddr.zipcode,
+        } : null,
+        parents: {
+          father_name: student.father_name,
+          father_contact_no: student.father_contact_no ? (isPublic ? maskPhone(student.father_contact_no) : String(student.father_contact_no).split('.')[0]) : null,
+          father_aadhar: student.father_aadhar ? (isPublic ? "••••••••" + String(student.father_aadhar).split('.')[0].slice(-4) : String(student.father_aadhar).split('.')[0]) : null,
+          mother_name: student.mother_name,
+          mother_contact_no: student.mother_contact_no ? (isPublic ? maskPhone(student.mother_contact_no) : String(student.mother_contact_no).split('.')[0]) : null,
+          mother_aadhar: student.mother_aadhar ? (isPublic ? "••••••••" + String(student.mother_aadhar).split('.')[0].slice(-4) : String(student.mother_aadhar).split('.')[0]) : null,
+          guardian_name: student.guardian_name,
+          guardian_contact_no: student.guardian_contact_no ? (isPublic ? maskPhone(student.guardian_contact_no) : String(student.guardian_contact_no).split('.')[0]) : null,
+          guardian_aadhar: student.guardian_aadhar ? (isPublic ? "••••••••" + String(student.guardian_aadhar).split('.')[0].slice(-4) : String(student.guardian_aadhar).split('.')[0]) : null,
+        },
+        contact_no: student.contact_no ? (isPublic ? maskPhone(student.contact_no) : String(student.contact_no)) : null,
+        email: isPublic ? (student.email ? student.email.replace(/(.{2})(.*)(?=@)/, "$1****") : null) : student.email,
+        attendance: {
+          total: totalAttendance,
+          present: presentCount,
+          absent: absentCount,
+          late: lateCount,
+          halfday: halfDayCount,
+          percentage: attendancePercentage,
+          recent: attendanceRows.slice(0, 10),
+        },
+        marksheets: marksheets.map((m) => ({
+          id: m.id,
+          term: m.term,
+          session: m.session,
+          result: m.result,
+          co_scholastic_data: m.co_scholastic_data,
+          discipline_data: m.discipline_data,
+          overall_remark: m.overall_remark,
+          created_at: m.created_at,
+        })),
+        payment: latestPayment ? {
+          id: latestPayment.id,
+          type: latestPayment.type,
+          type_duration: latestPayment.type_duration,
+          amount: isPublic ? "PAID / VERIFIED" : Number(latestPayment.final_amount || latestPayment.amount || 0),
+          academic_year: latestPayment.academic_year,
+          paid_date: latestPayment.created_at,
+          status: latestPayment.status || "Paid",
+          reference_no: isPublic ? "REF••••••••" : (latestPayment.reference_no || `REC-${latestPayment.id}`),
+          method: paymentMethodName,
+        } : null,
+        timetable: timetableSlots.map((tt) => ({
+          id: tt.id,
+          day: tt.day,
+          period: tt.period,
+          duration: tt.duration,
+          subject: tt.subject_name || "Subject",
+          batch: tt.batch,
+        })),
+        isPublic,
+      };
+
+      return NextResponse.json(Utility.formatResponse(200, payload), { status: 200 });
+    } catch (err: any) {
+      console.error("student-profile error:", err);
+      return NextResponse.json({ status: 500, message: String(err?.message || err) }, { status: 200 });
+    }
+  }
+
   // Verify Token
   if (endpoint === "verify-token") {
     const authHeader = req.headers.get("x-access-token") || req.headers.get("authorization");
@@ -1026,10 +1347,31 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         ? parseInt(searchParams.get("school_id")!, 10)
         : (schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : null);
 
+      const authUserId = getAuthUserId(req);
+      let scopedParent = parent;
+      let scopedParentId = parentId ? parseInt(parentId, 10) : null;
+
+      if (authUserId > 0) {
+        const authUser = await prisma.user.findUnique({
+          where: { id: authUserId },
+          select: { role: true },
+        });
+        if (authUser?.role === 6) {
+          const studentRec = await prisma.student.findFirst({
+            where: { user_id: authUserId },
+            select: { id: true },
+          });
+          if (studentRec) {
+            scopedParent = "student";
+            scopedParentId = studentRec.id;
+          }
+        }
+      }
+
       const searchWild = `%${search}%`;
       const schoolClause = schoolId ? Prisma.sql`AND a.school_id = ${schoolId}` : Prisma.sql``;
-      const parentClause = parent ? Prisma.sql`AND LOWER(a.parent::text) = LOWER(${parent})` : Prisma.sql``;
-      const parentIdClause = parentId ? Prisma.sql`AND a.parent_id = ${parseInt(parentId, 10)}` : Prisma.sql``;
+      const parentClause = scopedParent ? Prisma.sql`AND LOWER(a.parent::text) = LOWER(${scopedParent})` : Prisma.sql``;
+      const parentIdClause = scopedParentId ? Prisma.sql`AND a.parent_id = ${scopedParentId}` : Prisma.sql``;
       const classClause = classId ? Prisma.sql`AND a.class_id = ${parseInt(classId, 10)}` : Prisma.sql``;
       const sectionClause = sectionId ? Prisma.sql`AND a.section_id = ${parseInt(sectionId, 10)}` : Prisma.sql``;
       const statusClause = status ? Prisma.sql`AND LOWER(a.status::text) = LOWER(${status})` : Prisma.sql``;
@@ -1138,7 +1480,7 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         const cleanRows = rows.map(({ count: _c, ...rest }) => rest);
         return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
       }
-      return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
+      return NextResponse.json(Utility.formatResponse(200, { count: 0, rows: [] }), { status: 200 });
     } catch (err) {
       return NextResponse.json(Utility.formatResponse(500, String(err)), { status: 500 });
     }
@@ -1431,49 +1773,52 @@ async function handleGet(req: NextRequest, endpoint: string, params: string[]) {
         ? parseInt(searchParams.get("school_id")!, 10)
         : (schoolCond.school_id ? parseInt(String(schoolCond.school_id), 10) : undefined);
 
-      const whereCondition: Record<string, unknown> = {};
-      if (schoolId) whereCondition.school_id = schoolId;
-      if (classId) whereCondition.class = parseInt(classId, 10);
-      if (sectionId) whereCondition.section = parseInt(sectionId, 10);
-      if (parentId) whereCondition.parent_id = parseInt(parentId, 10);
-      if (search) {
-        whereCondition.OR = [
-          { firstname: { contains: search, mode: "insensitive" } },
-          { lastname: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-          { status: { startsWith: search } },
-        ];
-      }
+      const schoolClause = schoolId
+        ? Prisma.sql`AND st.school_id = ${schoolId}`
+        : Prisma.sql``;
+      const classClause = classId
+        ? Prisma.sql`AND st.class = ${parseInt(classId, 10)}`
+        : Prisma.sql``;
+      const sectionClause = sectionId
+        ? Prisma.sql`AND st.section = ${parseInt(sectionId, 10)}`
+        : Prisma.sql``;
+      const parentClause = parentId
+        ? Prisma.sql`AND st.parent_id = ${parseInt(parentId, 10)}`
+        : Prisma.sql``;
 
-      const [rows, count] = await Promise.all([
-        prisma.student.findMany({
-          where: whereCondition,
-          orderBy: { updated_at: "desc" },
-          take: limit,
-          skip: offset,
-        }),
-        prisma.student.count({ where: whereCondition }),
-      ]);
+      const searchWild = `%${search}%`;
+      const searchClause = search
+        ? Prisma.sql`AND (
+            st.firstname ILIKE ${searchWild} OR
+            st.lastname  ILIKE ${searchWild} OR
+            st.email     ILIKE ${searchWild} OR
+            st.status::text ILIKE ${searchWild}
+          )`
+        : Prisma.sql``;
 
-      if (count > 0) {
-        // Ensure user_id is populated on each student record
-        const studentIds = rows.filter(r => (r as any).user_id === undefined).map(r => r.id);
-        if (studentIds.length > 0) {
-          try {
-            const userIdRows = await prisma.$queryRaw<any[]>(
-              Prisma.sql`SELECT id, user_id FROM "student" WHERE id IN (${Prisma.join(studentIds)})`
-            );
-            const map = new Map(userIdRows.map(u => [u.id, u.user_id]));
-            rows.forEach((r: any) => {
-              if (r.user_id === undefined) {
-                r.user_id = map.get(r.id) ?? null;
-              }
-            });
-          } catch (e) {
-            console.error("Error populating student user_id:", e);
-          }
-        }
-        return NextResponse.json(Utility.formatResponse(200, { count, rows }), { status: 200 });
+      const rows = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT
+          st.*,
+          cl.name AS class_name,
+          se.name AS section_name,
+          COUNT(*) OVER() AS total_count
+        FROM student st
+        LEFT JOIN class   cl ON cl.id = st.class
+        LEFT JOIN section se ON se.id = st.section
+        WHERE 1=1
+          ${schoolClause}
+          ${classClause}
+          ${sectionClause}
+          ${parentClause}
+          ${searchClause}
+        ORDER BY st.updated_at DESC NULLS LAST, st.id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+
+      if (rows.length > 0) {
+        const count = Number(rows[0]?.total_count || 0);
+        const cleanRows = rows.map(({ total_count: _c, ...rest }) => rest);
+        return NextResponse.json(Utility.formatResponse(200, { count, rows: cleanRows }), { status: 200 });
       }
       return NextResponse.json(Utility.formatResponse(404, "No Data Found"), { status: 404 });
     } catch (err) {
@@ -1602,6 +1947,7 @@ async function handlePost(req: NextRequest, endpoint: string) {
           username: user.username,
           school_id: user.school_id,
           school_name: school?.name || undefined,
+          school_code: school?.school_code || undefined,
           student: studentProfile || undefined,
         }),
         { status: 200 }

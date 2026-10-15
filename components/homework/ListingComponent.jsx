@@ -34,6 +34,12 @@ const ListingComponent = ({ rolePriority = null }) => {
     const { getPaginatedData } = useCommon();
     const { getLocalStorage } = Utility();
 
+    const auth = getLocalStorage("auth");
+    const isStudent = rolePriority === 6 || auth?.role === 6 || auth?.rolePriority === 6;
+    const studentCondition = isStudent && auth?.student?.class
+        ? { class_id: auth.student.class, section_id: auth.student.section }
+        : false;
+
     const [reloadBtn, setReloadBtn] = useState(null);
     useEffect(() => {
         setReloadBtn(document.getElementById("reload-btn"));
@@ -64,6 +70,7 @@ const ListingComponent = ({ rolePriority = null }) => {
                             oldPagination={oldPagination}
                             reloadBtn={reloadBtn}
                             setSearchFlag={setSearchFlag}
+                            condition={studentCondition}
                         />
                     </div>
 
@@ -94,6 +101,7 @@ const ListingComponent = ({ rolePriority = null }) => {
                 api={API.HomeworkAPI}
                 getQuery={getPaginatedData}
                 columns={datagridColumns(rolePriority)}
+                condition={studentCondition}
                 rows={listData.rows}
                 count={listData.count}
                 loading={loading}

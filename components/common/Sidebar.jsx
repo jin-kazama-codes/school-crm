@@ -90,8 +90,11 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
     fetchAndSetAll,
     fetchAndSetSchoolData,
     getLocalStorage,
+    setLocalStorage,
     remLocalStorage,
     addClassKeyword,
+    getInitials,
+    capitalizeEachWord
   } = Utility();
 
   const classData =
@@ -151,6 +154,53 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
   };
 
   const authUser = getLocalStorage("auth");
+  const [studentInfo, setStudentInfo] = useState(authUser?.student || null);
+
+  useEffect(() => {
+    if (rolePriority === 6 && authUser) {
+      if (authUser.student?.fullName && authUser.student?.class_name) {
+        setStudentInfo(authUser.student);
+      } else {
+        const identifier = authUser.username || authUser.id;
+        if (identifier) {
+          API.StudentAPI.getStudentProfile(identifier)
+            .then((res) => {
+              if (res?.data) {
+                const sData = res.data;
+                const updatedStudent = {
+                  fullName: sData.fullName || `${sData.firstname || ""} ${sData.lastname || ""}`.trim(),
+                  class_name: sData.class_name,
+                  section_name: sData.section_name,
+                  photo_url: sData.photo_url,
+                  enrollment_no: sData.enrollment_no,
+                  roll_no: sData.roll_no,
+                };
+                setStudentInfo(updatedStudent);
+                try {
+                  const currentAuth = getLocalStorage("auth");
+                  if (currentAuth) {
+                    currentAuth.student = { ...(currentAuth.student || {}), ...updatedStudent };
+                    setLocalStorage("auth", currentAuth);
+                  }
+                } catch (e) { }
+              }
+            })
+            .catch(() => { });
+        }
+      }
+    }
+  }, [rolePriority, authUser?.username]);
+
+  const studentDisplayName = rolePriority === 6 && studentInfo?.fullName
+    ? studentInfo.fullName
+    : (authUser?.name || authUser?.username || "---");
+  const studentClassSection = rolePriority === 6 && studentInfo?.class_name
+    ? `Class ${studentInfo.class_name}${studentInfo.section_name ? ` - ${studentInfo.section_name}` : ""}`
+    : "";
+  const studentRoleLabel = rolePriority === 6 ? "Student" : (authUser?.designation || authUser?.role || "---");
+  const studentInitials = getInitials(studentDisplayName);
+  const studentPhoto = rolePriority === 6 ? (studentInfo?.photo_url || null) : (schoolImg || dpsImg?.src || dpsImg || null);
+
   const currentSchoolName = rolePriority > 1
     ? (authUser?.school || authUser?.designation?.charAt(0)?.toUpperCase() + authUser?.designation?.slice(1))
     : "The Skolar";
@@ -168,36 +218,77 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
           {authUser && (
             !isCollapsed ? (
               <div
-                onClick={() => setProfileModalOpen(true)}
+                onClick={() => {
+                  if (rolePriority === 6) {
+                    navigate("/student/profile");
+                  } else {
+                    setProfileModalOpen(true);
+                  }
+                }}
                 className="bg-slate-50 dark:bg-[#141414] p-3 rounded-2xl border border-slate-100 dark:border-[#222] hover:border-emerald-300 dark:hover:border-emerald-700/50 hover:bg-slate-100/80 dark:hover:bg-[#1a1a1a] flex items-center space-x-3 transition-all cursor-pointer shadow-2xs group active:scale-[0.98]"
                 title="Click to view full user profile"
               >
-                <img
-                  src={schoolImg || dpsImg?.src || dpsImg || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=256&auto=format&fit=crop"}
-                  alt="user"
-                  className="w-9 h-9 rounded-full object-cover border border-emerald-500/20 group-hover:border-emerald-500/50 transition-colors shrink-0"
-                />
+                {studentPhoto ? (
+                  <img
+                    src={studentPhoto}
+                    alt={studentDisplayName}
+                    className="w-9 h-9 rounded-full object-cover border border-emerald-500/20 group-hover:border-emerald-500/50 transition-colors shrink-0"
+                  />
+                ) : rolePriority === 6 ? (
+                  <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/20 shrink-0">
+                    {studentInitials}
+                  </div>
+                ) : (
+                  <img
+                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=256&auto=format&fit=crop"
+                    alt="user"
+                    className="w-9 h-9 rounded-full object-cover border border-emerald-500/20 group-hover:border-emerald-500/50 transition-colors shrink-0"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-slate-800 dark:text-gray-200 text-xs truncate leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                    {authUser?.username || authUser?.name || "superadmin"}
+                    {capitalizeEachWord(studentDisplayName)}
                   </p>
-                  <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate leading-tight mt-0.5">
-                    {authUser?.designation || authUser?.role || "Administrator"}
+                  {rolePriority === 6 && studentClassSection && (
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 truncate leading-tight mt-0.5">
+                      {studentClassSection}
+                    </p>
+                  )}
+                  <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate leading-tight mt-0.5 capitalize">
+                    {studentRoleLabel}
                   </p>
                 </div>
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => setProfileModalOpen(true)}
+                onClick={() => {
+                  if (rolePriority === 6) {
+                    navigate("/student/profile");
+                  } else {
+                    setProfileModalOpen(true);
+                  }
+                }}
                 className="w-10 h-10 mx-auto rounded-2xl bg-slate-50 dark:bg-[#141414] border border-slate-100 dark:border-[#222] hover:border-emerald-400 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 group"
-                title="Click to view full user profile"
+                title={`${capitalizeEachWord(studentDisplayName)}${studentClassSection ? ` • ${studentClassSection}` : ""} (${capitalizeEachWord(studentRoleLabel)})`}
               >
-                <img
-                  src={schoolImg || dpsImg?.src || dpsImg || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=256&auto=format&fit=crop"}
-                  alt="user"
-                  className="w-8 h-8 rounded-xl object-cover"
-                />
+                {studentPhoto ? (
+                  <img
+                    src={studentPhoto}
+                    alt={studentDisplayName}
+                    className="w-8 h-8 rounded-xl object-cover"
+                  />
+                ) : rolePriority === 6 ? (
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center">
+                    {studentInitials}
+                  </div>
+                ) : (
+                  <img
+                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=256&auto=format&fit=crop"
+                    alt="user"
+                    className="w-8 h-8 rounded-xl object-cover"
+                  />
+                )}
               </button>
             )
           )}
@@ -364,38 +455,74 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
             )}
 
             {/* 4. OPERATIONS & FINANCE */}
+            {rolePriority !== 6 && (
+              <div className="space-y-1">
+                {!isCollapsed ? (
+                  <div className="px-3 pt-2 pb-1 border-t border-slate-100 dark:border-[#1a1a1a]">
+                    <span className="text-[10px] font-black tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
+                      Operations & Finance
+                    </span>
+                  </div>
+                ) : (
+                  <div className="my-2 border-t border-slate-100 dark:border-[#1e1e1e] w-8 mx-auto" />
+                )}
+                <SidebarItem
+                  title="Payment"
+                  to="/payment/listing"
+                  icon={<ReceiptText className="w-4 h-4" />}
+                  selected={selected}
+                  rolePriority={rolePriority}
+                  menuVisibility={3}
+                  excludeRoles={[6]}
+                  isCollapsed={isCollapsed}
+                  setIsCollapsed={setIsCollapsed}
+                />
+                <SidebarItem
+                  title="Bus"
+                  to="/bus/listing"
+                  icon={<Bus className="w-4 h-4" />}
+                  selected={selected}
+                  rolePriority={rolePriority}
+                  menuVisibility={3}
+                  excludeRoles={[6]}
+                  isCollapsed={isCollapsed}
+                  setIsCollapsed={setIsCollapsed}
+                />
+                <SidebarItem
+                  title="School"
+                  to="/school/listing"
+                  icon={<Building2 className="w-4 h-4" />}
+                  selected={selected}
+                  rolePriority={rolePriority}
+                  menuVisibility={1}
+                  isCollapsed={isCollapsed}
+                  setIsCollapsed={setIsCollapsed}
+                />
+                <SidebarItem
+                  title="School House"
+                  to="/school-house/listing"
+                  icon={<Flag className="w-4 h-4" />}
+                  selected={selected}
+                  rolePriority={rolePriority}
+                  menuVisibility={4}
+                  excludeRoles={[6]}
+                  isCollapsed={isCollapsed}
+                  setIsCollapsed={setIsCollapsed}
+                />
+              </div>
+            )}
+
+            {/* 5. ANNOUNCEMENTS & CALENDAR */}
             <div className="space-y-1">
               {!isCollapsed ? (
                 <div className="px-3 pt-2 pb-1 border-t border-slate-100 dark:border-[#1a1a1a]">
                   <span className="text-[10px] font-black tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
-                    Operations & Finance
+                    Announcements & Calendar
                   </span>
                 </div>
               ) : (
                 <div className="my-2 border-t border-slate-100 dark:border-[#1e1e1e] w-8 mx-auto" />
               )}
-              <SidebarItem
-                title="Payment"
-                to="/payment/listing"
-                icon={<ReceiptText className="w-4 h-4" />}
-                selected={selected}
-                rolePriority={rolePriority}
-                menuVisibility={3}
-                excludeRoles={[6]}
-                isCollapsed={isCollapsed}
-                setIsCollapsed={setIsCollapsed}
-              />
-              <SidebarItem
-                title="Bus"
-                to="/bus/listing"
-                icon={<Bus className="w-4 h-4" />}
-                selected={selected}
-                rolePriority={rolePriority}
-                menuVisibility={3}
-                excludeRoles={[6]}
-                isCollapsed={isCollapsed}
-                setIsCollapsed={setIsCollapsed}
-              />
               <SidebarItem
                 title="Notice Board"
                 to="/noticeboard/listing"
@@ -416,30 +543,9 @@ const Sidebar = ({ rolePriority, isCollapsed, setIsCollapsed, schoolInfo }) => {
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
               />
-              <SidebarItem
-                title="School"
-                to="/school/listing"
-                icon={<Building2 className="w-4 h-4" />}
-                selected={selected}
-                rolePriority={rolePriority}
-                menuVisibility={1}
-                isCollapsed={isCollapsed}
-                setIsCollapsed={setIsCollapsed}
-              />
-              <SidebarItem
-                title="School House"
-                to="/school-house/listing"
-                icon={<Flag className="w-4 h-4" />}
-                selected={selected}
-                rolePriority={rolePriority}
-                menuVisibility={4}
-                excludeRoles={[6]}
-                isCollapsed={isCollapsed}
-                setIsCollapsed={setIsCollapsed}
-              />
             </div>
 
-            {/* 5. CONFIGURATIONS */}
+            {/* 6. CONFIGURATIONS */}
             {rolePriority < 2 && (
               <div className="space-y-1">
                 {!isCollapsed ? (

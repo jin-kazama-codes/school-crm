@@ -9,7 +9,7 @@ This repository is a **unified, multi-tenant School Management System & CRM** bu
 
 ---
 
-## 2. Role Priority & Hierarchy (1 to 5)
+## 2. Role Priority & Hierarchy (1 to 6)
 
 | Role Priority | Role Name | Scope & Capabilities | UI Permissions |
 | :--- | :--- | :--- | :--- |
@@ -17,7 +17,23 @@ This repository is a **unified, multi-tenant School Management System & CRM** bu
 | **`2`** | **School Admin** | Head of a specific School. Full management within their assigned school. | Full CRUD on students, teachers, staff, fees, marksheets, timetable, homework, etc. Cannot access global configurations. |
 | **`3`** | **Sub Admin** | School administrative staff. | CRUD on operational modules (`User`, `Teacher`, `Employee`, `Bus`, `Notice Board`, `Payment`, `ID Cards`). |
 | **`4`** | **Teacher** | Teaching staff. | Access to `Marksheet`, `Attendance`, `Homework`, `Time Table`, `School Duration`, `School House`. Cannot modify school fees or staff. |
-| **`5`** | **Student / Guardian** | End users (Students / Parents). | Read-only access to own profile, marksheet, homework, attendance, holidays, notices. |
+| **`5`** | **Guardian** | Parent user linked to student siblings via `student.parent_id`. | Read-only access to wards' profiles, marksheets, fee payments, attendance, notices. |
+| **`6`** | **Student** | Student Portal user linked via `student.user_id`. | Strictly scoped to own records: own attendance (`parent = 'student'`, `parent_id = student.id`), own class/section homework (`class_id = student.class`, `section_id = student.section`), own timetables/exams. |
+
+---
+
+## 2.1 Student Portal Scoping & RBAC Rules (Role Priority 6)
+
+1. **Attendance Scoping**:
+   - A logged-in student (`rolePriority === 6`) must ONLY see their own attendance record (`a.parent = 'student' AND a.parent_id = student.id`).
+   - Under no circumstances should a student see teacher, employee, or other students' attendance records.
+2. **Homework Scoping**:
+   - A logged-in student (`rolePriority === 6`) must ONLY see homework assigned to their assigned class and section (`h.class_id = student.class AND (h.section_id = student.section OR h.section_id IS NULL)`).
+3. **Database-Level Filtering**:
+   - Always enforce these scoping constraints directly inside SQL query `WHERE` clauses (both dedicated route handlers and fallback slug routes) to avoid unnecessary bandwidth and prevent data leakage over the network.
+4. **Minimal Code Diffs & Verification**:
+   - Keep code diffs minimal, clean, and free of extraneous modifications.
+   - Always run `npx tsc --noEmit` outside the sandbox to verify TypeScript compilation after completing tasks.
 
 ---
 

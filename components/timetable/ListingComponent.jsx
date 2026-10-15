@@ -109,6 +109,9 @@ const ListingComponent = ({ rolePriority = null }) => {
   } = Utility();
 
   const authInfo = getLocalStorage("auth") || {};
+  const isStudent = rolePriority === 6 || authInfo?.role === 6 || authInfo?.rolePriority === 6;
+  const studentClass = authInfo?.student?.class ? String(authInfo.student.class) : "";
+  const studentSection = authInfo?.student?.section ? String(authInfo.student.section) : "";
   const schoolInfo = getLocalStorage("schoolInfo") || {};
   const schoolName = schoolInfo?.name || schoolInfo?.school_name || authInfo?.school || "Delhi Public School";
 
@@ -121,8 +124,8 @@ const ListingComponent = ({ rolePriority = null }) => {
 
   // Local Master Data
   const [classData, setClassData] = useState([]);
-  const [selectedClass, setSelectedClass] = useState("");
-  const [selectedSection, setSelectedSection] = useState("");
+  const [selectedClass, setSelectedClass] = useState(isStudent ? studentClass : "");
+  const [selectedSection, setSelectedSection] = useState(isStudent ? studentSection : "");
 
   // School Duration / Schedule Timings Master
   const [schoolDuration, setSchoolDuration] = useState(null);
@@ -287,19 +290,27 @@ const ListingComponent = ({ rolePriority = null }) => {
 
   // Automatically select first class and section when loaded
   useEffect(() => {
+    if (isStudent) {
+      if (studentClass && selectedClass !== studentClass) setSelectedClass(studentClass);
+      return;
+    }
     if (classList.length > 0 && !selectedClass) {
       setSelectedClass(String(classList[0].id));
     }
-  }, [classList, selectedClass]);
+  }, [classList, selectedClass, isStudent, studentClass]);
 
   useEffect(() => {
+    if (isStudent) {
+      if (studentSection && selectedSection !== studentSection) setSelectedSection(studentSection);
+      return;
+    }
     if (sectionList.length > 0) {
       const currentValid = sectionList.some((s) => String(s.id) === String(selectedSection));
       if (!selectedSection || !currentValid) {
         setSelectedSection(String(sectionList[0].id));
       }
     }
-  }, [sectionList, selectedSection]);
+  }, [sectionList, selectedSection, isStudent, studentSection]);
 
   // Fetch Timetable data whenever selected class or section changes
   const fetchTimetableData = useCallback(async () => {
@@ -568,49 +579,53 @@ const ListingComponent = ({ rolePriority = null }) => {
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
 
             {/* Class Dropdown */}
-            <div className="relative flex items-center min-w-[170px] w-full sm:w-auto">
-              <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all cursor-pointer shadow-2xs appearance-none"
-              >
-                <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Class</option>
-                {classList.map((cls) => (
-                  <option
-                    value={cls.id}
-                    key={`class-${cls.id}`}
-                    className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
-                  >
-                    {cls.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
-            </div>
+            {!isStudent && (
+              <div className="relative flex items-center min-w-[170px] w-full sm:w-auto">
+                <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all cursor-pointer shadow-2xs appearance-none"
+                >
+                  <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Class</option>
+                  {classList.map((cls) => (
+                    <option
+                      value={cls.id}
+                      key={`class-${cls.id}`}
+                      className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
+                    >
+                      {cls.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
+              </div>
+            )}
 
             {/* Section Dropdown */}
-            <div className="relative flex items-center min-w-[170px] w-full sm:w-auto">
-              <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
-              <select
-                value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-                disabled={!selectedClass || sectionList.length === 0}
-                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all cursor-pointer shadow-2xs appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Section</option>
-                {sectionList.map((sec) => (
-                  <option
-                    value={sec.id}
-                    key={`section-${sec.id}`}
-                    className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
-                  >
-                    {sec.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
-            </div>
+            {!isStudent && (
+              <div className="relative flex items-center min-w-[170px] w-full sm:w-auto">
+                <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
+                <select
+                  value={selectedSection}
+                  onChange={(e) => setSelectedSection(e.target.value)}
+                  disabled={!selectedClass || sectionList.length === 0}
+                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all cursor-pointer shadow-2xs appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="" className="bg-white dark:bg-[#161616] text-slate-500 font-medium">Select Section</option>
+                  {sectionList.map((sec) => (
+                    <option
+                      value={sec.id}
+                      key={`section-${sec.id}`}
+                      className="bg-white dark:bg-[#161616] text-slate-800 dark:text-slate-100 font-medium py-1"
+                    >
+                      {sec.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute right-3 pointer-events-none z-10" />
+              </div>
+            )}
 
             {/* Print Timetable Button */}
             <button

@@ -106,8 +106,24 @@ export const StudentAPI = {
       signal: cancel && cancelApiObject.generateStudentLogin ? cancelApiObject.generateStudentLogin.handleRequestCancellation().signal : undefined
     });
     return response;
+  },
+
+  /** Fetch comprehensive student profile for public portfolio and student profile page
+   */
+  getStudentProfile: async (identifier, isPublic = false, cancel = false) => {
+    const token = getLocalStorage("auth")?.token;
+    const headers = token ? { "x-access-token": token } : {};
+    const { data: response } = await api.request({
+      url: `/student-profile?identifier=${encodeURIComponent(identifier)}${isPublic ? "&public=true" : ""}`,
+      headers,
+      method: "GET",
+      signal: cancel && cancelApiObject.getStudentProfile ? cancelApiObject.getStudentProfile.handleRequestCancellation().signal : undefined
+    });
+    return response;
   }
 };
 
 // defining the cancel API object for StudentAPI
 const cancelApiObject = defineCancelApiObject(StudentAPI);
+
+export default StudentAPI;

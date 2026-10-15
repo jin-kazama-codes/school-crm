@@ -61,6 +61,7 @@ const GenerateIdCardComponent = dynamic(() => import("@/components/generateIdCar
 const HomeworkFormComponent = dynamic(() => import("@/components/homework/FormComponent"), { ssr: false });
 const HomeworkListingComponent = dynamic(() => import("@/components/homework/ListingComponent"), { ssr: false });
 const AssessmentListingComponent = dynamic(() => import("@/components/assessment/ListingComponent"), { ssr: false });
+const StudentProfilePage = dynamic(() => import("@/components/student/StudentProfilePage"), { ssr: false });
 
 // Import idle timer dynamically (browser only)
 const IdleTimerWrapper = dynamic(
@@ -132,6 +133,12 @@ function renderRouteContent(pathname: string, userRole: { name: string; priority
     if (priority === 6) {
       return <AssessmentListingComponent rolePriority={priority} />;
     }
+  }
+
+  // Universal Student Profile route (Students & Admins)
+  if (base === "student" && sub === "profile") {
+    const studentIdentifier = parts[2] || "";
+    return <StudentProfilePage isPublic={false} identifier={studentIdentifier} rolePriority={priority} />;
   }
 
   // Priority 1 only routes (Superadmin / System Configs)
@@ -260,7 +267,10 @@ export default function ClientApp() {
     });
   }, []);
 
+  const isPublicStudentRoute = pathname?.startsWith("/public/student/");
+
   useEffect(() => {
+    if (isPublicStudentRoute) return;
     verifyToken().then((result: any) => {
       if (!result && currentSection === "reset-password") {
         const parts = pathname?.split("/") || [];
@@ -274,10 +284,21 @@ export default function ClientApp() {
         router.replace("/login");
       }
     });
-  }, []);
+  }, [pathname, isPublicStudentRoute]);
 
   const isLoggedIn = getLocalStorage("auth")?.token;
   const isResetPw = currentSection === "reset-password";
+
+  if (isPublicStudentRoute) {
+    const identifier = pathname?.replace("/public/student/", "")?.split("/")?.[0] || "";
+    return (
+      <ColorModeContext.Provider value={colorMode}>
+        <div className="h-screen w-full overflow-y-auto bg-slate-50 dark:bg-[#09090b]">
+          <StudentProfilePage isPublic={true} identifier={identifier} />
+        </div>
+      </ColorModeContext.Provider>
+    );
+  }
 
   if (pathname === "/login") {
     return (

@@ -108,6 +108,12 @@ const StudentDossierModal = ({
     return !isNaN(Number(student.house)) ? `House ${student.house}` : capitalizeEveryWord(String(student.house));
   }, [student?.house, student?.house_name, allHouses]);
 
+  const resolvedHouseColor = useMemo(() => {
+    if (student?.house_color || student?.house_color_code) return student.house_color || student.house_color_code;
+    const found = allHouses.find((h) => String(h.id) === String(student?.house) || h.name?.toLowerCase() === String(student?.house_name || student?.house).toLowerCase());
+    return found?.color_code || null;
+  }, [student?.house, student?.house_name, student?.house_color, student?.house_color_code, allHouses]);
+
   // Resolved Subjects List
   const resolvedSubjectList = useMemo(() => {
     // 1. If backend already returned resolved_subjects
@@ -572,7 +578,7 @@ const StudentDossierModal = ({
                   <InfoCard label="Assigned Class" value={resolvedClass} icon={BookOpen} highlight="emerald" />
                   <InfoCard label="Assigned Section" value={resolvedSection || 'General'} icon={BookOpen} highlight="indigo" />
                   <InfoCard label="Academic Session" value={student?.session || '2025-2026'} icon={Calendar} />
-                  <InfoCard label="School House" value={resolvedHouse} icon={Award} />
+                  <InfoCard label="School House" value={resolvedHouse} icon={Award} valueStyle={resolvedHouseColor ? { color: resolvedHouseColor } : undefined} />
                   <InfoCard label="Bus / Transport Service" value={student?.is_taking_bus ? (student?.bus ? `Bus #${student.bus}` : 'Opted for School Bus') : 'Self Transport (No Bus)'} icon={Bus} />
                   <InfoCard label="Student Role / Head Status" value={student?.head ? 'School Head Representative' : 'Standard Student'} icon={Shield} />
                 </div>
@@ -1161,7 +1167,7 @@ const StudentDossierModal = ({
 };
 
 // Helper Card Subcomponent
-const InfoCard = ({ label, value, subValue, icon: Icon, highlight = 'slate' }) => {
+const InfoCard = ({ label, value, subValue, icon: Icon, highlight = 'slate', valueStyle }) => {
   const highlightStyles = {
     slate: 'border-slate-200/80 dark:border-[#222]',
     emerald: 'border-emerald-300/80 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/10',
@@ -1175,7 +1181,7 @@ const InfoCard = ({ label, value, subValue, icon: Icon, highlight = 'slate' }) =
         <span>{label}</span>
         {Icon && <Icon className="w-3.5 h-3.5 opacity-60" />}
       </div>
-      <div className="text-sm font-extrabold text-slate-900 dark:text-white capitalize">
+      <div className="text-sm font-extrabold text-slate-900 dark:text-white capitalize" style={valueStyle}>
         {value || '—'}
       </div>
       {subValue && (

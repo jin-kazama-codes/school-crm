@@ -92,7 +92,7 @@ const Login = () => {
             const authInfo = {
               id: response.data.id,
               school_id: response.data.school_id,
-              school_code: sanitizedData.school_code,
+              school_code: response.data.school_code || sanitizedData.school_code || "",
               token: response.data.token,
               role: response.data.role,
               rolePriority: response.data.rolePriority ?? numRole,
@@ -216,9 +216,9 @@ const Login = () => {
                   <div className="space-y-1">
                     <input
                       name="email"
-                      type="email"
-                      placeholder="Email"
-                      autoComplete="email"
+                      type="text"
+                      placeholder="Email or Enrollment No / Username"
+                      autoComplete="username"
                       onBlur={(e) => {
                         setFieldValue("email", e.target.value.trim());
                         handleBlur(e);

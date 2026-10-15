@@ -15,7 +15,18 @@ const { getLocalStorage } = Utility();
 export const HomeworkAPI = {
   /** Get Homeworks from the database that meet the specified query parameters */
   getAll: async (conditionObj = false, page = 0, size = 10, search = false, authInfo, cancel = false) => {
-    const queryParam = conditionObj ? `&${conditionObj.key}=${conditionObj.value}` : "";
+    let queryParam = "";
+    if (conditionObj) {
+      if (conditionObj.key && conditionObj.value !== undefined) {
+        queryParam += `&${conditionObj.key}=${conditionObj.value}`;
+      } else {
+        Object.keys(conditionObj).forEach((key) => {
+          if (conditionObj[key] !== undefined && conditionObj[key] !== null && conditionObj[key] !== false) {
+            queryParam += `&${key}=${conditionObj[key]}`;
+          }
+        });
+      }
+    }
     const searchParam = search ? `&search=${search}` : "";
     const { data: response } = await api.request({
       url: `/homework?page=${page}&size=${size}${queryParam}${searchParam}`,

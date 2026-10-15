@@ -42,12 +42,13 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
   const dispatch = useDispatch();
   const navigateTo = useNavigate();
   const colorMode = useContext(ColorModeContext);
-  
+
   const isMobile = typeof window !== "undefined" && window.innerWidth <= 480;
   const profileMenuRef = useRef(null);
   const schoolMenuRef = useRef(null);
 
   const {
+    capitalizeEachWord,
     fetchAndSetAll,
     getInitials,
     getNameAndType,
@@ -56,6 +57,53 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
     setLocalStorage,
   } = Utility();
   const { username, role } = getNameAndType(roleName);
+
+  const authUser = getLocalStorage("auth");
+  const [studentInfo, setStudentInfo] = useState(authUser?.student || null);
+
+  useEffect(() => {
+    if (rolePriority === 6 && authUser) {
+      if (authUser.student?.fullName && authUser.student?.class_name) {
+        setStudentInfo(authUser.student);
+      } else {
+        const identifier = authUser.username || authUser.id;
+        if (identifier) {
+          API.StudentAPI.getStudentProfile(identifier)
+            .then((res) => {
+              if (res?.data) {
+                const sData = res.data;
+                const updatedStudent = {
+                  fullName: sData.fullName || `${sData.firstname || ""} ${sData.lastname || ""}`.trim(),
+                  class_name: sData.class_name,
+                  section_name: sData.section_name,
+                  photo_url: sData.photo_url,
+                  enrollment_no: sData.enrollment_no,
+                  roll_no: sData.roll_no,
+                };
+                setStudentInfo(updatedStudent);
+                try {
+                  const currentAuth = getLocalStorage("auth");
+                  if (currentAuth) {
+                    currentAuth.student = { ...(currentAuth.student || {}), ...updatedStudent };
+                    setLocalStorage("auth", currentAuth);
+                  }
+                } catch (e) { }
+              }
+            })
+            .catch(() => { });
+        }
+      }
+    }
+  }, [rolePriority, authUser?.username]);
+
+  const studentDisplayName = rolePriority === 6 && studentInfo?.fullName
+    ? studentInfo.fullName
+    : username;
+  const studentClassSection = rolePriority === 6 && studentInfo?.class_name
+    ? `Class ${studentInfo.class_name}${studentInfo.section_name ? ` - ${studentInfo.section_name}` : ""}`
+    : "";
+  const roleDisplay = rolePriority === 6 ? "Student" : role;
+  const studentInitials = getInitials(studentDisplayName);
 
   const handleSignOut = () => {
     localStorage.clear();
@@ -162,22 +210,20 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
               <button
                 type="button"
                 onClick={() => setSchoolMenuOpen(!schoolMenuOpen)}
-                className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border font-semibold text-xs transition-all cursor-pointer shadow-xs ${
-                  activeSchoolSelected
-                    ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20"
-                    : "bg-slate-50 dark:bg-[#141414] border-slate-200 dark:border-[#222] text-slate-700 dark:text-gray-300 hover:border-slate-300 dark:hover:border-[#333]"
-                }`}
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border font-semibold text-xs transition-all cursor-pointer shadow-xs ${activeSchoolSelected
+                  ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20"
+                  : "bg-slate-50 dark:bg-[#141414] border-slate-200 dark:border-[#222] text-slate-700 dark:text-gray-300 hover:border-slate-300 dark:hover:border-[#333]"
+                  }`}
                 title="Filter entire application by school"
               >
                 <Building2 className={`w-4 h-4 shrink-0 ${activeSchoolSelected ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}`} />
                 <span className="font-bold max-w-[120px] sm:max-w-[180px] truncate hidden sm:block">
                   {schoolObj.name || "All Schools"}
                 </span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider hidden sm:inline-block ${
-                  activeSchoolSelected
-                    ? "bg-emerald-600 text-white"
-                    : "bg-slate-200 dark:bg-[#252525] text-slate-600 dark:text-gray-400"
-                }`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider hidden sm:inline-block ${activeSchoolSelected
+                  ? "bg-emerald-600 text-white"
+                  : "bg-slate-200 dark:bg-[#252525] text-slate-600 dark:text-gray-400"
+                  }`}>
                   {activeSchoolSelected ? "School Active" : `${schoolsList.length} Schools`}
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -200,11 +246,10 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
                   <button
                     type="button"
                     onClick={() => handleSelectSchool(null)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                      !activeSchoolSelected
-                        ? "bg-emerald-600 text-white font-bold shadow-xs"
-                        : "hover:bg-slate-50 dark:hover:bg-[#1a1a1a] text-slate-700 dark:text-gray-300"
-                    }`}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${!activeSchoolSelected
+                      ? "bg-emerald-600 text-white font-bold shadow-xs"
+                      : "hover:bg-slate-50 dark:hover:bg-[#1a1a1a] text-slate-700 dark:text-gray-300"
+                      }`}
                   >
                     <div className="flex items-center space-x-2.5">
                       <span className="text-base">🏢</span>
@@ -215,11 +260,10 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
                         </p>
                       </div>
                     </div>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                      !activeSchoolSelected
-                        ? "bg-white/20 text-white"
-                        : "bg-slate-100 dark:bg-[#1f1f1f] text-slate-600 dark:text-gray-400"
-                    }`}>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${!activeSchoolSelected
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 dark:bg-[#1f1f1f] text-slate-600 dark:text-gray-400"
+                      }`}>
                       {schoolsList.length}
                     </span>
                   </button>
@@ -233,11 +277,10 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
                           key={school.id}
                           type="button"
                           onClick={() => handleSelectSchool(school)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                            isSelected
-                              ? "bg-emerald-600 text-white font-bold shadow-xs"
-                              : "hover:bg-slate-50 dark:hover:bg-[#1a1a1a] text-slate-700 dark:text-gray-300"
-                          }`}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${isSelected
+                            ? "bg-emerald-600 text-white font-bold shadow-xs"
+                            : "hover:bg-slate-50 dark:hover:bg-[#1a1a1a] text-slate-700 dark:text-gray-300"
+                            }`}
                         >
                           <div className="flex items-center space-x-2.5 min-w-0">
                             <span className="text-base">📍</span>
@@ -280,11 +323,19 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
               type="button"
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               className="relative p-0.5 rounded-full hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer focus:outline-none shrink-0"
-              title={`${username} (${role})`}
+              title={`${capitalizeEachWord(studentDisplayName)} (${capitalizeEachWord(roleDisplay)})`}
             >
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 font-bold text-xs border-2 border-slate-200 dark:border-slate-800 shadow-xs">
-                {getInitials()}
-              </div>
+              {studentInfo?.photo_url ? (
+                <img
+                  src={studentInfo.photo_url}
+                  alt={studentDisplayName}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-slate-200 dark:border-slate-800 shadow-xs"
+                />
+              ) : (
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 font-bold text-xs border-2 border-slate-200 dark:border-slate-800 shadow-xs">
+                  {capitalizeEachWord(studentInitials)}
+                </div>
+              )}
               <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-[#0f0f0f] absolute bottom-0 right-0 shadow-xs" />
             </button>
 
@@ -292,13 +343,26 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
             {profileMenuOpen && (
               <div className="absolute right-0 top-11 z-50 w-64 bg-white dark:bg-[#0f0f0f] border border-slate-100 dark:border-[#1a1a1a] rounded-2xl shadow-2xl p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="flex items-center space-x-3 p-2 bg-slate-50 dark:bg-[#141414] rounded-xl border border-slate-100 dark:border-[#1a1a1a]">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 font-bold text-xs shrink-0">
-                    {getInitials()}
-                  </div>
+                  {studentInfo?.photo_url ? (
+                    <img
+                      src={studentInfo.photo_url}
+                      alt={studentDisplayName}
+                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 font-bold text-xs shrink-0">
+                      {capitalizeEachWord(studentInitials)}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
-                    <p className="font-extrabold text-xs text-slate-800 dark:text-white truncate">{username}</p>
-                    <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">
-                      {role}
+                    <p className="font-extrabold text-xs text-slate-800 dark:text-white truncate">{capitalizeEachWord(studentDisplayName)}</p>
+                    {rolePriority === 6 && studentClassSection && (
+                      <p className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 truncate leading-tight mt-0.5">
+                        {studentClassSection}
+                      </p>
+                    )}
+                    <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate capitalize leading-tight mt-0.5">
+                      {roleDisplay}
                     </p>
                   </div>
                 </div>
@@ -308,7 +372,11 @@ const Topbar = ({ roleName = null, rolePriority = null, isCollapsed, setIsCollap
                     type="button"
                     onClick={() => {
                       setProfileMenuOpen(false);
-                      setProfileModalOpen(true);
+                      if (rolePriority === 6) {
+                        navigateTo("/student/profile");
+                      } else {
+                        setProfileModalOpen(true);
+                      }
                     }}
                     className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-[#1a1a1a] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
                   >
